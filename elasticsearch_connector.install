@@ -1,0 +1,112 @@
+<?php
+/**
+ * @file
+ *
+ * The installtion file for elasticsearch_connector module.
+ */
+
+/**
+ * Implements hook_requirements().
+ *
+ * Check Elastica installation.
+ */
+function elasticsearch_connector_requirements($phase) {
+  $t = get_t();
+  if ($phase === 'install') {
+    if (!PHP_MAJOR_VERSION >= 5 || (PHP_MAJOR_VERSION >= 5 && !PHP_MINOR_VERSION >= 3)) {
+      return array(
+        'elasticsearch_connector' => array(
+          'title' => $t('The version of PHP is not compatible with this module.'),
+          'description' => $t('The module requires PHP version bigger than version 5.3.'),
+          'severity' => REQUIREMENT_ERROR,
+        ),
+      );
+    }
+  }
+
+  if ($phase == 'runtime') {
+    //TODO: Handle dynamic checks. This is only for tests.
+    if (!class_exists('Elasticsearch\Client')) {
+      return array(
+        'elasticsearch_connector' => array(
+          'title' => $t('The Elasticsearch library is missing.'),
+          'description' => $t('The official library for Elasticsearch connection is missing.'),
+          'severity' => REQUIREMENT_ERROR,
+        ),
+      );
+    }
+    else {
+      return array(
+        'elasticsearch_connector' => array(
+          'title' => $t('Elasticsearch PHP library'),
+          'description' => $t('The official Elasticsearch library was correctly installed.'),
+          'severity' => REQUIREMENT_OK,
+        ),
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_schema().
+ */
+function elasticsearch_connector_schema() {
+
+  //TODOs:
+  //TODO: Make the module CTools exportable compatible!
+  //TODO: Handle foreign keys with nodes table!
+
+  $schema['elasticsearch_connector_cluster'] = array(
+    'description' => 'The base table for elasticsearch clusters.',
+    'fields' => array(
+      'cluster_id' => array(
+        'description' => 'Unique identifier for the cluster environment',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'name' => array(
+        'description' => 'Human-readable name for the cluster',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'url' => array(
+        'description' => 'URL of master Node.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'status' => array(
+        'description' => 'Boolean indicating whether the entity is active or not.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'options' => array(
+        'description' => 'Other serialized options available for the cluster',
+        'type' => 'blob',
+        'not null' => TRUE,
+        'size' => 'normal',
+      ),
+    ),
+    'indexes' => array('status_idx' => array('status'), 'default_idx' => array('default')),
+    'unique keys' => array(),
+    'foreign keys' => array(),
+    'primary key' => array('cluster_id', 'name'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Delete Search Api elasticsearch servers.
+ */
+function elasticsearch_connector_uninstall() {
+  //TODO: Remove all variables if any.
+}

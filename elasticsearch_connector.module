@@ -1,0 +1,162 @@
+<?php
+/**
+ * @file
+ * This module provide an interface to connecting to the elasticsearch
+ * cluster and implementing the Elastica library.
+ *
+ *
+ * Created on Dec 21, 2013
+ */
+
+define('ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE', '0');
+define('ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE', '1');
+define('ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK', 'ok');
+define('ELASTICSEARCH_CONNECTOR_DEFAULT_LIBRARY', 'Elasticsearch\Client');
+
+/**
+ * Implements hook_init().
+ */
+function elasticsearch_connector_init() {
+  $dynamic_client = 'Elasticsearch\Client';
+  $params = array();
+  $params['hosts'] = array (
+      '192.168.0.107:9200',         // IP + Port
+      //'lab.local',         // IP + Port
+  );
+  $params['logging'] = false;
+
+
+  //var_dump(elasticsearch_connector_cluster_load('test'));exit;
+  try {
+    $client = new $dynamic_client($params);
+    //echo '<pre>';var_dump($client->search());exit;
+  }
+  catch(Exception $e) {
+    //Catch exceptions if any.
+  }
+}
+
+/**
+ * Implements hook_cron()
+ */
+function elasticsearch_connector_cron() {
+  //TODO: Check cluster node state and update cluster nodes if any changes.
+  // Do this only if we have auto-node update configuration enabled.
+  // The default state of the auto mode will be activeated!
+}
+
+/**
+ * Implements hook_permission().
+ */
+function elasticsearch_connector_permission() {
+   return array(
+    'adminiser elasticsearch connector' => array(
+      'title' => t('Administer elasticsearch connector'),
+      'description' => t('Giving you access to administer elasticsearch clusters.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function elasticsearch_connector_menu() {
+  $items = array();
+  $settings_path = 'admin/config/elasticsearch-connector';
+
+  //TODO: Think if it is not better to have a internal function to list menus.
+  $items[$settings_path] = array(
+    'title'              => 'Elasticsearch connector',
+    'description'        => 'Administer Elasticsearch connector module',
+    'position'           => 'left',
+    'access arguments'   => array('adminiser elasticsearch connector'),
+    'page callback'      => 'system_admin_menu_block_page',
+    'file'               => 'system.admin.inc',
+    'file path'          => drupal_get_path('module', 'system'),
+  );
+
+  $items[$settings_path . '/clusters'] = array(
+    'title'             => 'Elasticsearch Clusters',
+    'description'       => 'Showing all available clusters',
+    'page callback'     => 'elasticsearch_connector_status_page',
+    'access arguments'  => array('adminiser elasticsearch connector'),
+    'file'              => 'elasticsearch_connector.admin.inc',
+    'weight'            => -10,
+  );
+
+  $items[$settings_path . '/clusters/add'] = array(
+    'title'              => 'Add cluster',
+    'description'        => 'Add new elasticsearch cluster',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_connector_edit_cluster'),
+    'access arguments'   => array('adminiser elasticsearch connector'),
+    'file'               => 'elasticsearch_connector.admin.inc',
+    'type'               => MENU_LOCAL_ACTION,
+  );
+
+  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/edit'] = array(
+    'title'              => 'Edit cluster',
+    'description'        => 'Edit cluster settings',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_connector_edit_cluster'),
+    'access arguments'   => array('adminiser elasticsearch connector'),
+    'file'               => 'elasticsearch_connector.admin.inc',
+    'type'               => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ *
+ * @param string $cluster_id
+ * @return object $cluster
+ */
+function elasticsearch_connector_cluster_load($cluster_id) {
+  $object = db_select('elasticsearch_connector_cluster', 'ecc')
+          ->fields('ecc')
+          ->condition('cluster_id', $cluster_id, '=')->execute()->fetchObject();
+  if (!empty($object)) {
+    drupal_unpack($object, 'options');
+  }
+
+  return $object;
+}
+
+/**
+ * Get the default connector (cluster) used for elasticsearch.
+ *
+ * @return string
+ */
+function elasticsearch_connector_get_default_connector() {
+  return variable_get('elasticsearch_connector_get_default_connector', '');
+}
+
+/**
+ * Return cluster info.
+ * @param string $url
+ * @return return array
+ */
+function elasticsearch_connector_get_cluster_info($url) {
+  $result = FALSE;
+  // TODO: Handle different name!
+  if (valid_url($url)) {
+    $library = ELASTICSEARCH_CONNECTOR_DEFAULT_LIBRARY;
+    $client = new $library(
+      array(
+        'hosts' => array(
+          $url
+        )
+      )
+    );
+    $info = $client->info();
+
+    if ($info['ok'] == TRUE) {
+      $result['info'] = $info;
+      $result['state'] = $client->cluster()->state();
+      $result['health'] = $client->cluster()->health();
+    }
+  }
+
+  return $result;
+}
