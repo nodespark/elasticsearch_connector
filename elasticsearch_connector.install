@@ -93,10 +93,10 @@ function elasticsearch_connector_schema() {
         'size' => 'normal',
       ),
     ),
-    'indexes' => array('status_idx' => array('status'), 'default_idx' => array('default')),
+    'indexes' => array('status_idx' => array('status')),
     'unique keys' => array(),
     'foreign keys' => array(),
-    'primary key' => array('cluster_id', 'name'),
+    'primary key' => array('cluster_id'),
   );
 
   return $schema;

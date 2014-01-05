@@ -11,14 +11,35 @@
  */
 function elasticsearch_connector_status_page() {
   $headers = array(
-    array('data' => t('Cluster name'), 'colspan' => 2),
+    array('data' => t('Cluster name')),
     array('data' => t('Status')),
     array('data' => t('Operations')),
   );
 
   $rows = array();
 
-  //TODO: Load all clusters and check their status and display it.
+  $query = db_select('elasticsearch_connector_cluster', 'ecc')
+            ->extend('PagerDefault')
+            ->extend('TableSort');
+
+  $cluster_ids = $query
+  ->fields('ecc',array('cluster_id'))
+  ->limit(50)
+  ->orderByHeader($headers)
+  ->addTag('elasticsearch_connector_cluster')
+  ->execute()
+  ->fetchCol();
+
+  foreach ($cluster_ids as $cluster_id) {
+    $row = array();
+    $cluster = elasticsearch_connector_cluster_load($cluster_id);
+
+    $row[] = $cluster->name;
+    $row[] = (!empty($cluster->status) ? t('Active') : t('Inactive'));
+    $row[] = l(t('edit'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/edit');
+
+    $rows[] = $row;
+  }
 
   $output['elasticsearch_connector']['table'] = array(
     '#theme' => 'table',
@@ -26,6 +47,8 @@ function elasticsearch_connector_status_page() {
     '#rows' => $rows,
     '#attributes' => array('class' => array('admin-elasticsearch-connector')),
   );
+
+  $output['pager'] = array('#markup' => theme('pager'));
 
   return $output;
 }
@@ -60,10 +83,17 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#required' => TRUE,
   );
 
+  if (isset($cluster)) {
+    $form['cluster'] = array(
+      '#type'  => 'value',
+      '#value' => $cluster
+    );
+  }
+
   $form['url'] = array(
     '#type' => 'textfield',
     '#title' => t('Server URL'),
-    '#default_value' => '',
+    '#default_value' => !empty($cluster->url) ? $cluster->url : '',
     '#description' => t('Enter the URL of a node in the cluster. ' .
         'All nodes will be automatically discover. ' .
         'Example: http://localhost:9200'),
@@ -90,7 +120,19 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#title' => t('Make this cluster default connection'),
     '#description' => t('If no specific cluster connection specified the API will use the default connection.'),
     '#default_value' => (!empty($cluster->cluster_id) &&
-        $cluster->name == elasticsearch_connector_get_default_connector() ? '1' : '0'),
+        $cluster->cluster_id == elasticsearch_connector_get_default_connector() ? '1' : '0'),
+  );
+
+  $form['options'] = array(
+    '#tree' => TRUE
+  );
+
+  $form['options']['multiple_nodes_connection'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use multiple nodes connection'),
+    '#description' => t('It will automatically discover all nodes and use them in the connection to the cluster. ' .
+      'The Elasticsearch client can then randomise the query execution between nodes.'),
+    '#default_value' => (!empty($cluster->options['multiple_nodes_connection']) ? 1 : 0),
   );
 
   $form['status'] = array(
@@ -116,18 +158,6 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
   );
 
   return $form;
-}
-
-/**
- * Build the node options
- *
- * @param array $form
- * @param array &$form_state
- * @param object $cluster
- */
-function elasticsearch_connector_node_form_items($form, $form_state, $cluster) {
-  $results = array();
-  return $results;
 }
 
 function elasticsearch_connector_edit_cluster_ajax($form, $form_state) {
@@ -213,5 +243,25 @@ function elasticsearch_connector_edit_cluster_validate($form, &$form_state) {
  * @param array $form_state
  */
 function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
+  $values = (object)$form_state['values'];
+  $values->options = serialize($values->options);
+  $cluster = isset($values->cluster) ? $values->cluster : NULL;
+
+  if ($values->default == 1) {
+    elasticsearch_connector_set_default_connector($values->cluster_id);
+  }
+
+  if (isset($cluster)) {
+    drupal_write_record('elasticsearch_connector_cluster', $values,
+      array('cluster_id'));
+    $message = t('The cluster has been updated.');
+  }
+  else {
+    drupal_write_record('elasticsearch_connector_cluster', $values);
+    $message = t('The cluster has been insert.');
+  }
+
+  drupal_set_message($message);
+  $form_state['redirect'] = elasticsearch_connector_main_settings_path() . '/clusters';
 
 }
