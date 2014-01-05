@@ -226,7 +226,7 @@ function elasticsearch_connector_edit_cluster_form_info($cluster_info = NULL, $a
 }
 
 /**
- *
+ * Handle the cluster add/edit validations.
  * @param array $form
  * @param array $form_state
  */
@@ -238,6 +238,7 @@ function elasticsearch_connector_edit_cluster_validate($form, &$form_state) {
 }
 
 /**
+ * Handle the cluster add/edit submissions.
  *
  * @param array $form
  * @param array $form_state

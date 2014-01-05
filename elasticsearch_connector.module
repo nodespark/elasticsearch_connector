@@ -17,23 +17,7 @@ define('ELASTICSEARCH_CONNECTOR_DEFAULT_LIBRARY', 'Elasticsearch\Client');
  * Implements hook_init().
  */
 function elasticsearch_connector_init() {
-  $dynamic_client = 'Elasticsearch\Client';
-  $params = array();
-  $params['hosts'] = array (
-      '192.168.0.107:9200',         // IP + Port
-      //'lab.local',         // IP + Port
-  );
-  $params['logging'] = false;
 
-
-  //var_dump(elasticsearch_connector_cluster_load('test'));exit;
-  try {
-    $client = new $dynamic_client($params);
-    //echo '<pre>';var_dump($client->search());exit;
-  }
-  catch(Exception $e) {
-    //Catch exceptions if any.
-  }
 }
 
 /**
