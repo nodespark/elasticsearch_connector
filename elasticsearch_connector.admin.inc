@@ -13,6 +13,7 @@ function elasticsearch_connector_status_page() {
   $headers = array(
     array('data' => t('Cluster name')),
     array('data' => t('Status')),
+    array('data' => t('Cluster Status')),
     array('data' => t('Operations')),
   );
 
@@ -24,7 +25,7 @@ function elasticsearch_connector_status_page() {
 
   $cluster_ids = $query
   ->fields('ecc',array('cluster_id'))
-  ->limit(50)
+  ->limit(25)
   ->orderByHeader($headers)
   ->addTag('elasticsearch_connector_cluster')
   ->execute()
@@ -33,10 +34,13 @@ function elasticsearch_connector_status_page() {
   foreach ($cluster_ids as $cluster_id) {
     $row = array();
     $cluster = elasticsearch_connector_cluster_load($cluster_id);
+    $cluster_info = elasticsearch_connector_get_cluster_info($cluster->url);
 
     $row[] = $cluster->name;
     $row[] = (!empty($cluster->status) ? t('Active') : t('Inactive'));
-    $row[] = l(t('edit'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/edit');
+    $row[] = $cluster_info['health']['status'];
+    $row[] = l(t('edit'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/edit')
+     . ' | ' . l(t('delete'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/delete');
 
     $rows[] = $row;
   }
@@ -264,5 +268,38 @@ function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
 
   drupal_set_message($message);
   $form_state['redirect'] = elasticsearch_connector_main_settings_path() . '/clusters';
+}
 
+/**
+ * Form constructor for the node deletion confirmation form.
+ *
+ * @see elasticsearch_connector_delete_cluster_submit()
+ */
+function elasticsearch_connector_delete_cluster($form, &$form_state, $cluster) {
+  $form['cluster'] = array('#type' => 'value', '#value' => $cluster);
+  return confirm_form($form,
+      t('Are you sure you want to delete %name?', array('%name' => $cluster->name)),
+      elasticsearch_connector_main_settings_path() . '/clusters',
+      t('This action cannot be undone.'),
+      t('Delete'),
+      t('Cancel')
+  );
+}
+
+/**
+ * Handle the submit from elasticsearch_connector_delete_cluster() form.
+ *
+ * @param array $form
+ * @param array $form_state
+ */
+function elasticsearch_connector_delete_cluster_submit($form, &$form_state) {
+  $cluster = $form_state['values']['cluster'];
+  if (isset($cluster)) {
+    db_delete('elasticsearch_connector_cluster')
+      ->condition('cluster_id', $cluster->cluster_id, '=')
+      ->execute();
+  }
+
+  drupal_set_message(t('%name has been deleted.', array('%name' => $cluster->name)));
+  $form_state['redirect'] = elasticsearch_connector_main_settings_path() . '/clusters';
 }
