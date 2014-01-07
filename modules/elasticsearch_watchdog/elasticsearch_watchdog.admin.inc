@@ -293,27 +293,31 @@ function elasticsearch_watchdog_top($type) {
 
   $header = array(
     array('data' => t('Count'), 'field' => 'count', 'sort' => 'desc'),
-    array('data' => t('Message'), 'field' => 'message')
+    array('data' => t('Path'), 'field' => 'message')
   );
-  $count_query = db_select('watchdog');
-  $count_query->addExpression('COUNT(DISTINCT(message))');
-  $count_query->condition('type', $type);
 
-  $query = db_select('watchdog', 'w')->extend('PagerDefault')->extend('TableSort');
-  $query->addExpression('COUNT(wid)', 'count');
-  $query = $query
-  ->fields('w', array('message', 'variables'))
-  ->condition('w.type', $type)
-  ->groupBy('message')
-  ->groupBy('variables')
-  ->limit(30)
-  ->orderByHeader($header);
-  $query->setCountQuery($count_query);
-  $result = $query->execute();
+  $result = array();
 
-  $rows = array();
-  foreach ($result as $elasticlog) {
-    $rows[] = array($elasticlog->count, theme('elasticsearch_watchdog_message', array('event' => $elasticlog)));
+  $global_facet_name = 'facetname_message';
+  $field_faceting = 'message';
+  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      $params = array();
+      $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
+      $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+      $params['search_type'] = 'count';
+      $params['body']['query']['term']['type'] = $type;
+      $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
+      $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
+      $search_result = $client->search($params);
+      if (!empty($search_result['facets'])) {
+        foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
+          $rows[] = array($facet['count'], $facet['term']);
+        }
+      }
+    }
   }
 
   $build['elasticsearch_watchdog_top_table']  = array(
@@ -322,7 +326,8 @@ function elasticsearch_watchdog_top($type) {
     '#rows' => $rows,
     '#empty' => t('No log messages available.'),
   );
-  $build['elasticsearch_watchdog_top_pager'] = array('#theme' => 'pager');
+  // TODO: Elasticsearch doesn't support pager on facets!
+  // $build['elasticsearch_watchdog_top_pager'] = array('#theme' => 'pager');
 
   return $build;
 }

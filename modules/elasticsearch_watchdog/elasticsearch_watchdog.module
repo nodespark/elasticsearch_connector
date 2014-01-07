@@ -46,7 +46,7 @@ function elasticsearch_watchdog_menu() {
   );
 
   $items['admin/reports/elastic-page-not-found'] = array(
-    'title' => "Top 'page not found' errors",
+    'title' => "Top 100 'page not found' errors",
     'description' => "View 'page not found' errors (404s).",
     'page callback' => 'elasticsearch_watchdog_top',
     'page arguments' => array('page not found'),
@@ -55,7 +55,7 @@ function elasticsearch_watchdog_menu() {
   );
 
   $items['admin/reports/elastic-access-denied'] = array(
-    'title' => "Top 'access denied' errors",
+    'title' => "Top 100 'access denied' errors",
     'description' => "View 'access denied' errors (403s).",
     'page callback' => 'elasticsearch_watchdog_top',
     'page arguments' => array('access denied'),
@@ -88,18 +88,7 @@ function elasticsearch_watchdog_cron() {
   // Counting the most recent n rows avoids issues with wid number sequences,
   // e.g. auto_increment value > 1 or rows deleted directly from the table.
   if ($row_limit > 0) {
-    $min_row = db_select('watchdog', 'w')
-    ->fields('w', array('wid'))
-    ->orderBy('wid', 'DESC')
-    ->range($row_limit - 1, 1)
-    ->execute()->fetchField();
-
-    // Delete all table entries older than the nth row, if nth row was found.
-    if ($min_row) {
-      db_delete('watchdog')
-      ->condition('wid', $min_row, '<')
-      ->execute();
-    }
+    //TODO: Remove the older messages!
   }
 }
 
@@ -169,8 +158,10 @@ function _elasticsearch_watchdog_get_message_types() {
       $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
       $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
       $params['search_type'] = 'count';
-      $params['body']['facets'][$global_facet_name]['terms']['field'] = 'type';
+      $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
       $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
+
+      // TODO: Handle filtering to narrow down
 //       $params['body']['facets'][$global_facet_name]['date_histogram']['field'] = 'date';
 //       $params['body']['facets'][$global_facet_name]['date_histogram']['interval'] = 'month';
 
