@@ -63,10 +63,10 @@ function elasticsearch_watchdog_menu() {
     'file' => 'elasticsearch_watchdog.admin.inc',
   );
 
-  $items['admin/reports/elastic-message/%'] = array(
+  $items['admin/reports/elasticlog/elastic-message/%'] = array(
     'title' => 'Details',
     'page callback' => 'elasticsearch_watchdog_event',
-    'page arguments' => array(3),
+    'page arguments' => array(4),
     'access arguments' => array('access site reports'),
     'file' => 'elasticsearch_watchdog.admin.inc',
   );
@@ -108,6 +108,7 @@ function elasticsearch_watchdog_cron() {
  * Implements hook_watchdog().
  */
 function elasticsearch_watchdog_watchdog(array $log_entry) {
+  global $user;
   // TODO: Check if the index exists before insert a message!
   $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
   if (!empty($client_id)) {
@@ -119,6 +120,7 @@ function elasticsearch_watchdog_watchdog(array $log_entry) {
 
       $doc['body']  = array(
         'uid' => $log_entry['uid'],
+        'username'  => user_is_logged_in() ? $user->name : '',
         'type' => substr($log_entry['type'], 0, 64),
         'message' => $log_entry['message'],
         'variables' => serialize($log_entry['variables']),
@@ -156,5 +158,29 @@ function elasticsearch_watchdog_form_system_logging_settings_alter(&$form, $form
  * @return array
  */
 function _elasticsearch_watchdog_get_message_types() {
-  return array();
+  $result = array();
+  $global_facet_name = 'facetname_type';
+  $field_faceting = 'type';
+  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      $params = array();
+      $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
+      $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+      $params['search_type'] = 'count';
+      $params['body']['facets'][$global_facet_name]['terms']['field'] = 'type';
+      $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
+//       $params['body']['facets'][$global_facet_name]['date_histogram']['field'] = 'date';
+//       $params['body']['facets'][$global_facet_name]['date_histogram']['interval'] = 'month';
+
+      $search_result = $client->search($params);
+      if (!empty($search_result['facets'])) {
+        foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
+          $result[$facet['term']] = $facet['term'] . ' (' . $facet['count'] . ')';
+        }
+      }
+    }
+  }
+  return $result;
 }

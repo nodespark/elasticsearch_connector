@@ -2,6 +2,10 @@
 /**
  * @file
  * Created on Jan 06, 2014
+ *
+ *
+ * TODO: Fix the comments of the functions!
+ *
  */
 
 function elasticsearch_watchdog_settings() {
@@ -41,7 +45,7 @@ function elasticsearch_watchdog_settings() {
 }
 
 /**
- * TODO: Rework the functionality if needed. Seems like we can re-work in a little bit.
+ * Validate the setting form submission.
  *
  * @param array $form
  * @param array $form_state
@@ -88,13 +92,14 @@ function elasticsearch_watchdog_settings_submit($form, &$form_state) {
 }
 
 function elasticsearch_watchdog_create_index_and_mapping($client) {
+  // TODO: Handle settings override because of submit creation the variable is not set.
   $indexParams['index']  =  variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX) . '_index';
 
   // Index Settings
   $indexParams['body']['settings']['number_of_shards']   = variable_get('elasticsearch_watchdog_num_of_shards', ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS);
   $indexParams['body']['settings']['number_of_replicas'] = (int)variable_get('elasticsearch_watchdog_num_of_replica', ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA);
 
-  // Example Index Mapping
+  // Index Mapping
   $myTypeMapping = array(
     '_source' => array(
       'enabled' => true
@@ -102,6 +107,10 @@ function elasticsearch_watchdog_create_index_and_mapping($client) {
     'properties' => array(
       'uid' => array(
         'type' => 'integer',
+      ),
+      'username' => array(
+        'type' => 'string',
+        'index' => 'not_analyzed'
       ),
       'type' => array(
         'type' => 'string',
@@ -146,8 +155,9 @@ function elasticsearch_watchdog_create_index_and_mapping($client) {
 
   $type = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
   $indexParams['body']['mappings'][$type] = $myTypeMapping;
-  $client = new Elasticsearch\Client();
 
+
+  // TODO: Think of building an template for watchdog messages.
   $result = $client->indices()->create($indexParams);
 
   try {
@@ -183,6 +193,7 @@ function elasticsearch_watchdog_create_index_and_mapping($client) {
 */
 function elasticsearch_watchdog_overview() {
   $filter = elasticsearch_watchdog_build_filter_query();
+
   $rows = array();
   $classes = array(
     WATCHDOG_DEBUG     => 'elasticlog-debug',
@@ -200,10 +211,10 @@ function elasticsearch_watchdog_overview() {
 
   $header = array(
     '', // Icon column.
-    array('data' => t('Type'), 'field' => 'w.type'),
-    array('data' => t('Date'), 'field' => 'w.wid', 'sort' => 'desc'),
+    array('data' => t('Type'), 'field' => 'type'),
+    array('data' => t('Date'), 'field' => 'date', 'sort' => 'desc'),
     t('Message'),
-    array('data' => t('User'), 'field' => 'u.name'),
+    array('data' => t('User'), 'field' => 'username'),
     array('data' => t('Operations')),
   );
 
@@ -215,17 +226,24 @@ function elasticsearch_watchdog_overview() {
       $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
       $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
 
-      // TODO: Handle pager with elasticsearch.
-      $params['size']  = 50;
-      $params['from']  = 0;
-      $params['sort'] = 'timestamp:desc';
+      $sort = tablesort_get_sort($header);
+      $field = tablesort_get_order($header);
+      $limit = variable_get('elasticsearch_watchdog_page_limit', 50);
+      $current_page = pager_find_page();
+      $params['body']['size']  = $limit;
+      $params['body']['from']  = $current_page*$limit;
+      $params['body']['sort'][$field['sql']]['order'] = $sort;
 
+      // Filter the results if there are filters specified.
+      if (!empty($filter['filter']['and'])) {
+        $params['body']['filter'] = $filter['filter'];
+      }
       $results = $client->search($params);
+      pager_default_initialize($results['hits']['total'], $limit);
     }
   }
 
   // TODO: Handle sorting and pager!!!
-
   foreach ($results['hits']['hits'] as $doc) {
     $account = user_load($doc['_source']['uid']);
     $rows[] = array('data' =>
@@ -390,10 +408,10 @@ function elasticsearch_watchdog_event($id) {
 }
 
 /**
- * Builds a query for database log administration filters based on session.
+ * Builds a filter for elasticsearch log administration filters based on session.
  *
  * @return array
- *   An associative array with keys 'where' and 'args'.
+ *   An associative array with keys. Only filter for now 'filter'.
  */
 function elasticsearch_watchdog_build_filter_query() {
   if (empty($_SESSION['elasticsearch_watchdog_overview_filter'])) {
@@ -402,23 +420,22 @@ function elasticsearch_watchdog_build_filter_query() {
 
   $filters = elasticsearch_watchdog_filters();
 
+  $filter['and'] = array();
   // Build query
-  $where = $args = array();
+  $where = &$filter['and'];
+  $args = array();
   foreach ($_SESSION['elasticsearch_watchdog_overview_filter'] as $key => $filter) {
-    $filter_where = array();
+    $filter_where['terms'][$filters[$key]['elastic_key']] = array();
     foreach ($filter as $value) {
-      $filter_where[] = $filters[$key]['where'];
-      $args[] = $value;
+      $filter_where['terms'][$filters[$key]['elastic_key']][] = $value;
     }
-    if (!empty($filter_where)) {
-      $where[] = '(' . implode(' OR ', $filter_where) . ')';
+    if (!empty($filter_where['terms'][$filters[$key]['elastic_key']])) {
+      $where['and'][] = $filter_where;
     }
   }
-  $where = !empty($where) ? implode(' AND ', $where) : '';
 
   return array(
-    'where' => $where,
-    'args' => $args,
+    'filter' => $where,
   );
 }
 
@@ -436,21 +453,21 @@ function elasticsearch_watchdog_build_filter_query() {
 function elasticsearch_watchdog_filters() {
   $filters = array();
 
-  foreach (_elasticsearch_watchdog_get_message_types() as $type) {
-    $types[$type] = t($type);
+  foreach (_elasticsearch_watchdog_get_message_types() as $key => $type) {
+    $types[$key] = t($type);
   }
 
   if (!empty($types)) {
     $filters['type'] = array(
       'title' => t('Type'),
-      'where' => "w.type = ?",
+      'elastic_key' => "type",
       'options' => $types,
     );
   }
 
   $filters['severity'] = array(
     'title' => t('Severity'),
-    'where' => 'w.severity = ?',
+    'elastic_key' => 'severity',
     'options' => watchdog_severity_levels(),
   );
 
@@ -483,7 +500,7 @@ function theme_elasticsearch_watchdog_message($variables) {
     if ($variables['link'] && isset($variables['event_id'])) {
       // Truncate message to 56 chars.
       $output = truncate_utf8(filter_xss($output, array()), 56, TRUE, TRUE);
-      $output = l($output, 'admin/reports/elastic-message/' . $variables['event_id'], array('html' => TRUE));
+      $output = l($output, 'admin/reports/elasticlog/elastic-message/' . $variables['event_id'], array('html' => TRUE));
     }
   }
   return $output;
@@ -600,6 +617,6 @@ function elasticsearch_watchdog_clear_log_form($form) {
 function elasticsearch_watchdog_clear_log_submit() {
   $_SESSION['elasticsearch_watchdog_overview_filter'] = array();
   // TODO: Delete the messages from the index.
-  db_delete('watchdog')->execute();
-  drupal_set_message(t('Database log cleared.'));
+  //db_delete('watchdog')->execute();
+  drupal_set_message(t('Elasticsearch logs has been cleared.'));
 }
