@@ -1,9 +1,7 @@
 <?php
 /**
+ * @file
  * Created on Dec 23, 2013
- *
- * To change the template for this generated file go to
- * Window - Preferences - PHPeclipse - PHP - Code Templates
  */
 
 /**
@@ -11,8 +9,8 @@
  */
 function elasticsearch_connector_status_page() {
   $headers = array(
-    array('data' => t('Cluster name')),
-    array('data' => t('Status')),
+    array('data' => t('Cluster name'), 'field' => 'ecc.name'),
+    array('data' => t('Status'), 'field' => 'ecc.status'),
     array('data' => t('Cluster Status')),
     array('data' => t('Operations')),
   );
@@ -40,7 +38,8 @@ function elasticsearch_connector_status_page() {
     $row[] = (!empty($cluster->status) ? t('Active') : t('Inactive'));
     $row[] = $cluster_info['health']['status'];
     $row[] = l(t('edit'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/edit')
-     . ' | ' . l(t('delete'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/delete');
+      . ' | ' . l(t('info'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/info')
+      . ' | ' . l(t('delete'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/delete');
 
     $rows[] = $row;
   }
@@ -58,6 +57,111 @@ function elasticsearch_connector_status_page() {
 }
 
 /**
+ *
+ * @param object $cluster
+ * @return array
+ */
+function elasticsearch_connector_info_cluster($cluster) {
+  elasticsearch_connector_set_breadcrumb(array(
+    l(t('Elasticsearch Clusters'), elasticsearch_connector_main_settings_path() . '/clusters'))
+  );
+
+  $cluster_status = elasticsearch_connector_get_cluster_info($cluster->url);
+  $cluster_client = $cluster_status['client'];
+
+  if (isset($cluster_client)) {
+    // TODO: Think if it is not better to move the stats calling in wrapper function or
+    //       making a new class interface to get the stats!
+
+    $node_stats = $cluster_client->cluster()->nodeStats();
+    $total_docs = $total_size = 0;
+    $node_rows = array();
+    if (isset($node_stats)) {
+      foreach($node_stats['nodes'] as $node_key => $node_values ) {
+        $row = array();
+        $row[] = array('data' => $node_values['name']);
+        $row[] = array('data' => $node_values['indices']['docs']['count']);
+        $row[] = array('data' => $node_values['indices']['store']['size']);
+        $total_docs += $node_values['indices']['docs']['count'];
+        $total_size += $node_values['indices']['store']['size_in_bytes'];
+        $node_rows[] = $row;
+      }
+    }
+  }
+
+  $cluster_statistics_rows = array(
+    array(
+      array('data' => $cluster_status['health']['number_of_nodes'] . '<br/>' . t('Nodes')),
+      array('data' => $cluster_status['health']['active_shards'] + $cluster_status['health']['unassigned_shards']
+            . '<br/>' . t('Total Shards')),
+      array('data' => $cluster_status['health']['active_shards'] . '<br/>' . t('Successful Shards')),
+      array('data' => count($cluster_status['state']['metadata']['indices']) . '<br/>' . t('Indices')),
+      array('data' => $total_docs . '<br/>' . t('Total Documents')),
+      array('data' => format_size($total_size) . '<br/>' . t('Total Size')),
+    )
+  );
+
+  $cluster_health_rows = array();
+  // TODO: Think of moving this mapping to a separate class.
+  $cluster_health_mapping = array(
+    'cluster_name'  => t('Cluster name'),
+    'status'        => t('Status'),
+    'timed_out'     => t('Time out'),
+    'number_of_nodes' => t('Number of nodes'),
+    'number_of_data_nodes'  => t('Number of data nodes'),
+    'active_primary_shards' => t('Active primary shards'),
+    'active_shards'         => t('Active shards'),
+    'relocating_shards'     => t('Relocating shards'),
+    'initializing_shards'   => t('Initializing shards'),
+    'unassigned_shards'     => t('Unassigned shards')
+  );
+
+  foreach ($cluster_status['health'] as $health_key => $health_value) {
+    $row = array();
+    $row[] = array('data' => $cluster_health_mapping[$health_key]);
+    $row[] = array('data' => ($health_value === FALSE ? 'False' : $health_value));
+    $cluster_health_rows[] = $row;
+  }
+
+  $output['cluster_statistics_wrapper'] = array(
+    '#type' => 'fieldset',
+    '#title'  => t('Cluster statistics'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE
+  );
+
+  $output['cluster_statistics_wrapper']['nodes'] = array(
+    '#theme' => 'table',
+    '#header' => array(
+      array('data' => t('Node name')),
+      array('data' => t('Documents')),
+      array('data' => t('Size')),
+    ),
+    '#rows' => $node_rows,
+  );
+
+  $output['cluster_statistics_wrapper']['cluster_statistics'] = array(
+    '#theme' => 'table',
+    '#header' => array(
+      array('data' => t('Total'), 'colspan' => 6),
+    ),
+    '#rows' => $cluster_statistics_rows,
+    '#attributes' => array('class' => array('admin-elasticsearch-statistics')),
+  );
+
+  $output['cluster_health'] = array(
+    '#theme' => 'table',
+    '#header' => array(
+      array('data' => t('Cluster Health'), 'colspan' => 2),
+    ),
+    '#rows' => $cluster_health_rows,
+    '#attributes' => array('class' => array('admin-elasticsearch-health')),
+  );
+
+  return $output;
+}
+
+/**
  * Add/edit Elasticsearch clusters.
  *
  * @param object $cluster
@@ -65,6 +169,10 @@ function elasticsearch_connector_status_page() {
  */
 function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NULL) {
   $form = array();
+
+  elasticsearch_connector_set_breadcrumb(array(
+    l(t('Elasticsearch Clusters'), elasticsearch_connector_main_settings_path() . '/clusters'))
+  );
 
   $form['name'] = array(
     '#type' => 'textfield',
@@ -114,6 +222,10 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
   $form_state_active = FALSE;
   if (isset($form_state['values'])) {
     $cluster_info = elasticsearch_connector_get_cluster_info($form_state['values']['url']);
+    $form_state_active = TRUE;
+  }
+  else if (isset($cluster->url)) {
+    $cluster_info = elasticsearch_connector_get_cluster_info($cluster->url);
     $form_state_active = TRUE;
   }
 
@@ -252,6 +364,7 @@ function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
   $values->options = serialize($values->options);
   $cluster = isset($values->cluster) ? $values->cluster : NULL;
 
+  // TODO: Set default connection if we are saving the first cluster in settings.
   if ($values->default == 1) {
     elasticsearch_connector_set_default_connector($values->cluster_id);
   }

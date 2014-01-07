@@ -1,0 +1,6 @@
+name = Elasticsearch Watchdog
+description = "Use Elasticsearch to store the Drupal logs."
+core = 7.x
+package = Elasticsearch
+configure = admin/config/elasticsearch-connector/watchdog
+dependencies[] = elasticsearch_connector

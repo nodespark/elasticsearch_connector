@@ -4,7 +4,6 @@
  * This module provide an interface to connecting to the elasticsearch
  * cluster and implementing the Elastica library.
  *
- *
  * Created on Dec 21, 2013
  */
 
@@ -44,6 +43,23 @@ function elasticsearch_connector_permission() {
 function elasticsearch_connector_main_settings_path() {
   $settings_path = 'admin/config/elasticsearch-connector';
   return $settings_path;
+}
+
+function elasticsearch_connector_set_breadcrumb($links = array()) {
+  $breadcrumb = array(
+    l(t('Home'), '<front>'),
+    l(t('Administration'), 'admin'),
+    l(t('Configuration'), 'admin/config'),
+    l(t('Elasticsearch connector'), elasticsearch_connector_main_settings_path()),
+  );
+
+  if (!empty($links)) {
+    foreach ($links as $link) {
+      $breadcrumb[] = $link;
+    }
+  }
+
+  drupal_set_breadcrumb($breadcrumb);
 }
 
 /**
@@ -92,6 +108,16 @@ function elasticsearch_connector_menu() {
     'type'               => MENU_CALLBACK,
   );
 
+  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/info'] = array(
+    'title'              => 'Elasticsearch cluster info',
+    'description'        => 'Elasticsearch cluster info',
+    'page callback'      => 'elasticsearch_connector_info_cluster',
+    'page arguments'     => array(4),
+    'access arguments'   => array('adminiser elasticsearch connector'),
+    'file'               => 'elasticsearch_connector.admin.inc',
+    'type'               => MENU_CALLBACK,
+  );
+
   $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/delete'] = array(
     'title'              => 'Delete cluster',
     'description'        => 'Delete cluster settings',
@@ -122,6 +148,27 @@ function elasticsearch_connector_cluster_load($cluster_id) {
   return $object;
 }
 
+function elasticsearch_connector_cluster_load_all($active = TRUE, $load_as_options = FALSE) {
+  $query = db_select('elasticsearch_connector_cluster', 'ecc')
+    ->fields('ecc',array('cluster_id', 'name'))
+    ->addTag('elasticsearch_connector_cluster_all');
+
+  if ($active) {
+    $query->condition('status', ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE, '=');
+  }
+
+  $result = $query->execute();
+  $options = array();
+  if ($load_as_options) {
+    $options[''] = t('None');
+  }
+  while ($row = $result->fetchAssoc()) {
+    $options[$row['cluster_id']] = $row['name'];
+  }
+
+  return $options;
+}
+
 /**
  * Get the default connector (cluster) used for elasticsearch.
  *
@@ -141,23 +188,66 @@ function elasticsearch_connector_set_default_connector($connection) {
 }
 
 /**
+ *
+ * @param unknown $cluster_id
+ */
+function elasticsearch_connector_get_client_by_id($cluster_id = NULL, $default_fallback = NULL) {
+  if (!isset($cluster_id) && !empty($default_fallback)) {
+    $cluster_id = elasticsearch_connector_get_default_connector();
+  }
+
+  if (!empty($cluster_id)) {
+    $client = FALSE;
+    $cluster = elasticsearch_connector_cluster_load($cluster_id);
+    if ($cluster) {
+      // TODO: Handle cluster connection.
+      $client = elasticsearch_connector_get_client_by_url($cluster->url);
+    }
+  }
+  else {
+    // TODO: watchdog
+  }
+
+  return $client;
+}
+
+/**
+ *
+ * @param string $url
+ * @return
+ */
+function elasticsearch_connector_get_client_by_url($url) {
+  static $clients;
+  // TODO: Add watchdog messages if not able to connect.
+  if (!isset($clients[$url])) {
+    $clients[$url] = FALSE;
+    if (valid_url($url)) {
+      $library = ELASTICSEARCH_CONNECTOR_DEFAULT_LIBRARY;
+      $clients[$url] = new $library(
+          array(
+            'hosts' => array(
+              $url
+            )
+          )
+      );
+    }
+  }
+
+  return $clients[$url];
+}
+
+/**
  * Return cluster info.
  * @param string $url
  * @return return array
  */
 function elasticsearch_connector_get_cluster_info($url) {
+  // TODO: Build a function that will return Elasticsearch object.
   $result = FALSE;
-  if (valid_url($url)) {
-    $library = ELASTICSEARCH_CONNECTOR_DEFAULT_LIBRARY;
-    $client = new $library(
-      array(
-        'hosts' => array(
-          $url
-        )
-      )
-    );
+  $client = elasticsearch_connector_get_client_by_url($url);
+  if (!empty($client)) {
     $info = $client->info();
-
+    $result['client'] = $client;
     if ($info['ok'] == TRUE) {
       $result['info'] = $info;
       $result['state'] = $client->cluster()->state();

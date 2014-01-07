@@ -1,0 +1,160 @@
+<?php
+/**
+ * @file
+ * Created on Jan 06, 2014
+ */
+
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE', 'watchdog_message');
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX', 'elasticsearch_watchdog');
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS', 3);
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA', 0);
+
+/**
+ * Implements hook_theme().
+ */
+function elasticsearch_watchdog_theme() {
+  return array(
+    'elasticsearch_watchdog_message' => array(
+      'variables' => array('event_id' => NULL, 'event' => NULL, 'link' => FALSE),
+      'file' => 'elasticsearch_watchdog.admin.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function elasticsearch_watchdog_menu() {
+  $items = array();
+  $settings_path = elasticsearch_connector_main_settings_path();
+
+  $items[$settings_path . '/watchdog'] = array(
+    'title'             => 'Elasticsearch Watchdog Settings',
+    'description'       => 'Showing all available clusters',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_watchdog_settings'),
+    'access arguments'  => array('adminiser elasticsearch connector'),
+    'file'              => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  $items['admin/reports/elasticlog'] = array(
+    'title' => 'Recent log messages',
+    'description' => 'View events that have recently been logged.',
+    'page callback' => 'elasticsearch_watchdog_overview',
+    'access arguments' => array('access site reports'),
+    'file' => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  $items['admin/reports/elastic-page-not-found'] = array(
+    'title' => "Top 'page not found' errors",
+    'description' => "View 'page not found' errors (404s).",
+    'page callback' => 'elasticsearch_watchdog_top',
+    'page arguments' => array('page not found'),
+    'access arguments' => array('access site reports'),
+    'file' => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  $items['admin/reports/elastic-access-denied'] = array(
+    'title' => "Top 'access denied' errors",
+    'description' => "View 'access denied' errors (403s).",
+    'page callback' => 'elasticsearch_watchdog_top',
+    'page arguments' => array('access denied'),
+    'access arguments' => array('access site reports'),
+    'file' => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  $items['admin/reports/elastic-message/%'] = array(
+    'title' => 'Details',
+    'page callback' => 'elasticsearch_watchdog_event',
+    'page arguments' => array(3),
+    'access arguments' => array('access site reports'),
+    'file' => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Controls the size of the log table, paring it to 'elasticsearch_watchdog_row_limit' messages.
+ */
+function elasticsearch_watchdog_cron() {
+  // TODO: Rework the function.
+  // Cleanup the watchdog table.
+  $row_limit = variable_get('elasticsearch_watchdog_row_limit', 1000000);
+
+  // For row limit n, get the wid of the nth row in descending wid order.
+  // Counting the most recent n rows avoids issues with wid number sequences,
+  // e.g. auto_increment value > 1 or rows deleted directly from the table.
+  if ($row_limit > 0) {
+    $min_row = db_select('watchdog', 'w')
+    ->fields('w', array('wid'))
+    ->orderBy('wid', 'DESC')
+    ->range($row_limit - 1, 1)
+    ->execute()->fetchField();
+
+    // Delete all table entries older than the nth row, if nth row was found.
+    if ($min_row) {
+      db_delete('watchdog')
+      ->condition('wid', $min_row, '<')
+      ->execute();
+    }
+  }
+}
+
+
+/**
+ * Implements hook_watchdog().
+ */
+function elasticsearch_watchdog_watchdog(array $log_entry) {
+  // TODO: Check if the index exists before insert a message!
+  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      $doc = array();
+      $doc['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
+      $doc['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+
+      $doc['body']  = array(
+        'uid' => $log_entry['uid'],
+        'type' => substr($log_entry['type'], 0, 64),
+        'message' => $log_entry['message'],
+        'variables' => serialize($log_entry['variables']),
+        'severity' => $log_entry['severity'],
+        'link' => substr($log_entry['link'], 0, 255),
+        'location' => $log_entry['request_uri'],
+        'referer' => $log_entry['referer'],
+        'hostname' => substr($log_entry['ip'], 0, 128),
+        'timestamp' => $log_entry['timestamp'],
+        'date'      => date('c', $log_entry['timestamp']),
+      );
+
+      // Indexing document.
+      $ret = $client->index($doc);
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for system_logging_settings().
+ */
+function elasticsearch_watchdog_form_system_logging_settings_alter(&$form, $form_state) {
+  $form['elasticsearch_watchdog_row_limit'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Elasticsearch log messages to keep'),
+    '#default_value' => variable_get('elasticsearch_watchdog_row_limit', 1000000),
+    '#description' => t('The maximum number of messages to keep in the elasticsearch log.' .
+        'Requires a <a href="@cron">cron maintenance task</a>.', array('@cron' => url('admin/reports/status')))
+  );
+  $form['actions']['#weight'] = 1;
+}
+
+/**
+ * Return message types FACET.
+ * @return array
+ */
+function _elasticsearch_watchdog_get_message_types() {
+  return array();
+}
