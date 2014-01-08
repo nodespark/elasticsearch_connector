@@ -9,10 +9,50 @@
  * Implements hook_uninstall().
  */
 function elasticsearch_watchdog_uninstall() {
+  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+
+    if ($client) {
+      module_load_include('module', 'elasticsearch_watchdog');
+
+      $index = elasticsearch_watchdog_get_realindex_name();
+      $type = elasticsearch_watchdog_get_type_name();
+      $alias_name = elasticsearch_watchdog_get_index_name();
+      $template_name = $alias_name . '_template';
+
+      $client->indices()->deleteAlias(array(
+        'index' => $index,
+        'name' => $alias_name
+      ));
+
+      $client->indices()->deleteTemplate(array(
+        'name' => $template_name
+      ));
+
+      $client->indices()->deleteMapping(array(
+        'index' => $index,
+        'type'  => $type
+      ));
+
+
+      $result = $client->indices()->getMapping(array(
+        'index' => $index,
+      ));
+
+      if (!empty($result) && empty($result[$index])) {
+        $client->indices()->delete(array(
+          'index' => $index,
+        ));
+      }
+
+    }
+  }
+
   variable_del('elasticsearch_watchdog_cluster_id');
   variable_del('elasticsearch_watchdog_num_of_shards');
   variable_del('elasticsearch_watchdog_num_of_replica');
-
-  // TODO: Delete the index, alias and template!
-
 }
+
+// TODO: Implements hook_requirements().

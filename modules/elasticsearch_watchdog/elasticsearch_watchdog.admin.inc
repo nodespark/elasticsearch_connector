@@ -3,6 +3,8 @@
  * @file
  * Created on Jan 06, 2014
  *
+ * TODO: Think of setting a TTL to the messages that will cause automatic deleteing of messages.
+ *
  */
 
 /**
@@ -14,8 +16,6 @@ function elasticsearch_watchdog_settings() {
 
   $clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
   $form['#old_cluster_id'] = variable_get('elasticsearch_watchdog_cluster_id', '');
-
-  // TODO: Think of setting a TTL to the messages that will cause automatic deleteing of messages.
 
   $form['elasticsearch_watchdog_cluster_id'] = array(
     '#type' => 'select',
@@ -93,30 +93,7 @@ function elasticsearch_watchdog_settings_submit($form, &$form_state) {
   // TODO: Handle alias instead of directly indexing and getting from index.
 }
 
-/**
- *
- * @param object $client
- * @return mixed $result from Elasticsearch\Client object.
- */
-function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_shards = NULL, $number_of_replica = NULL) {
-  // TODO: Handle settings override because of submit creation the variable is not set.
-  $index_name = elasticsearch_watchdog_get_realindex_name();
-  $alias_name = elasticsearch_watchdog_get_index_name();
-  $type = elasticsearch_watchdog_get_type_name();
-  if (!isset($number_of_shards)) {
-    $number_of_shards = variable_get('elasticsearch_watchdog_num_of_shards', ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS);
-  }
-
-  if (!isset($number_of_replica)) {
-    $number_of_replica = (int)variable_get('elasticsearch_watchdog_num_of_replica', ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA);
-  }
-
-  // Index
-  $indexParams['index']  = $index_name;
-  // Index Settings
-  $indexParams['body']['settings']['number_of_shards']   = $number_of_shards;
-  $indexParams['body']['settings']['number_of_replicas'] = $number_of_replica;
-
+function elasticsearch_watchdog_get_mapping() {
   // Index Mapping
   $myTypeMapping = array(
     '_source' => array(
@@ -164,7 +141,6 @@ function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_sha
         'type' => 'string',
         'index' => 'not_analyzed'
       ),
-      // TODO: Make ip type and test!
       'hostname' => array(
         'type' => 'string',
         'index' => 'not_analyzed'
@@ -185,11 +161,36 @@ function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_sha
     )
   );
 
+  return $myTypeMapping;
+}
+
+/**
+ *
+ * @param object $client
+ * @return mixed $result from Elasticsearch\Client object.
+ */
+function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_shards = NULL, $number_of_replica = NULL) {
+  // TODO: Handle settings override because of submit creation the variable is not set.
+  $index_name = elasticsearch_watchdog_get_realindex_name();
+  $alias_name = elasticsearch_watchdog_get_index_name();
+  $type = elasticsearch_watchdog_get_type_name();
+  if (!isset($number_of_shards)) {
+    $number_of_shards = variable_get('elasticsearch_watchdog_num_of_shards', ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS);
+  }
+
+  if (!isset($number_of_replica)) {
+    $number_of_replica = (int)variable_get('elasticsearch_watchdog_num_of_replica', ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA);
+  }
+
+  // Index
+  $indexParams['index']  = $index_name;
+  // Index Settings
+  $indexParams['body']['settings']['number_of_shards']   = $number_of_shards;
+  $indexParams['body']['settings']['number_of_replicas'] = $number_of_replica;
+  $myTypeMapping = elasticsearch_watchdog_get_mapping();
   $indexParams['body']['mappings'][$type] = $myTypeMapping;
 
   try {
-    $result = $client->indices()->create($indexParams);
-
     $template_body = $indexParams['body'];
     $template_body['template'] = $alias_name . '*';
 
@@ -197,6 +198,8 @@ function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_sha
       'name' => $alias_name . '_template',
       'body' => $template_body,
     ));
+
+    $result = $client->indices()->create($indexParams);
 
     $client->indices()->putAlias(array(
       'name' => $alias_name,
@@ -679,6 +682,19 @@ function elasticsearch_watchdog_clear_log_form($form) {
 }
 
 /**
+ * Create Elasticsearch watchdog type.
+ */
+function elasticsearch_watchdog_create_type(Elasticsearch\Client $client, $index, $type) {
+  $mappingParams['index'] = $index;
+  $mappingParams['type'] = $type;
+  $myTypeMapping = elasticsearch_watchdog_get_mapping();
+  $mappingParams['body'][$type] = $myTypeMapping;
+  $client->indices()->putMapping(
+      $mappingParams
+  );
+}
+
+/**
  * Form submission handler for elasticsearch_watchdog_clear_log_form().
  */
 function elasticsearch_watchdog_clear_log_submit() {
@@ -695,6 +711,9 @@ function elasticsearch_watchdog_clear_log_submit() {
           'index' => $index,
           'type'  => $type
         ));
+
+        // Create the type if not exists.
+        elasticsearch_watchdog_create_type($client, $index, $type);
 
         drupal_set_message(t('Elasticsearch logs has been cleared.'));
       }

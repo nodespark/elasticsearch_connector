@@ -170,6 +170,8 @@ function elasticsearch_connector_info_cluster($cluster) {
 function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NULL) {
   $form = array();
 
+  // TODO: Lock the edit of status if the cluster_id is lock by a module.
+
   elasticsearch_connector_set_breadcrumb(array(
     l(t('Elasticsearch Clusters'), elasticsearch_connector_main_settings_path() . '/clusters'))
   );
