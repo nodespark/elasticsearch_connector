@@ -2,6 +2,10 @@
 /**
  * @file
  * Created on Jan 06, 2014
+ *
+ * TODO: Think of building a functionality that log only a specific message
+ * severity.
+ *
  */
 
 define('ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE', 'watchdog_message');
@@ -99,6 +103,9 @@ function elasticsearch_watchdog_cron() {
 function elasticsearch_watchdog_watchdog(array $log_entry) {
   global $user;
   // TODO: Check if the index exists before insert a message!
+  // Better check if the template exists. If not log the message in error_log
+  // if a fallback in settings PHP is enabled to do so!
+
   $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
@@ -107,11 +114,16 @@ function elasticsearch_watchdog_watchdog(array $log_entry) {
       $doc['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
       $doc['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
 
+      // Workaround to order the logs if the same timestamp based on microtime.
+      $microtime_float = explode('.',microtime(TRUE));
+      $microtime = '0.' . $microtime_float[1];
+
       $doc['body']  = array(
         'uid' => $log_entry['uid'],
         'username'  => user_is_logged_in() ? $user->name : '',
         'type' => substr($log_entry['type'], 0, 64),
         'message' => $log_entry['message'],
+        'full_massage' => format_string($log_entry['message'], (array)$log_entry['variables']),
         'variables' => serialize($log_entry['variables']),
         'severity' => $log_entry['severity'],
         'link' => substr($log_entry['link'], 0, 255),
@@ -119,6 +131,8 @@ function elasticsearch_watchdog_watchdog(array $log_entry) {
         'referer' => $log_entry['referer'],
         'hostname' => substr($log_entry['ip'], 0, 128),
         'timestamp' => $log_entry['timestamp'],
+        'microtime' => (float)$microtime,
+        'domain'  => $_SERVER['SERVER_NAME'],
         'date'      => date('c', $log_entry['timestamp']),
       );
 
@@ -154,24 +168,55 @@ function _elasticsearch_watchdog_get_message_types() {
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
     if ($client) {
-      $params = array();
-      $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
-      $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
-      $params['search_type'] = 'count';
-      $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
-      $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
+      try {
+        $params = array();
+        $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
+        $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+        $params['search_type'] = 'count';
+        $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
+        $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
 
-      // TODO: Handle filtering to narrow down
-//       $params['body']['facets'][$global_facet_name]['date_histogram']['field'] = 'date';
-//       $params['body']['facets'][$global_facet_name]['date_histogram']['interval'] = 'month';
+        // TODO: Handle other facets like domain and reuse the call to the search engine.
+  //       $params['body']['facets'][$global_facet_name]['date_histogram']['field'] = 'date';
+  //       $params['body']['facets'][$global_facet_name]['date_histogram']['interval'] = 'month';
 
-      $search_result = $client->search($params);
-      if (!empty($search_result['facets'])) {
-        foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
-          $result[$facet['term']] = $facet['term'] . ' (' . $facet['count'] . ')';
+        $search_result = $client->search($params);
+        if (!empty($search_result['facets'])) {
+          foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
+            $result[$facet['term']] = $facet['term'] . ' (' . $facet['count'] . ')';
+          }
         }
+      }
+      catch (Exception $e) {
+        // TODO: Handle exception
+        error_log($e->getMessage());
       }
     }
   }
   return $result;
 }
+
+/**
+ * Return the real index name
+ * @return string
+ */
+function elasticsearch_watchdog_get_realindex_name() {
+  return variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX) . '_index';
+}
+
+/**
+ * Return the index name (the alias name).
+ * @return string
+ */
+function elasticsearch_watchdog_get_index_name() {
+  return variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
+}
+
+/**
+ * Return the name of the Elasticsearch type.
+ * @return string
+ */
+function elasticsearch_watchdog_get_type_name() {
+  return variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+}
+

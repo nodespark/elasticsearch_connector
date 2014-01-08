@@ -3,16 +3,19 @@
  * @file
  * Created on Jan 06, 2014
  *
- *
- * TODO: Fix the comments of the functions!
- *
  */
 
+/**
+ * Building a settings form for the Elasticsearch watchdog functionality.
+ * @return array Settings form
+ */
 function elasticsearch_watchdog_settings() {
   $form = array();
 
   $clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
   $form['#old_cluster_id'] = variable_get('elasticsearch_watchdog_cluster_id', '');
+
+  // TODO: Think of setting a TTL to the messages that will cause automatic deleteing of messages.
 
   $form['elasticsearch_watchdog_cluster_id'] = array(
     '#type' => 'select',
@@ -53,26 +56,25 @@ function elasticsearch_watchdog_settings() {
 function elasticsearch_watchdog_settings_validate($form, &$form_state) {
   $values = $form_state['values'];
   $client = elasticsearch_connector_get_client_by_id($values['elasticsearch_watchdog_cluster_id']);
-  $index_name = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX) . '_index';
+  $client = new Elasticsearch\Client();
+  $index_name = elasticsearch_watchdog_get_realindex_name();
+  $alias_name = elasticsearch_watchdog_get_index_name();
+  $type_name = elasticsearch_watchdog_get_type_name();
 
   if ($client) {
-    if ($form['#old_cluster_id'] != '') {
-      if ($values['elasticsearch_watchdog_cluster_id'] != $form['#old_cluster_id']) {
-        $indeces_status = $client->indices()->status();
+    if (!$client->indices()->exists(array('index' => $index_name))) {
 
-        if (!isset($indeces_status['indices'][$index_name])) {
-          $result = elasticsearch_watchdog_create_index_and_mapping($client);
-          if (empty($result['ok'])) {
-            form_set_error('elasticsearch_watchdog_cluster_id', $result['error']);
-          }
-        }
-      }
-    }
-    else {
-      $result = elasticsearch_watchdog_create_index_and_mapping($client);
+      $result = elasticsearch_watchdog_create_index_and_mapping($client,
+                    $values['elasticsearch_watchdog_num_of_shards'],
+                    $values['elasticsearch_watchdog_num_of_replica']);
+
       if (empty($result['ok'])) {
         form_set_error('elasticsearch_watchdog_cluster_id', $result['error']);
       }
+    }
+    elseif (!$client->indices()->existsType(array('index' => $index_name, 'type' => $type_name))) {
+      // TODO: Create only the mapping if only the type doesn't exists.
+      // Not sure if this is needed!
     }
   }
   else {
@@ -81,28 +83,47 @@ function elasticsearch_watchdog_settings_validate($form, &$form_state) {
 }
 
 /**
- * Create
+ * Handle the submit of settings form submission.
  *
  * @param array $form
  * @param array $form_state
  */
 function elasticsearch_watchdog_settings_submit($form, &$form_state) {
-  // TODO: Handle PUT request for the settings.
+  // TODO: Handle PUT request for the settings. This should only effect replica settings.
   // TODO: Handle alias instead of directly indexing and getting from index.
 }
 
-function elasticsearch_watchdog_create_index_and_mapping($client) {
+/**
+ *
+ * @param object $client
+ * @return mixed $result from Elasticsearch\Client object.
+ */
+function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_shards = NULL, $number_of_replica = NULL) {
   // TODO: Handle settings override because of submit creation the variable is not set.
-  $indexParams['index']  =  variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX) . '_index';
+  $index_name = elasticsearch_watchdog_get_realindex_name();
+  $alias_name = elasticsearch_watchdog_get_index_name();
+  $type = elasticsearch_watchdog_get_type_name();
+  if (!isset($number_of_shards)) {
+    $number_of_shards = variable_get('elasticsearch_watchdog_num_of_shards', ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS);
+  }
 
+  if (!isset($number_of_replica)) {
+    $number_of_replica = (int)variable_get('elasticsearch_watchdog_num_of_replica', ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA);
+  }
+
+  // Index
+  $indexParams['index']  = $index_name;
   // Index Settings
-  $indexParams['body']['settings']['number_of_shards']   = variable_get('elasticsearch_watchdog_num_of_shards', ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS);
-  $indexParams['body']['settings']['number_of_replicas'] = (int)variable_get('elasticsearch_watchdog_num_of_replica', ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA);
+  $indexParams['body']['settings']['number_of_shards']   = $number_of_shards;
+  $indexParams['body']['settings']['number_of_replicas'] = $number_of_replica;
 
   // Index Mapping
   $myTypeMapping = array(
     '_source' => array(
-      'enabled' => true
+      'enabled' => TRUE
+    ),
+    "_all" => array(
+      'enabled' => FALSE
     ),
     'properties' => array(
       'uid' => array(
@@ -119,6 +140,9 @@ function elasticsearch_watchdog_create_index_and_mapping($client) {
       'message' => array(
         'type' => 'string',
         'index' => 'not_analyzed'
+      ),
+      'full_massage' => array(
+        'type' => 'string',
       ),
       'variables' => array(
         'type' => 'string',
@@ -140,12 +164,20 @@ function elasticsearch_watchdog_create_index_and_mapping($client) {
         'type' => 'string',
         'index' => 'not_analyzed'
       ),
+      // TODO: Make ip type and test!
       'hostname' => array(
         'type' => 'string',
         'index' => 'not_analyzed'
       ),
+      'domain' => array(
+        'type' => 'string',
+        'index' => 'not_analyzed',
+      ),
       'timestamp' => array(
-        'type' => 'integer',
+        'type' => 'long',
+      ),
+      'microtime' => array(
+        'type' => 'float',
       ),
       'date' => array(
         'type' => 'date',
@@ -153,33 +185,33 @@ function elasticsearch_watchdog_create_index_and_mapping($client) {
     )
   );
 
-  $type = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
   $indexParams['body']['mappings'][$type] = $myTypeMapping;
 
-
-  // TODO: Think of building an template for watchdog messages.
-  $result = $client->indices()->create($indexParams);
-
   try {
+    $result = $client->indices()->create($indexParams);
+
+    $template_body = $indexParams['body'];
+    $template_body['template'] = $alias_name . '*';
+
+    $client->indices()->putTemplate(array(
+      'name' => $alias_name . '_template',
+      'body' => $template_body,
+    ));
+
     $client->indices()->putAlias(array(
-      'name' => variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX),
-      'index' => variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX) . '_index',
+      'name' => $alias_name,
+      'index' => $index_name,
     ));
   }
   catch (Exception $e) {
-
+    error_log($e->getMessage());
   }
 
   return $result;
 }
 
 /**
- * @file
-* Administrative page callbacks for the Database Logging module.
-*/
-
-/**
- * Page callback: Displays a listing of database log messages.
+ * Page callback: Displays a listing of log messages.
 *
 * Messages are truncated at 56 chars. Full-length messages can be viewed on the
 * message details page.
@@ -194,7 +226,9 @@ function elasticsearch_watchdog_create_index_and_mapping($client) {
 function elasticsearch_watchdog_overview() {
   $filter = elasticsearch_watchdog_build_filter_query();
 
-  $rows = array();
+  // TODO: Build a link to the Cluster info page for a shortcut!
+
+  $results = $rows = array();
   $classes = array(
     WATCHDOG_DEBUG     => 'elasticlog-debug',
     WATCHDOG_INFO      => 'elasticlog-info',
@@ -211,10 +245,10 @@ function elasticsearch_watchdog_overview() {
 
   $header = array(
     '', // Icon column.
-    array('data' => t('Type'), 'field' => 'type'),
-    array('data' => t('Date'), 'field' => 'date', 'sort' => 'desc'),
+    array('data' => t('Type'), 'field' => array('type')),
+    array('data' => t('Date'), 'field' => array('date', 'microtime'), 'sort' => 'desc'),
     t('Message'),
-    array('data' => t('User'), 'field' => 'username'),
+    array('data' => t('User'), 'field' => array('username')),
     array('data' => t('Operations')),
   );
 
@@ -222,43 +256,59 @@ function elasticsearch_watchdog_overview() {
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
     if ($client) {
-      $params = array();
-      $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
-      $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+      try {
+        $params = array();
+        $index_name = elasticsearch_watchdog_get_index_name();
+        $params['index'] = $index_name;
+        $params['type']  = elasticsearch_watchdog_get_type_name();
 
-      $sort = tablesort_get_sort($header);
-      $field = tablesort_get_order($header);
-      $limit = variable_get('elasticsearch_watchdog_page_limit', 50);
-      $current_page = pager_find_page();
-      $params['body']['size']  = $limit;
-      $params['body']['from']  = $current_page*$limit;
-      $params['body']['sort'][$field['sql']]['order'] = $sort;
+        if ($client->indices()->exists(array('index' => $index_name)) && $client->indices()->existsType($params)) {
+          $sort = tablesort_get_sort($header);
+          $sort_fields = tablesort_get_order($header);
+          $limit = variable_get('elasticsearch_watchdog_page_limit', 50);
+          $current_page = pager_find_page();
+          $params['body']['size']  = $limit;
+          $params['body']['from']  = $current_page*$limit;
 
-      // Filter the results if there are filters specified.
-      if (!empty($filter['filter']['and'])) {
-        $params['body']['filter'] = $filter['filter'];
+          foreach($sort_fields['sql'] as $sort_field) {
+            $params['body']['sort'][$sort_field]['order'] = $sort;
+          }
+          // Filter the results if there are filters specified.
+          if (!empty($filter['filter']['and'])) {
+            $params['body']['filter'] = $filter['filter'];
+          }
+
+          $results = $client->search($params);
+
+          if (!empty($results['hits']['total'])) {
+            pager_default_initialize($results['hits']['total'], $limit);
+          }
+        }
       }
-      $results = $client->search($params);
-      pager_default_initialize($results['hits']['total'], $limit);
+      catch (Exception $e) {
+        // TODO: Handle exception.
+        error_log($e->getMessage());
+      }
     }
   }
 
-  // TODO: Handle sorting and pager!!!
-  foreach ($results['hits']['hits'] as $doc) {
-    $account = user_load($doc['_source']['uid']);
-    $rows[] = array('data' =>
-      array(
-        // Cells
-        array('class' => 'icon'),
-        t($doc['_source']['type']),
-        format_date($doc['_source']['timestamp'], 'short'),
-        theme('elasticsearch_watchdog_message', array('event_id' => $doc['_id'], 'event' => $doc['_source'], 'link' => TRUE)),
-        theme('username', array('account' => $account)),
-        filter_xss($doc['_source']['link']),
-      ),
-      // Attributes for tr
-      'class' => array(drupal_html_class('elasticlog-' . $doc['_source']['type']), $classes[$doc['_source']['severity']]),
-    );
+  if (!empty($results['hits']['hits'])) {
+    foreach ((array)$results['hits']['hits'] as $doc) {
+      $account = user_load($doc['_source']['uid']);
+      $rows[] = array('data' =>
+        array(
+          // Cells
+          array('class' => 'icon'),
+          t($doc['_source']['type']),
+          format_date($doc['_source']['timestamp'], 'short'),
+          theme('elasticsearch_watchdog_message', array('event_id' => $doc['_id'], 'event' => $doc['_source'], 'link' => TRUE)),
+          theme('username', array('account' => $account)),
+          filter_xss($doc['_source']['link']),
+        ),
+        // Attributes for tr
+        'class' => array(drupal_html_class('elasticlog-' . $doc['_source']['type']), $classes[$doc['_source']['severity']]),
+      );
+    }
   }
 
   $build['elasticsearch_watchdog_table'] = array(
@@ -280,7 +330,7 @@ function elasticsearch_watchdog_overview() {
  * have links to a detailed view.
  *
  * @param string $type
- *   Type of database log events to display (e.g., 'search').
+ *   Type of log events to display (e.g., 'search').
  *
  * @return array
  *   A build array in the format expected by drupal_render().
@@ -288,15 +338,12 @@ function elasticsearch_watchdog_overview() {
  * @see elasticsearch_watchdog_menu()
  */
 function elasticsearch_watchdog_top($type) {
-
-  // TODO: Rework the function.
-
   $header = array(
     array('data' => t('Count'), 'field' => 'count', 'sort' => 'desc'),
     array('data' => t('Path'), 'field' => 'message')
   );
 
-  $result = array();
+  $rows = array();
 
   $global_facet_name = 'facetname_message';
   $field_faceting = 'message';
@@ -304,18 +351,24 @@ function elasticsearch_watchdog_top($type) {
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
     if ($client) {
-      $params = array();
-      $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
-      $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
-      $params['search_type'] = 'count';
-      $params['body']['query']['term']['type'] = $type;
-      $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
-      $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
-      $search_result = $client->search($params);
-      if (!empty($search_result['facets'])) {
-        foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
-          $rows[] = array($facet['count'], $facet['term']);
+      try {
+        $params = array();
+        $params['index'] = elasticsearch_watchdog_get_index_name();
+        $params['type']  = elasticsearch_watchdog_get_type_name();
+        $params['search_type'] = 'count';
+        $params['body']['query']['term']['type'] = $type;
+        $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
+        $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
+        $search_result = $client->search($params);
+        if (!empty($search_result['facets'])) {
+          foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
+            $rows[] = array($facet['count'], $facet['term']);
+          }
         }
+      }
+      catch (Exception $e) {
+        // TODO: Log message.
+        error_log($e->getMessage());
       }
     }
   }
@@ -326,34 +379,37 @@ function elasticsearch_watchdog_top($type) {
     '#rows' => $rows,
     '#empty' => t('No log messages available.'),
   );
+
   // TODO: Elasticsearch doesn't support pager on facets!
+  // So limiting the results to 100. We need to research the elastic aggregation
+  // http://www.elasticsearch.org/guide/en/elasticsearch/reference/master/search-aggregations.html
+
   // $build['elasticsearch_watchdog_top_pager'] = array('#theme' => 'pager');
 
   return $build;
 }
 
 /**
- * Page callback: Displays details about a specific database log message.
+ * Page callback: Displays details about a specific log message.
  *
  * @param int $id
- *   Unique ID of the database log message.
+ *   Unique ID of the log message.
  *
  * @return array|string
- *   If the ID is located in the Database Logging table, a build array in the
+ *   If the ID is located in the Elasticsearch index, a build array in the
  *   format expected by drupal_render(); otherwise, an empty string.
  *
  * @see elasticsearch_watchdog_menu()
  */
 function elasticsearch_watchdog_event($id) {
   $severity = watchdog_severity_levels();
-  //$result = db_query('SELECT w.*, u.name, u.uid FROM {watchdog} w INNER JOIN {users} u ON w.uid = u.uid WHERE w.wid = :id', array(':id' => $id))->fetchObject();
   $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
     if ($client) {
       $params = array();
-      $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
-      $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+      $params['index'] = elasticsearch_watchdog_get_index_name();
+      $params['type']  = elasticsearch_watchdog_get_type_name();
       $params['id']    = $id;
 
       $result = $client->get($params);
@@ -392,6 +448,10 @@ function elasticsearch_watchdog_event($id) {
           array(
             array('data' => t('Hostname'), 'header' => TRUE),
             check_plain($source['hostname']),
+          ),
+          array(
+            array('data' => t('Domain'), 'header' => TRUE),
+            check_plain($source['domain']),
           ),
           array(
             array('data' => t('Operations'), 'header' => TRUE),
@@ -445,7 +505,7 @@ function elasticsearch_watchdog_build_filter_query() {
 }
 
 /**
- * Creates a list of database log administration filters that can be applied.
+ * Creates a list of log administration filters that can be applied.
  *
  * @return array
  *   Associative array of filters. The top-level keys are used as the form
@@ -484,6 +544,7 @@ function elasticsearch_watchdog_filters() {
  *
  * @param array $variables
  *   An associative array containing:
+ *   - event_id: An object id.
  *   - event: An object with at least the message and variables properties.
  *   - link: (optional) Format message as link, event->wid is required.
  *
@@ -512,7 +573,7 @@ function theme_elasticsearch_watchdog_message($variables) {
 }
 
 /**
- * Form constructor for the database logging filter form.
+ * Form constructor for the logging filter form.
  *
  * @see elasticsearch_watchdog_filter_form_validate()
  * @see elasticsearch_watchdog_filter_form_submit()
@@ -530,6 +591,7 @@ function elasticsearch_watchdog_filter_form($form) {
     '#collapsed' => empty($_SESSION['elasticsearch_watchdog_overview_filter']),
   );
   foreach ($filters as $key => $filter) {
+    // TODO: Handle the free text search filter!
     $form['filters']['status'][$key] = array(
       '#title' => $filter['title'],
       '#type' => 'select',
@@ -579,16 +641,16 @@ function elasticsearch_watchdog_filter_form_submit($form, &$form_state) {
   $op = $form_state['values']['op'];
   $filters = elasticsearch_watchdog_filters();
   switch ($op) {
-  	case t('Filter'):
-  	  foreach ($filters as $name => $filter) {
-  	    if (isset($form_state['values'][$name])) {
-  	      $_SESSION['elasticsearch_watchdog_overview_filter'][$name] = $form_state['values'][$name];
-  	    }
-  	  }
-  	  break;
-  	case t('Reset'):
-  	  $_SESSION['elasticsearch_watchdog_overview_filter'] = array();
-  	  break;
+    case t('Filter'):
+      foreach ($filters as $name => $filter) {
+        if (isset($form_state['values'][$name])) {
+          $_SESSION['elasticsearch_watchdog_overview_filter'][$name] = $form_state['values'][$name];
+        }
+      }
+      break;
+    case t('Reset'):
+      $_SESSION['elasticsearch_watchdog_overview_filter'] = array();
+      break;
   }
   return 'admin/reports/elasticlog';
 }
@@ -603,7 +665,7 @@ function elasticsearch_watchdog_clear_log_form($form) {
   $form['elasticsearch_watchdog_clear'] = array(
     '#type' => 'fieldset',
     '#title' => t('Clear log messages'),
-    '#description' => t('This will permanently remove the log messages from the database.'),
+    '#description' => t('This will permanently remove the log messages from the Elasticsearch index.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -621,7 +683,24 @@ function elasticsearch_watchdog_clear_log_form($form) {
  */
 function elasticsearch_watchdog_clear_log_submit() {
   $_SESSION['elasticsearch_watchdog_overview_filter'] = array();
-  // TODO: Delete the messages from the index.
-  //db_delete('watchdog')->execute();
-  drupal_set_message(t('Elasticsearch logs has been cleared.'));
+  // Delete the index and recreate it.
+  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+  $index = elasticsearch_watchdog_get_index_name();
+  $type = elasticsearch_watchdog_get_type_name();
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      try {
+        $result = $client->indices()->deleteMapping(array(
+          'index' => $index,
+          'type'  => $type
+        ));
+
+        drupal_set_message(t('Elasticsearch logs has been cleared.'));
+      }
+      catch(Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
+    }
+  }
 }

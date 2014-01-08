@@ -1,0 +1,18 @@
+<?php
+/**
+ * @file
+ * Created on Jan 08, 2014
+ *
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function elasticsearch_watchdog_uninstall() {
+  variable_del('elasticsearch_watchdog_cluster_id');
+  variable_del('elasticsearch_watchdog_num_of_shards');
+  variable_del('elasticsearch_watchdog_num_of_replica');
+
+  // TODO: Delete the index, alias and template!
+
+}
