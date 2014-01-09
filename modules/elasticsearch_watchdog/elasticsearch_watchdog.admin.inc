@@ -4,6 +4,9 @@
  * Created on Jan 06, 2014
  *
  * TODO: Think of setting a TTL to the messages that will cause automatic deleteing of messages.
+ * TODO: Elasticsearch doesn't support pager on facets!
+ *       So limiting the results to 100. We need to research the elastic aggregation
+ *       http://www.elasticsearch.org/guide/en/elasticsearch/reference/master/search-aggregations.html
  *
  */
 
@@ -42,7 +45,6 @@ function elasticsearch_watchdog_settings() {
   );
 
   $form['#validate'] = array('elasticsearch_watchdog_settings_validate');
-  $form['#submit'] = array('elasticsearch_watchdog_settings_submit');
 
   return system_settings_form($form);
 }
@@ -56,14 +58,15 @@ function elasticsearch_watchdog_settings() {
 function elasticsearch_watchdog_settings_validate($form, &$form_state) {
   $values = $form_state['values'];
   $client = elasticsearch_connector_get_client_by_id($values['elasticsearch_watchdog_cluster_id']);
-  $client = new Elasticsearch\Client();
+
   $index_name = elasticsearch_watchdog_get_realindex_name();
   $alias_name = elasticsearch_watchdog_get_index_name();
   $type_name = elasticsearch_watchdog_get_type_name();
 
   if ($client) {
+    $update_settings = TRUE;
     if (!$client->indices()->exists(array('index' => $index_name))) {
-
+      $update_settings = FALSE;
       $result = elasticsearch_watchdog_create_index_and_mapping($client,
                     $values['elasticsearch_watchdog_num_of_shards'],
                     $values['elasticsearch_watchdog_num_of_replica']);
@@ -73,24 +76,23 @@ function elasticsearch_watchdog_settings_validate($form, &$form_state) {
       }
     }
     elseif (!$client->indices()->existsType(array('index' => $index_name, 'type' => $type_name))) {
-      // TODO: Create only the mapping if only the type doesn't exists.
-      // Not sure if this is needed!
+      elasticsearch_watchdog_create_type($client, $index_name, $type_name);
     }
+
+    if ($update_settings) {
+      $settings['settings']['index.number_of_replicas'] = $values['elasticsearch_watchdog_num_of_replica'];
+      $settings = $client->indices()->putSettings(
+        array(
+          'index' => $index_name,
+          'body' => $settings,
+        )
+      );
+    }
+
   }
   else {
     form_set_error('elasticsearch_watchdog_cluster_id', t('Cannot connect to the cluster for some reason! Please contact your system administrator.'));
   }
-}
-
-/**
- * Handle the submit of settings form submission.
- *
- * @param array $form
- * @param array $form_state
- */
-function elasticsearch_watchdog_settings_submit($form, &$form_state) {
-  // TODO: Handle PUT request for the settings. This should only effect replica settings.
-  // TODO: Handle alias instead of directly indexing and getting from index.
 }
 
 function elasticsearch_watchdog_get_mapping() {
@@ -170,7 +172,7 @@ function elasticsearch_watchdog_get_mapping() {
  * @return mixed $result from Elasticsearch\Client object.
  */
 function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_shards = NULL, $number_of_replica = NULL) {
-  // TODO: Handle settings override because of submit creation the variable is not set.
+
   $index_name = elasticsearch_watchdog_get_realindex_name();
   $alias_name = elasticsearch_watchdog_get_index_name();
   $type = elasticsearch_watchdog_get_type_name();
@@ -229,8 +231,6 @@ function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_sha
 function elasticsearch_watchdog_overview() {
   $filter = elasticsearch_watchdog_build_filter_query();
 
-  // TODO: Build a link to the Cluster info page for a shortcut!
-
   $results = $rows = array();
   $classes = array(
     WATCHDOG_DEBUG     => 'elasticlog-debug',
@@ -276,9 +276,10 @@ function elasticsearch_watchdog_overview() {
           foreach($sort_fields['sql'] as $sort_field) {
             $params['body']['sort'][$sort_field]['order'] = $sort;
           }
+
           // Filter the results if there are filters specified.
-          if (!empty($filter['filter']['and'])) {
-            $params['body']['filter'] = $filter['filter'];
+          if (!empty($filter)) {
+            $params['body']['query']['filtered'] = $filter;
           }
 
           $results = $client->search($params);
@@ -289,13 +290,15 @@ function elasticsearch_watchdog_overview() {
         }
       }
       catch (Exception $e) {
-        // TODO: Handle exception.
-        error_log($e->getMessage());
+        // Show the error message to the user.
+        drupal_set_messsage($e->getMessage(), 'error');
       }
     }
   }
 
+  $hits = FALSE;
   if (!empty($results['hits']['hits'])) {
+    $hits = TRUE;
     foreach ((array)$results['hits']['hits'] as $doc) {
       $account = user_load($doc['_source']['uid']);
       $rows[] = array('data' =>
@@ -312,6 +315,35 @@ function elasticsearch_watchdog_overview() {
         'class' => array(drupal_html_class('elasticlog-' . $doc['_source']['type']), $classes[$doc['_source']['severity']]),
       );
     }
+  }
+
+  if ($hits) {
+    $elasticsearch_connector_path = elasticsearch_connector_main_settings_path();
+    $cluster = elasticsearch_connector_cluster_load($client_id);
+
+    $build['info'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Info'),
+    );
+
+    $build['info']['total_messages'] = array(
+      '#theme' => 'table',
+      '#rows' => array(
+        array(
+          array('data' => t('Messages: @messages', array('@messages' => $results['hits']['total'])), 'header' => TRUE),
+        ),
+        array(
+          array('data' => t('Cluster status: <a href="@clusters">!cluster</a>',
+              array(
+                '@clusters' => url($elasticsearch_connector_path . '/clusters/' . $client_id . '/info', array()),
+                '!cluster' => $cluster->name
+              )),
+            'header' => TRUE
+          )
+        )
+      ),
+      '#attributes' => array('class' => array('elasticlog-event')),
+    );
   }
 
   $build['elasticsearch_watchdog_table'] = array(
@@ -370,8 +402,7 @@ function elasticsearch_watchdog_top($type) {
         }
       }
       catch (Exception $e) {
-        // TODO: Log message.
-        error_log($e->getMessage());
+        drupal_set_message($e->getMessage(), 'error');
       }
     }
   }
@@ -382,12 +413,6 @@ function elasticsearch_watchdog_top($type) {
     '#rows' => $rows,
     '#empty' => t('No log messages available.'),
   );
-
-  // TODO: Elasticsearch doesn't support pager on facets!
-  // So limiting the results to 100. We need to research the elastic aggregation
-  // http://www.elasticsearch.org/guide/en/elasticsearch/reference/master/search-aggregations.html
-
-  // $build['elasticsearch_watchdog_top_pager'] = array('#theme' => 'pager');
 
   return $build;
 }
@@ -486,25 +511,36 @@ function elasticsearch_watchdog_build_filter_query() {
     return;
   }
 
-  $filters = elasticsearch_watchdog_filters();
+  $filters = elasticsearch_watchdog_filters(FALSE);
+  $query_filter = array();
+  $query = array();
 
-  $filter['and'] = array();
-  // Build query
-  $where = &$filter['and'];
-  $args = array();
   foreach ($_SESSION['elasticsearch_watchdog_overview_filter'] as $key => $filter) {
-    $filter_where['terms'][$filters[$key]['elastic_key']] = array();
-    foreach ($filter as $value) {
-      $filter_where['terms'][$filters[$key]['elastic_key']][] = $value;
+    $has_value = FALSE;
+    $filter_where = array();
+
+    if (empty($filters[$key]['type'])) {
+      foreach ($filter as $value) {
+        $has_value = TRUE;
+        $filter_where[] = $value;
+      }
+
+      if ($has_value) {
+        $query_filter['and'][] = array('terms' => array($filters[$key]['elastic_key'] => $filter_where));
+      }
     }
-    if (!empty($filter_where['terms'][$filters[$key]['elastic_key']])) {
-      $where['and'][] = $filter_where;
+    elseif ($filters[$key]['type'] == 'textfield' && !empty($filter) && is_scalar($filter)) {
+      $query['bool']['must'][] = array('match' => array($filters[$key]['elastic_key'] => $filter));
     }
   }
 
-  return array(
-    'filter' => $where,
-  );
+  if (empty($query)) {
+    $query['match_all'] = array();
+  }
+
+  $result = array('query' => $query, 'filter' => $query_filter);
+
+  return $result;
 }
 
 /**
@@ -518,14 +554,22 @@ function elasticsearch_watchdog_build_filter_query() {
  *   - where: The filter condition.
  *   - options: Array of options for the select list for the filter.
  */
-function elasticsearch_watchdog_filters() {
+function elasticsearch_watchdog_filters($load_options = TRUE) {
   $filters = array();
 
-  foreach (_elasticsearch_watchdog_get_message_types() as $key => $type) {
-    $types[$key] = t($type);
+  $filters['full_massage'] = array(
+    'title' => t('Freetext'),
+    'elastic_key' => "full_massage",
+    'type'  => 'textfield',
+    'options' => array(),
+  );
+
+  $types = array();
+  foreach (_elasticsearch_watchdog_get_facets('type', 'terms') as $key => $value) {
+    $types[$key] = t($value['term'] . ' (' . $value['count'] . ')');
   }
 
-  if (!empty($types)) {
+  if (!empty($types) || $load_options == FALSE) {
     $filters['type'] = array(
       'title' => t('Type'),
       'elastic_key' => "type",
@@ -533,11 +577,43 @@ function elasticsearch_watchdog_filters() {
     );
   }
 
-  $filters['severity'] = array(
-    'title' => t('Severity'),
-    'elastic_key' => 'severity',
-    'options' => watchdog_severity_levels(),
-  );
+  $severities = array();
+  $basic_severity = watchdog_severity_levels();
+  foreach(_elasticsearch_watchdog_get_facets('severity', 'terms') as $key => $value) {
+    $severities[$key] = $basic_severity[$key] . ' (' . $value['count'] . ')';
+  }
+
+  if (!empty($severities) || $load_options == FALSE) {
+    $filters['severity'] = array(
+      'title' => t('Severity'),
+      'elastic_key' => 'severity',
+      'options' => $severities,
+    );
+  }
+
+  $options = array();
+  foreach (_elasticsearch_watchdog_get_facets('domain', 'terms') as $key => $value) {
+    $options[$key] = t($value['term'] . ' (' . $value['count'] . ')');
+  }
+  if (!empty($options) || $load_options == FALSE) {
+    $filters['domain'] = array(
+      'title' => t('Domain'),
+      'elastic_key' => "domain",
+      'options' => $options,
+    );
+  }
+
+  $options = array();
+  foreach (_elasticsearch_watchdog_get_facets('username', 'terms') as $key => $value) {
+    $options[$key] = t($value['term'] . ' (' . $value['count'] . ')');
+  }
+  if (!empty($options) || $load_options == FALSE) {
+    $filters['username'] = array(
+      'title' => t('Username'),
+      'elastic_key' => "username",
+      'options' => $options,
+    );
+  }
 
   return $filters;
 }
@@ -593,15 +669,25 @@ function elasticsearch_watchdog_filter_form($form) {
     '#collapsible' => TRUE,
     '#collapsed' => empty($_SESSION['elasticsearch_watchdog_overview_filter']),
   );
+
   foreach ($filters as $key => $filter) {
-    // TODO: Handle the free text search filter!
-    $form['filters']['status'][$key] = array(
-      '#title' => $filter['title'],
-      '#type' => 'select',
-      '#multiple' => TRUE,
-      '#size' => 8,
-      '#options' => $filter['options'],
-    );
+    if (empty($filter['type'])) {
+      $form['filters']['status'][$key] = array(
+        '#title' => $filter['title'],
+        '#type' => 'select',
+        '#multiple' => TRUE,
+        '#size' => 8,
+        '#options' => $filter['options'],
+      );
+    }
+    else {
+      $form['filters']['status'][$key] = array(
+        '#title' => $filter['title'],
+        '#type' => $filter['type'],
+        '#size' => 30,
+      );
+    }
+
     if (!empty($_SESSION['elasticsearch_watchdog_overview_filter'][$key])) {
       $form['filters']['status'][$key]['#default_value'] = $_SESSION['elasticsearch_watchdog_overview_filter'][$key];
     }
@@ -630,7 +716,8 @@ function elasticsearch_watchdog_filter_form($form) {
  * @see elasticsearch_watchdog_filter_form_submit()
  */
 function elasticsearch_watchdog_filter_form_validate($form, &$form_state) {
-  if ($form_state['values']['op'] == t('Filter') && empty($form_state['values']['type']) && empty($form_state['values']['severity'])) {
+  if ($form_state['values']['op'] == t('Filter') && empty($form_state['values']['type']) && empty($form_state['values']['severity'])
+      && empty($form_state['values']['domain']) && empty($form_state['values']['full_massage'])) {
     form_set_error('type', t('You must select something to filter by.'));
   }
 }
@@ -642,7 +729,7 @@ function elasticsearch_watchdog_filter_form_validate($form, &$form_state) {
  */
 function elasticsearch_watchdog_filter_form_submit($form, &$form_state) {
   $op = $form_state['values']['op'];
-  $filters = elasticsearch_watchdog_filters();
+  $filters = elasticsearch_watchdog_filters(FALSE);
   switch ($op) {
     case t('Filter'):
       foreach ($filters as $name => $filter) {

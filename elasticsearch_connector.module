@@ -224,11 +224,11 @@ function elasticsearch_connector_get_client_by_url($url) {
     if (valid_url($url)) {
       $library = ELASTICSEARCH_CONNECTOR_DEFAULT_LIBRARY;
       $clients[$url] = new $library(
-          array(
-            'hosts' => array(
-              $url
-            )
+        array(
+          'hosts' => array(
+            $url
           )
+        )
       );
     }
   }

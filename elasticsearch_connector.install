@@ -19,6 +19,7 @@ function elasticsearch_connector_requirements($phase) {
           'title' => $t('The version of PHP is not compatible with this module.'),
           'description' => $t('The module requires PHP version bigger than version 5.3.'),
           'severity' => REQUIREMENT_ERROR,
+          'value' => $t('PHP version not compatible.'),
         ),
       );
     }
@@ -32,6 +33,7 @@ function elasticsearch_connector_requirements($phase) {
           'title' => $t('The Elasticsearch library is missing.'),
           'description' => $t('The official library for Elasticsearch connection is missing.'),
           'severity' => REQUIREMENT_ERROR,
+          'value' => $t('Elasticsearch library missing.'),
         ),
       );
     }
@@ -41,6 +43,7 @@ function elasticsearch_connector_requirements($phase) {
           'title' => $t('Elasticsearch PHP library'),
           'description' => $t('The official Elasticsearch library was correctly installed.'),
           'severity' => REQUIREMENT_OK,
+          'value' => $t('OK'),
         ),
       );
     }

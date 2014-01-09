@@ -4,7 +4,7 @@
  * Created on Jan 06, 2014
  *
  * TODO: Think of building a functionality that log only a specific message
- * severity.
+ * severity e.g. only errors.
  *
  */
 
@@ -84,7 +84,8 @@ function elasticsearch_watchdog_menu() {
  * Controls the size of the log table, paring it to 'elasticsearch_watchdog_row_limit' messages.
  */
 function elasticsearch_watchdog_cron() {
-  // TODO: Rework the function.
+  // TODO: Rework the function. Maybe we do not need this because of the TTL!
+
   // Cleanup the watchdog table.
   $row_limit = variable_get('elasticsearch_watchdog_row_limit', 1000000);
 
@@ -92,7 +93,7 @@ function elasticsearch_watchdog_cron() {
   // Counting the most recent n rows avoids issues with wid number sequences,
   // e.g. auto_increment value > 1 or rows deleted directly from the table.
   if ($row_limit > 0) {
-    //TODO: Remove the older messages!
+
   }
 }
 
@@ -102,9 +103,6 @@ function elasticsearch_watchdog_cron() {
  */
 function elasticsearch_watchdog_watchdog(array $log_entry) {
   global $user;
-  // TODO: Check if the index exists before insert a message!
-  // Better check if the template exists. If not log the message in error_log
-  // if a fallback in settings PHP is enabled to do so!
 
   $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
   if (!empty($client_id)) {
@@ -115,12 +113,17 @@ function elasticsearch_watchdog_watchdog(array $log_entry) {
       $doc['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
 
       // Workaround to order the logs if the same timestamp based on microtime.
-      $microtime_float = explode('.',microtime(TRUE));
-      $microtime = '0.' . $microtime_float[1];
+      $microtime_float = explode('.', microtime(TRUE));
+      if (empty($microtime_float[1])) {
+        $microtime = '0.0';
+      }
+      else {
+        $microtime = '0.' . $microtime_float[1];
+      }
 
       $doc['body']  = array(
         'uid' => $log_entry['uid'],
-        'username'  => user_is_logged_in() ? $user->name : '',
+        'username'  => user_is_logged_in() ? $user->name : 'Anonymous',
         'type' => substr($log_entry['type'], 0, 64),
         'message' => $log_entry['message'],
         'full_massage' => format_string($log_entry['message'], (array)$log_entry['variables']),
@@ -146,6 +149,9 @@ function elasticsearch_watchdog_watchdog(array $log_entry) {
  * Implements hook_form_FORM_ID_alter() for system_logging_settings().
  */
 function elasticsearch_watchdog_form_system_logging_settings_alter(&$form, $form_state) {
+  // TODO: Add TTL parameter to settings instead of using message count!
+  // Sounds much more reasonable.
+
   $form['elasticsearch_watchdog_row_limit'] = array(
     '#type' => 'textfield',
     '#title' => t('Elasticsearch log messages to keep'),
@@ -160,40 +166,57 @@ function elasticsearch_watchdog_form_system_logging_settings_alter(&$form, $form
  * Return message types FACET.
  * @return array
  */
-function _elasticsearch_watchdog_get_message_types() {
+function _elasticsearch_watchdog_get_facets($facet_field, $facet_type) {
+  static $watchdog_facets = NULL;
+
   $result = array();
-  $global_facet_name = 'facetname_type';
-  $field_faceting = 'type';
-  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
-  if (!empty($client_id)) {
-    $client = elasticsearch_connector_get_client_by_id($client_id);
-    if ($client) {
-      try {
-        $params = array();
-        $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
-        $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
-        $params['search_type'] = 'count';
-        $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
-        $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
 
-        // TODO: Handle other facets like domain and reuse the call to the search engine.
-  //       $params['body']['facets'][$global_facet_name]['date_histogram']['field'] = 'date';
-  //       $params['body']['facets'][$global_facet_name]['date_histogram']['interval'] = 'month';
+  if (!isset($watchdog_facets)) {
+    $facet_name_prefix = 'facetname_';
+    $facets = array(
+      $facet_name_prefix . 'type'     => array('type' => 'terms', 'field' => 'type'),
+      $facet_name_prefix . 'domain'   => array('type' => 'terms', 'field' => 'domain'),
+      $facet_name_prefix . 'severity' => array('type' => 'terms', 'field' => 'severity'),
+      $facet_name_prefix . 'username' => array('type' => 'terms', 'field' => 'username'),
+    );
 
-        $search_result = $client->search($params);
-        if (!empty($search_result['facets'])) {
-          foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
-            $result[$facet['term']] = $facet['term'] . ' (' . $facet['count'] . ')';
+    $params = array();
+    $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
+    $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+    $params['search_type'] = 'count';
+
+    foreach($facets as $facet_name => $facet_params) {
+      $watchdog_facets[$facet_params['field'] . '_' . $facet_params['type']] = array();
+      $params['body']['facets'][$facet_name][$facet_params['type']]['field'] = $facet_params['field'];
+      $params['body']['facets'][$facet_name][$facet_params['type']]['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
+    }
+
+    $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+    if (!empty($client_id)) {
+      $client = elasticsearch_connector_get_client_by_id($client_id);
+      if ($client) {
+        try {
+          $search_result = $client->search($params);
+          if (!empty($search_result['facets'])) {
+            foreach ($search_result['facets'] as $result_facet_name => $result_params) {
+              $type = $facets[$result_facet_name]['type'];
+              $field = str_replace($facet_name_prefix, '', $result_facet_name);
+              $result = array();
+              foreach ($result_params[$type] as $facet) {
+                $result[$facet['term']] = $facet;
+              }
+              $watchdog_facets[$field . '_' . $type] = $result;
+            }
           }
         }
-      }
-      catch (Exception $e) {
-        // TODO: Handle exception
-        error_log($e->getMessage());
+        catch (Exception $e) {
+          error_log($e->getMessage());
+        }
       }
     }
   }
-  return $result;
+
+  return $watchdog_facets[$facet_field . '_' . $facet_type];
 }
 
 /**
