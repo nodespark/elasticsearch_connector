@@ -8,10 +8,11 @@
  *
  */
 
-define('ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE', 'watchdog_message');
-define('ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX', 'elasticsearch_watchdog');
-define('ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS', 3);
-define('ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA', 0);
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE',     'watchdog_message');
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX',    'elasticsearch_watchdog');
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS',   3);
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA',  0);
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL', '31d');
 
 /**
  * Implements hook_theme().
@@ -79,26 +80,6 @@ function elasticsearch_watchdog_menu() {
 }
 
 /**
- * Implements hook_cron().
- *
- * Controls the size of the log table, paring it to 'elasticsearch_watchdog_row_limit' messages.
- */
-function elasticsearch_watchdog_cron() {
-  // TODO: Rework the function. Maybe we do not need this because of the TTL!
-
-  // Cleanup the watchdog table.
-  $row_limit = variable_get('elasticsearch_watchdog_row_limit', 1000000);
-
-  // For row limit n, get the wid of the nth row in descending wid order.
-  // Counting the most recent n rows avoids issues with wid number sequences,
-  // e.g. auto_increment value > 1 or rows deleted directly from the table.
-  if ($row_limit > 0) {
-
-  }
-}
-
-
-/**
  * Implements hook_watchdog().
  */
 function elasticsearch_watchdog_watchdog(array $log_entry) {
@@ -122,21 +103,22 @@ function elasticsearch_watchdog_watchdog(array $log_entry) {
       }
 
       $doc['body']  = array(
-        'uid' => $log_entry['uid'],
-        'username'  => user_is_logged_in() ? $user->name : 'Anonymous',
-        'type' => substr($log_entry['type'], 0, 64),
-        'message' => $log_entry['message'],
-        'full_massage' => format_string($log_entry['message'], (array)$log_entry['variables']),
-        'variables' => serialize($log_entry['variables']),
-        'severity' => $log_entry['severity'],
-        'link' => substr($log_entry['link'], 0, 255),
-        'location' => $log_entry['request_uri'],
-        'referer' => $log_entry['referer'],
-        'hostname' => substr($log_entry['ip'], 0, 128),
-        'timestamp' => $log_entry['timestamp'],
-        'microtime' => (float)$microtime,
-        'domain'  => $_SERVER['SERVER_NAME'],
-        'date'      => date('c', $log_entry['timestamp']),
+        'uid'           => $log_entry['uid'],
+        'username'      => user_is_logged_in() ? $user->name : 'Anonymous',
+        'type'          => substr($log_entry['type'], 0, 64),
+        'message'       => $log_entry['message'],
+        'full_massage'  => format_string($log_entry['message'], (array)$log_entry['variables']),
+        'variables'     => serialize($log_entry['variables']),
+        'severity'      => $log_entry['severity'],
+        'link'          => substr($log_entry['link'], 0, 255),
+        'location'      => $log_entry['request_uri'],
+        'referer'       => $log_entry['referer'],
+        'hostname'      => substr($log_entry['ip'], 0, 128),
+        'timestamp'     => $log_entry['timestamp'],
+        'microtime'     => (float)$microtime,
+        'domain'        => $_SERVER['SERVER_NAME'],
+        'date'          => date('c', $log_entry['timestamp']),
+        '_ttl'          => variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL),
       );
 
       // Indexing document.
@@ -149,15 +131,13 @@ function elasticsearch_watchdog_watchdog(array $log_entry) {
  * Implements hook_form_FORM_ID_alter() for system_logging_settings().
  */
 function elasticsearch_watchdog_form_system_logging_settings_alter(&$form, $form_state) {
-  // TODO: Add TTL parameter to settings instead of using message count!
-  // Sounds much more reasonable.
-
-  $form['elasticsearch_watchdog_row_limit'] = array(
+  $form['elasticsearch_watchdog_ttl'] = array(
     '#type' => 'textfield',
-    '#title' => t('Elasticsearch log messages to keep'),
-    '#default_value' => variable_get('elasticsearch_watchdog_row_limit', 1000000),
-    '#description' => t('The maximum number of messages to keep in the elasticsearch log.' .
-        'Requires a <a href="@cron">cron maintenance task</a>.', array('@cron' => url('admin/reports/status')))
+    '#title' => t('Elasticsearch TTL Interval'),
+    '#default_value' => variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL),
+    '#description' => t('Use format like 1d. Suffix can be d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks).'
+        . ' You can dynamically update the default interval.'
+        . ' However it won\'t change the TTL of already indexed messages but will be used for future logs.'),
   );
   $form['actions']['#weight'] = 1;
 }

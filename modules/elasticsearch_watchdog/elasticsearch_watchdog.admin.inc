@@ -3,7 +3,6 @@
  * @file
  * Created on Jan 06, 2014
  *
- * TODO: Think of setting a TTL to the messages that will cause automatic deleteing of messages.
  * TODO: Elasticsearch doesn't support pager on facets!
  *       So limiting the results to 100. We need to research the elastic aggregation
  *       http://www.elasticsearch.org/guide/en/elasticsearch/reference/master/search-aggregations.html
@@ -95,14 +94,22 @@ function elasticsearch_watchdog_settings_validate($form, &$form_state) {
   }
 }
 
-function elasticsearch_watchdog_get_mapping() {
+function elasticsearch_watchdog_get_mapping($ttl = NULL) {
+  if (!isset($ttl)) {
+    $ttl = variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL);
+  }
+
   // Index Mapping
   $myTypeMapping = array(
     '_source' => array(
       'enabled' => TRUE
     ),
-    "_all" => array(
+    '_all' => array(
       'enabled' => FALSE
+    ),
+    '_ttl' => array(
+      'enabled' => TRUE,
+      'default' => $ttl,
     ),
     'properties' => array(
       'uid' => array(
@@ -440,64 +447,71 @@ function elasticsearch_watchdog_event($id) {
       $params['type']  = elasticsearch_watchdog_get_type_name();
       $params['id']    = $id;
 
-      $result = $client->get($params);
-      if (!empty($result['exists'])) {
-        $source = $result['_source'];
-        $account = user_load($source['uid']);
-        $rows = array(
-          array(
-            array('data' => t('Type'), 'header' => TRUE),
-            $source['type'],
-          ),
-          array(
-            array('data' => t('Date'), 'header' => TRUE),
-            format_date($source['timestamp'], 'long'),
-          ),
-          array(
-            array('data' => t('User'), 'header' => TRUE),
-            theme('username', array('account' => $account)),
-          ),
-          array(
-            array('data' => t('Location'), 'header' => TRUE),
-            l($source['location'], $source['location']),
-          ),
-          array(
-            array('data' => t('Referrer'), 'header' => TRUE),
-            l($source['referer'], $source['referer']),
-          ),
-          array(
-            array('data' => t('Message'), 'header' => TRUE),
-            theme('elasticsearch_watchdog_message', array('event_id' => $id, 'event' => $source)),
-          ),
-          array(
-            array('data' => t('Severity'), 'header' => TRUE),
-            $severity[$source['severity']],
-          ),
-          array(
-            array('data' => t('Hostname'), 'header' => TRUE),
-            check_plain($source['hostname']),
-          ),
-          array(
-            array('data' => t('Domain'), 'header' => TRUE),
-            check_plain($source['domain']),
-          ),
-          array(
-            array('data' => t('Operations'), 'header' => TRUE),
-            $source['link'],
-          ),
-        );
-        $build['elasticsearch_watchdog_table'] = array(
-          '#theme' => 'table',
-          '#rows' => $rows,
-          '#attributes' => array('class' => array('elasticlog-event')),
-        );
-        return $build;
+      if ($client->exists($params)) {
+        $result = $client->get($params);
+        if (!empty($result['exists'])) {
+          $source = $result['_source'];
+          $account = user_load($source['uid']);
+          $rows = array(
+            array(
+              array('data' => t('Type'), 'header' => TRUE),
+              $source['type'],
+            ),
+            array(
+              array('data' => t('Date'), 'header' => TRUE),
+              format_date($source['timestamp'], 'long'),
+            ),
+            array(
+              array('data' => t('User'), 'header' => TRUE),
+              theme('username', array('account' => $account)),
+            ),
+            array(
+              array('data' => t('Location'), 'header' => TRUE),
+              l($source['location'], $source['location']),
+            ),
+            array(
+              array('data' => t('Referrer'), 'header' => TRUE),
+              l($source['referer'], $source['referer']),
+            ),
+            array(
+              array('data' => t('Message'), 'header' => TRUE),
+              theme('elasticsearch_watchdog_message', array('event_id' => $id, 'event' => $source)),
+            ),
+            array(
+              array('data' => t('Severity'), 'header' => TRUE),
+              $severity[$source['severity']],
+            ),
+            array(
+              array('data' => t('Hostname'), 'header' => TRUE),
+              check_plain($source['hostname']),
+            ),
+            array(
+              array('data' => t('Domain'), 'header' => TRUE),
+              check_plain($source['domain']),
+            ),
+            array(
+              array('data' => t('Operations'), 'header' => TRUE),
+              $source['link'],
+            ),
+          );
+          $build['elasticsearch_watchdog_table'] = array(
+            '#theme' => 'table',
+            '#rows' => $rows,
+            '#attributes' => array('class' => array('elasticlog-event')),
+          );
+          return $build;
+        }
+      }
+      else {
+        drupal_set_message(t('The log with ID: !id doesn\'t exists.', array('!id' => $id)), 'error');
       }
     }
   }
   else {
-    return '';
+    drupal_set_message(t('Elasticsearch connector not specified.'), 'error');
   }
+
+  drupal_goto('admin/reports/elasticlog');
 }
 
 /**
