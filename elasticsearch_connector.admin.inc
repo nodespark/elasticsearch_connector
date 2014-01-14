@@ -22,7 +22,7 @@ function elasticsearch_connector_status_page() {
             ->extend('TableSort');
 
   $cluster_ids = $query
-  ->fields('ecc',array('cluster_id'))
+  ->fields('ecc', array('cluster_id'))
   ->limit(25)
   ->orderByHeader($headers)
   ->addTag('elasticsearch_connector_cluster')
@@ -37,9 +37,9 @@ function elasticsearch_connector_status_page() {
     $row[] = $cluster->name;
     $row[] = (!empty($cluster->status) ? t('Active') : t('Inactive'));
     $row[] = $cluster_info['health']['status'];
-    $row[] = l(t('edit'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/edit')
-      . ' | ' . l(t('info'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/info')
-      . ' | ' . l(t('delete'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id .  '/delete');
+    $row[] = l(t('edit'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/edit')
+      . ' | ' . l(t('info'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/info')
+      . ' | ' . l(t('delete'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/delete');
 
     $rows[] = $row;
   }
@@ -77,7 +77,7 @@ function elasticsearch_connector_info_cluster($cluster) {
     $total_docs = $total_size = 0;
     $node_rows = array();
     if (isset($node_stats)) {
-      foreach($node_stats['nodes'] as $node_key => $node_values ) {
+      foreach ($node_stats['nodes'] as $node_key => $node_values) {
         $row = array();
         $row[] = array('data' => $node_values['name']);
         $row[] = array('data' => $node_values['indices']['docs']['count']);
@@ -226,7 +226,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     $cluster_info = elasticsearch_connector_get_cluster_info($form_state['values']['url']);
     $form_state_active = TRUE;
   }
-  else if (isset($cluster->url)) {
+  elseif (isset($cluster->url)) {
     $cluster_info = elasticsearch_connector_get_cluster_info($cluster->url);
     $form_state_active = TRUE;
   }
@@ -319,7 +319,7 @@ function elasticsearch_connector_edit_cluster_form_info($cluster_info = NULL, $a
         'id'  => 'cluster-info'),
     );
   }
-  else if (!empty($ajax)) {
+  elseif (!empty($ajax)) {
     $rows = array(array(
       t('Unknown'),
       t('Unavailable'),

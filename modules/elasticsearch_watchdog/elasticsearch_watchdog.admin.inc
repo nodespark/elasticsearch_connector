@@ -100,7 +100,7 @@ function elasticsearch_watchdog_get_mapping($ttl = NULL) {
   }
 
   // Index Mapping
-  $myTypeMapping = array(
+  $my_type_mapping = array(
     '_source' => array(
       'enabled' => TRUE
     ),
@@ -170,7 +170,7 @@ function elasticsearch_watchdog_get_mapping($ttl = NULL) {
     )
   );
 
-  return $myTypeMapping;
+  return $my_type_mapping;
 }
 
 /**
@@ -192,15 +192,15 @@ function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_sha
   }
 
   // Index
-  $indexParams['index']  = $index_name;
+  $index_params['index']  = $index_name;
   // Index Settings
-  $indexParams['body']['settings']['number_of_shards']   = $number_of_shards;
-  $indexParams['body']['settings']['number_of_replicas'] = $number_of_replica;
-  $myTypeMapping = elasticsearch_watchdog_get_mapping();
-  $indexParams['body']['mappings'][$type] = $myTypeMapping;
+  $index_params['body']['settings']['number_of_shards']   = $number_of_shards;
+  $index_params['body']['settings']['number_of_replicas'] = $number_of_replica;
+  $my_type_mapping = elasticsearch_watchdog_get_mapping();
+  $index_params['body']['mappings'][$type] = $my_type_mapping;
 
   try {
-    $template_body = $indexParams['body'];
+    $template_body = $index_params['body'];
     $template_body['template'] = $alias_name . '*';
 
     $client->indices()->putTemplate(array(
@@ -208,7 +208,7 @@ function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_sha
       'body' => $template_body,
     ));
 
-    $result = $client->indices()->create($indexParams);
+    $result = $client->indices()->create($index_params);
 
     $client->indices()->putAlias(array(
       'name' => $alias_name,
@@ -280,7 +280,7 @@ function elasticsearch_watchdog_overview() {
           $params['body']['size']  = $limit;
           $params['body']['from']  = $current_page*$limit;
 
-          foreach($sort_fields['sql'] as $sort_field) {
+          foreach ($sort_fields['sql'] as $sort_field) {
             $params['body']['sort'][$sort_field]['order'] = $sort;
           }
 
@@ -503,7 +503,7 @@ function elasticsearch_watchdog_event($id) {
         }
       }
       else {
-        drupal_set_message(t('The log with ID: !id doesn\'t exists.', array('!id' => $id)), 'error');
+        drupal_set_message(t("The log with ID: %id does not exist.", array('%id' => $id)), 'error');
       }
     }
   }
@@ -593,7 +593,7 @@ function elasticsearch_watchdog_filters($load_options = TRUE) {
 
   $severities = array();
   $basic_severity = watchdog_severity_levels();
-  foreach(_elasticsearch_watchdog_get_facets('severity', 'terms') as $key => $value) {
+  foreach (_elasticsearch_watchdog_get_facets('severity', 'terms') as $key => $value) {
     $severities[$key] = $basic_severity[$key] . ' (' . $value['count'] . ')';
   }
 
@@ -687,7 +687,7 @@ function elasticsearch_watchdog_filter_form($form) {
   foreach ($filters as $key => $filter) {
     if (empty($filter['type'])) {
       $form['filters']['status'][$key] = array(
-        '#title' => $filter['title'],
+        '#title' => check_plain($filter['title']),
         '#type' => 'select',
         '#multiple' => TRUE,
         '#size' => 8,
@@ -696,7 +696,7 @@ function elasticsearch_watchdog_filter_form($form) {
     }
     else {
       $form['filters']['status'][$key] = array(
-        '#title' => $filter['title'],
+        '#title' => check_plain($filter['title']),
         '#type' => $filter['type'],
         '#size' => 30,
       );
@@ -786,12 +786,12 @@ function elasticsearch_watchdog_clear_log_form($form) {
  * Create Elasticsearch watchdog type.
  */
 function elasticsearch_watchdog_create_type(Elasticsearch\Client $client, $index, $type) {
-  $mappingParams['index'] = $index;
-  $mappingParams['type'] = $type;
-  $myTypeMapping = elasticsearch_watchdog_get_mapping();
-  $mappingParams['body'][$type] = $myTypeMapping;
+  $mapping_params['index'] = $index;
+  $mapping_params['type'] = $type;
+  $my_type_mapping = elasticsearch_watchdog_get_mapping();
+  $mapping_params['body'][$type] = $my_type_mapping;
   $client->indices()->putMapping(
-      $mappingParams
+      $mapping_params
   );
 }
 
@@ -818,7 +818,7 @@ function elasticsearch_watchdog_clear_log_submit() {
 
         drupal_set_message(t('Elasticsearch logs has been cleared.'));
       }
-      catch(Exception $e) {
+      catch (Exception $e) {
         drupal_set_message($e->getMessage(), 'error');
       }
     }

@@ -150,7 +150,7 @@ function elasticsearch_connector_cluster_load($cluster_id) {
 
 function elasticsearch_connector_cluster_load_all($active = TRUE, $load_as_options = FALSE) {
   $query = db_select('elasticsearch_connector_cluster', 'ecc')
-    ->fields('ecc',array('cluster_id', 'name'))
+    ->fields('ecc', array('cluster_id', 'name'))
     ->addTag('elasticsearch_connector_cluster_all');
 
   if ($active) {
