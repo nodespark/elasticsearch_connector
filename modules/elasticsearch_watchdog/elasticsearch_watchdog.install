@@ -9,6 +9,10 @@
  * Implements hook_uninstall().
  */
 function elasticsearch_watchdog_uninstall() {
+  if (!module_exists('elasticsearch_connector')) {
+    module_load_include('module', 'elasticsearch_connector');
+  }
+
   $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
