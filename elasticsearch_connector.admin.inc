@@ -233,12 +233,12 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
 
   $form['status_info'] = elasticsearch_connector_edit_cluster_form_info($cluster_info, $form_state_active);
 
+  $default = elasticsearch_connector_get_default_connector();
   $form['default'] = array(
     '#type' => 'checkbox',
     '#title' => t('Make this cluster default connection'),
     '#description' => t('If no specific cluster connection specified the API will use the default connection.'),
-    '#default_value' => (!empty($cluster->cluster_id) &&
-        $cluster->cluster_id == elasticsearch_connector_get_default_connector() ? '1' : '0'),
+    '#default_value' => (empty($default) || (!empty($cluster->cluster_id) && $cluster->cluster_id == $default)) ? '1' : '0',
   );
 
   $form['options'] = array(
@@ -353,6 +353,12 @@ function elasticsearch_connector_edit_cluster_validate($form, &$form_state) {
   if (!isset($cluster_info['info']) || !$cluster_info['info'] == ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK) {
     form_set_error('url', t('Cannot connect to the cluster!'));
   }
+
+  // Complain if we are removing the default.
+  $default = elasticsearch_connector_get_default_connector();
+  if ($form_state['values']['default'] == 0 && !empty($default)) {
+    drupal_set_message(t('There must be a default connection. %name is still the default connection. Please change the default setting on the cluster you wish to set as default.', array('%name' => $form_state['values']['name'])), 'warning' );
+  }
 }
 
 /**
@@ -366,8 +372,9 @@ function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
   $values->options = serialize($values->options);
   $cluster = isset($values->cluster) ? $values->cluster : NULL;
 
-  // TODO: Set default connection if we are saving the first cluster in settings.
-  if ($values->default == 1) {
+  // Set default connection if selected or there is no default yet.
+  $default = elasticsearch_connector_get_default_connector();
+  if ($values->default == 1 || empty($default)) {
     elasticsearch_connector_set_default_connector($values->cluster_id);
   }
 
