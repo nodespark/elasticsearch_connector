@@ -122,7 +122,12 @@ function elasticsearch_watchdog_watchdog(array $log_entry) {
       );
 
       // Indexing document.
-      $ret = $client->index($doc);
+      try {
+        $ret = $client->index($doc);
+      }
+      catch (Exception $e) {
+        error_log($e->getMessage());
+      }
     }
   }
 }

@@ -71,7 +71,12 @@ function elasticsearch_watchdog_uninstall() {
      if (!empty($client_id)) {
        $client = elasticsearch_connector_get_client_by_id($client_id);
        if ($client) {
-         $info = $client->info();
+         try {
+           $info = $client->info();
+         }
+         catch (Exception $e) {
+
+         }
          if (!empty($info['ok'])) {
            return array(
              'elasticsearch_watchdog' => array(

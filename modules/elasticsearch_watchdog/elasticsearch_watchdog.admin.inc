@@ -28,6 +28,9 @@ function elasticsearch_watchdog_settings() {
     '#description' => t('Select the cluster you want to hold the logs.')
   );
 
+  // TODO: Select and existing index where the content type to be created!
+  // In this case we neeed to hide the options to select number of shards and s.o.
+
   $form['elasticsearch_watchdog_num_of_shards'] = array(
     '#type' => 'textfield',
     '#title' => t('Number of shards'),
@@ -298,7 +301,7 @@ function elasticsearch_watchdog_overview() {
       }
       catch (Exception $e) {
         // Show the error message to the user.
-        drupal_set_messsage($e->getMessage(), 'error');
+        drupal_set_message($e->getMessage(), 'error');
       }
     }
   }
