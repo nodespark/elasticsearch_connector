@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Module implementing a logic to have an sequence functionality,
+ * similar to MySQL sequence and PostgreSQL
+ */
+
