@@ -32,7 +32,7 @@ function elasticsearch_connector_status_page() {
   foreach ($cluster_ids as $cluster_id) {
     $row = array();
     $cluster = elasticsearch_connector_cluster_load($cluster_id);
-    $cluster_info = elasticsearch_connector_get_cluster_info($cluster->url);
+    $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
 
     $row[] = $cluster->name;
     $row[] = (!empty($cluster->status) ? t('Active') : t('Inactive'));
@@ -66,7 +66,7 @@ function elasticsearch_connector_info_cluster($cluster) {
     l(t('Elasticsearch Clusters'), elasticsearch_connector_main_settings_path() . '/clusters'))
   );
 
-  $cluster_status = elasticsearch_connector_get_cluster_info($cluster->url);
+  $cluster_status = elasticsearch_connector_get_cluster_info($cluster);
   $cluster_client = $cluster_status['client'];
 
   if (isset($cluster_client)) {
@@ -223,11 +223,12 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
   $cluster_info = NULL;
   $form_state_active = FALSE;
   if (isset($form_state['values'])) {
-    $cluster_info = elasticsearch_connector_get_cluster_info($form_state['values']['url']);
+    $values = (object)$form_state['values'];
+    $cluster_info = elasticsearch_connector_get_cluster_info($values);
     $form_state_active = TRUE;
   }
   elseif (isset($cluster->url)) {
-    $cluster_info = elasticsearch_connector_get_cluster_info($cluster->url);
+    $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
     $form_state_active = TRUE;
   }
 
@@ -349,7 +350,8 @@ function elasticsearch_connector_edit_cluster_form_info($cluster_info = NULL, $a
  * @param array $form_state
  */
 function elasticsearch_connector_edit_cluster_validate($form, &$form_state) {
-  $cluster_info = elasticsearch_connector_get_cluster_info($form_state['values']['url']);
+  $values = (object)$form_state['values'];
+  $cluster_info = elasticsearch_connector_get_cluster_info($values);
   if (!isset($cluster_info['info']) || !$cluster_info['info'] == ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK) {
     form_set_error('url', t('Cannot connect to the cluster!'));
   }

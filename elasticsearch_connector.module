@@ -10,7 +10,6 @@
 define('ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE', '0');
 define('ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE', '1');
 define('ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK', 'ok');
-define('ELASTICSEARCH_CONNECTOR_DEFAULT_LIBRARY', 'Elasticsearch\Client');
 
 /**
  * Implements hook_init().
@@ -188,8 +187,11 @@ function elasticsearch_connector_set_default_connector($connection) {
 }
 
 /**
+ * Return the cluster object based on Cluster ID.
  *
- * @param unknown $cluster_id
+ * @param string $cluster_id
+ * @param boolean
+ * @return object
  */
 function elasticsearch_connector_get_client_by_id($cluster_id = NULL, $default_fallback = NULL) {
   if (!isset($cluster_id) && !empty($default_fallback)) {
@@ -200,12 +202,8 @@ function elasticsearch_connector_get_client_by_id($cluster_id = NULL, $default_f
     $client = FALSE;
     $cluster = elasticsearch_connector_cluster_load($cluster_id);
     if ($cluster) {
-      // TODO: Handle cluster connection.
-      $client = elasticsearch_connector_get_client_by_url($cluster->url);
+      $client = elasticsearch_connector_load_library($cluster);
     }
-  }
-  else {
-    // TODO: watchdog
   }
 
   return $client;
@@ -216,42 +214,47 @@ function elasticsearch_connector_get_client_by_id($cluster_id = NULL, $default_f
  * @param string $url
  * @return
  */
-function elasticsearch_connector_get_client_by_url($url) {
+function elasticsearch_connector_load_library($cluster) {
   static $clients;
-  // TODO: Add watchdog messages if not able to connect.
-  if (!isset($clients[$url])) {
-    $clients[$url] = FALSE;
-    if (valid_url($url)) {
-      $library = ELASTICSEARCH_CONNECTOR_DEFAULT_LIBRARY;
-      $clients[$url] = new $library(
-        array(
-          'hosts' => array(
-            $url
-          )
-        )
+
+  if (!isset($clients[$cluster->cluster_id])) {
+    $clients[$cluster->cluster_id] = FALSE;
+
+    // TODO: Handle cluster connection. This should be accomplished if the setting is enabled.
+    // If enabled, discover all the nodes in the cluster initialize the Pool connection.
+    if (valid_url($cluster->url)) {
+      $options = array(
+        'hosts' => array($cluster->url),
       );
+
+      $clients[$cluster->cluster_id] = new \Elasticsearch\Client($options);
     }
   }
 
-  return $clients[$url];
+  return $clients[$cluster->cluster_id];
 }
 
 /**
  * Return cluster info.
- * @param string $url
+ * @param object
+ *    $cluster - The cluster object.
  * @return return array
  */
-function elasticsearch_connector_get_cluster_info($url) {
-  // TODO: Build a function that will return Elasticsearch object.
+function elasticsearch_connector_get_cluster_info($cluster) {
   $result = FALSE;
-  $client = elasticsearch_connector_get_client_by_url($url);
+  $client = elasticsearch_connector_load_library($cluster);
   if (!empty($client)) {
-    $info = $client->info();
-    $result['client'] = $client;
-    if ($info['ok'] == TRUE) {
-      $result['info'] = $info;
-      $result['state'] = $client->cluster()->state();
-      $result['health'] = $client->cluster()->health();
+    try {
+      $info = $client->info();
+      $result['client'] = $client;
+      if ($info['ok'] == TRUE) {
+        $result['info'] = $info;
+        $result['state'] = $client->cluster()->state();
+        $result['health'] = $client->cluster()->health();
+      }
+    }
+    catch (Exception $e) {
+      drupal_set_message($e->getMessage(), 'error');
     }
   }
 
