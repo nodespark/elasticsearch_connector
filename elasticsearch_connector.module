@@ -226,8 +226,18 @@ function elasticsearch_connector_load_library($cluster) {
       $options = array(
         'hosts' => array($cluster->url),
       );
-
-      $clients[$cluster->cluster_id] = new \Elasticsearch\Client($options);
+      try {
+        if (!class_exists('\Elasticsearch\Client') && module_exists('composer_manager')) {
+          // If the class doesn't exists try to explicity load the classes!
+          // The issues is in update.php where search api call this function, but the function
+          // has not been invoked.
+          composer_manager_register_autoloader();
+        }
+        $clients[$cluster->cluster_id] = new \Elasticsearch\Client($options);
+      }
+      catch(Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
     }
   }
 
