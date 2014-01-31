@@ -38,7 +38,7 @@ function elasticsearch_connector_search_api_form_alter(&$form, &$form_state, $fo
   if ($form_id == 'search_api_admin_add_index') {
     elasticsearch_connector_search_api_attach_ajax_callback($form);
     if (isset($form_state['values']) && !empty($form_state['values'])) {
-      $add_options = elasticsearch_connector_search_api_add_options_enabled($form_state['values']['server']);
+      $add_options = elasticsearch_connector_search_api_elasticsearch_server_enabled($form_state['values']['server']);
       if ($add_options != FALSE) {
         elasticsearch_connector_search_api_return_form_options($form, $form_state, array(), 'add');
       }
