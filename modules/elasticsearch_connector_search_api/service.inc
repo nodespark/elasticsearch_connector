@@ -803,12 +803,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $body['sort'] = $query_options['sort'];
     }
 
-    $body['filter'] = array();
-    $filter = &$body['filter'];
     $body['fields'] = array();
     $fields = &$body['fields'];
-    $body['query'] = array();
-    $query_body = &$body['query'];
 
     // More Like This
     if (!empty($query_options['mlt'])) {
@@ -820,22 +816,25 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $mlt_query['more_like_this']['min_doc_freq'] = 1;
       $mlt_query['more_like_this']['min_term_freq'] = 1;
       $fields += array_values($query_options['mlt']['fields']);
-      $query_body += $mlt_query;
+      $body['query'] = $mlt_query;
     }
 
     // Build the query.
     if (!empty($query_options['query_search_string']) && !empty($query_options['query_search_filter'])) {
-      //$elastica_query->setQuery(new Elastica\Query\Filtered($query_options['query_search_string'], $query_options['query_search_filter']));
+      $body['query']['filtered']['query'] = $query_options['query_search_string'];
+      $body['query']['filtered']['filter'] = $query_options['query_search_filter'];
     }
     elseif (!empty($query_options['query_search_string'])) {
-      unset($body['filter']);
-      $query_body += $query_options['query_search_string'];
+      if (empty($body['query'])) {
+        $body['query'] = array();
+      }
+      $body['query'] += $query_options['query_search_string'];
     }
     elseif (!empty($query_options['query_search_filter'])) {
-      unset($body['query']);
-      $filter += $query_options['query_search_filter'];
+      $body['filter'] = $query_options['query_search_filter'];
     }
 
+    // TODO: Handle fields on filter query.
     if (empty($fields)) {
       unset($body['fields']);
     }
