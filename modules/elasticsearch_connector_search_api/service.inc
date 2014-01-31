@@ -807,7 +807,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $filter = &$body['filter'];
     $body['fields'] = array();
     $fields = &$body['fields'];
-    $query_body = array();
+    $body['query'] = array();
     $query_body = &$body['query'];
 
     // More Like This
