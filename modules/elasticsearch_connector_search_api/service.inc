@@ -51,27 +51,26 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       '#parents' => array('options', 'form', 'cluster'),
     );
 
-    if (module_exists('search_api_facetapi')) {
-      // Facet settings.
-      $form['facet_settings'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Elasticsearch facet settings'),
-        '#tree' => FALSE,
-      );
+    // Facet settings.
+    $form['facet_settings'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Elasticsearch facet settings'),
+      '#tree' => FALSE,
+      '#access' => module_exists('search_api_facetapi'),
+    );
 
-      // Elasticsearch facet limit.
-      $default = 10;
-      $form['facet_settings']['facet_limit'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Facet limit'),
-        '#description' => t("Maximum number of facet elements to be returned by the server if 'no limit' is selected as hard limit is the facet option. Default is %default.", array(
-          '%default' => $default,
-        )),
-        '#required' => TRUE,
-        '#default_value' => $this->getOption('facet_limit', $default),
-        '#parents' => array('options', 'form', 'facet_limit'),
-      );
-    }
+    // Elasticsearch facet limit.
+    $default = 10;
+    $form['facet_settings']['facet_limit'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Facet limit'),
+      '#description' => t("Maximum number of facet elements to be returned by the server if 'no limit' is selected as hard limit is the facet option. Default is %default.", array(
+        '%default' => $default,
+      )),
+      '#required' => TRUE,
+      '#default_value' => $this->getOption('facet_limit', $default),
+      '#parents' => array('options', 'form', 'facet_limit'),
+    );
 
     return $form;
   }
