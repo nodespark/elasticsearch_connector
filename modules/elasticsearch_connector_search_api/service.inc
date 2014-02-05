@@ -1285,6 +1285,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $query->keys($user_input);
 
     try {
+      // TODO: Making autocomplete to work as autocomplete instead of exact string match.
       $response = $this->search($query);
     }
     catch (Exception $e) {
@@ -1324,5 +1325,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       return $suggestions;
     }
   }
+
+  // TODO: Implement the settings update feature.
 
 }
