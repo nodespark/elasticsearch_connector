@@ -1275,10 +1275,54 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    */
   public function getAutocompleteSuggestions(SearchApiQueryInterface $query, SearchApiAutocompleteSearch $search, $incomplete_key, $user_input) {
     $suggestions = array();
+    // Turn inputs to lower case, otherwise we get case sensivity problems.
+    $incomp = drupal_strtolower($incomplete_key);
 
-    // TODO: Implement the logic!
+    $index = $query->getIndex();
+    $index_fields = $this->getIndexFields($query);
 
-    return $suggestions;
+    $complete = $query->getOriginalKeys();
+    $query->keys($user_input);
+
+    try {
+      $response = $this->search($query);
+    }
+    catch (Exception $e) {
+      watchdog('Elasticsearch Search API', check_plain($e->getMessage()), array(), WATCHDOG_ERROR);
+      return array();
+    }
+
+    $matches = array();
+    if (isset($response['results'])) {
+      $items = $index->loadItems(array_keys($response['results']));
+      foreach ($items as $id => $item) {
+        $node_title = $index->datasource()->getItemLabel($item);
+        $matches[$node_title] = $node_title;
+      }
+
+      if ($matches) {
+        // Eliminate suggestions that are too short or already in the query.
+        foreach ($matches as $name => $node_title) {
+          if (drupal_strlen($name) < 3 || isset($keys_array[$name])) {
+            unset($matches[$name]);
+          }
+        }
+
+        // The $count in this array is actually a score. We want the
+        // highest ones first.
+        arsort($matches);
+
+        // Shorten the array to the right ones.
+        $additional_matches = array_slice($matches, $limit - count($suggestions), NULL, TRUE);
+        $matches = array_slice($matches, 0, $limit, TRUE);
+
+        foreach ($matches as $node => $name) {
+          $suggestions[] = $name;
+        }
+      }
+      $keys = trim($keys . ' ' . $incomplete_key);
+      return $suggestions;
+    }
   }
 
 }
