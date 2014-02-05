@@ -445,7 +445,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     // Add facets.
     $this->addSearchFacets($params, $query);
-
+    //echo '<pre>';var_dump($params);exit;
     // Do search.
     $response = $this->elasticsearchClient->search($params);
 
@@ -502,19 +502,26 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   }
 
   /**
-   * Get filter by associative array
-   * TODO: Implement the whole logic in this function.
+   * Get filter by associative array.
    */
   protected function getFilter(array $filter_assoc) {
     // Handles "empty", "not empty" operators.
     if (!isset($filter_assoc['filter_value'])) {
       switch ($filter_assoc['filter_operator']) {
         case '<>':
-
+          $filter = array(
+            'exists' => array('field' => $filter_assoc['field_id'])
+          );
           break;
 
         case '=':
-
+          $filter = array(
+            'not' => array(
+              'filter' => array(
+                'exists' => array('field' => $filter_assoc['field_id'])
+              )
+            )
+          );
           break;
 
         default:
@@ -525,26 +532,71 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     else {
       switch ($filter_assoc['filter_operator']) {
         case '=':
-          $filter = array('term' => array($filter_assoc['field_id'] => $filter_assoc['filter_value']));
+          $filter = array(
+            'term' => array($filter_assoc['field_id'] => $filter_assoc['filter_value'])
+          );
           break;
 
         case '<>':
-
+          $filter = array(
+            'not' => array(
+              'filter' => array(
+                'term' => array($filter_assoc['field_id'] => $filter_assoc['filter_value'])
+              )
+            )
+          );
           break;
 
         case '>':
-
+          $filter = array(
+            'range' => array(
+              $filter_assoc['field_id'] => array(
+                'from'          => $filter_assoc['filter_value'],
+                'to'            => NULL,
+                'include_lower' => FALSE,
+                'include_upper' => FALSE
+              )
+            )
+          );
           break;
 
         case '>=':
-
+          $filter = array(
+            'range' => array(
+              $filter_assoc['field_id'] => array(
+                'from'          => $filter_assoc['filter_value'],
+                'to'            => NULL,
+                'include_lower' => TRUE,
+                'include_upper' => FALSE
+              )
+            )
+          );
           break;
 
         case '<':
-
+          $filter = array(
+            'range' => array(
+              $filter_assoc['field_id'] => array(
+                'from'          => NULL,
+                'to'            => $filter_assoc['filter_value'],
+                'include_lower' => FALSE,
+                'include_upper' => FALSE
+              )
+            )
+          );
           break;
 
         case '<=':
+          $filter = array(
+            'range' => array(
+              $filter_assoc['field_id'] => array(
+                'from'          => NULL,
+                'to'            => $filter_assoc['filter_value'],
+                'include_lower' => FALSE,
+                'include_upper' => TRUE
+              )
+            )
+          );
           break;
 
         default:
@@ -575,12 +627,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   protected function setFiltersConjunction(&$filters, $conjunction) {
     if (count($filters) > 1) {
       if ($conjunction === 'OR') {
-        // TODO: Handle OR operator.
-        $filters = array($filter);
+        $filters = array(array('or' => $filters));
       }
       elseif ($conjunction === 'AND') {
-        // TODO: Handle AND operator.
-        $filters = array($filter);
+        $filters = array(array('and' => $filters));
       }
       else {
         throw new Exception(t('Undefined conjunction :conjunction! Available values are :avail_conjunction! Incorrect filter criteria is using for searching!',
@@ -848,7 +898,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     // Preserve the options for futher manipulation if necessary.
     $query->setOption('ElasticParams', $params);
-    //echo '<pre>';var_dump($params);exit;
     return $params;
   }
 
