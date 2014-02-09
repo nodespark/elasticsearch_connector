@@ -445,7 +445,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     // Add facets.
     $this->addSearchFacets($params, $query);
-    //echo '<pre>';var_dump($params);exit;
+
     // Do search.
     $response = $this->elasticsearchClient->search($params);
 
@@ -648,7 +648,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   protected function correctFilter($filter_assoc, $index_fields, $ignored_field_id = '') {
     if (!isset($filter_assoc['field_id']) || !isset($filter_assoc['filter_value'])
     || !isset($filter_assoc['filter_operator'])) {
-      throw new Exception(t('Incorrect filter criteria is using for searching!'));
+      // TODO: When using views the sort field is comming as a filter and messing with this section.
+      // throw new Exception(t('Incorrect filter criteria is using for searching!'));
     }
 
     $field_id = $filter_assoc['field_id'];
