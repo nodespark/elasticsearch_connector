@@ -57,7 +57,6 @@ function elasticsearch_connector_schema() {
 
   //TODOs:
   //TODO: Make the module CTools exportable compatible!
-  //TODO: Handle foreign keys with nodes table!
 
   $schema['elasticsearch_connector_cluster'] = array(
     'description' => 'The base table for elasticsearch clusters.',
@@ -111,5 +110,5 @@ function elasticsearch_connector_schema() {
  * Delete Search Api elasticsearch servers.
  */
 function elasticsearch_connector_uninstall() {
-  //TODO: Remove all variables if any.
+  variable_del('elasticsearch_connector_get_default_connector');
 }
