@@ -23,7 +23,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   public function __construct(SearchApiServer $server) {
     parent::__construct($server);
 
-    $this->cluster_id = $this->getOption('cluster', '');
+    $this->cluster_id = $this->getCluster();
     if ($this->cluster_id) {
       $this->elasticsearchClient = elasticsearch_connector_get_client_by_id($this->cluster_id);
     }
@@ -40,11 +40,12 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       '#tree' => FALSE,
     );
 
-    $clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
+    $clusters = array('' => t('Default cluster')) + elasticsearch_connector_cluster_load_all(TRUE);
     $form['connector_settings']['cluster'] = array(
       '#type' => 'select',
       '#title' => t('Cluster'),
-      '#required' => TRUE,
+      // This should not use the getCluster() method so that the service can be
+      // configured to use the default cluster.
       '#default_value' => $this->getOption('cluster', ''),
       '#options' => $clusters,
       '#description' => t('Select the cluster you want to handle the connections.'),
@@ -79,12 +80,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    * Overrides configurationFormValidate().
    */
   public function configurationFormValidate(array $form, array &$values, array &$form_state) {
-    $clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
-    // Check cluster!
-    if (empty($clusters[$values['cluster']])) {
-      form_set_error('options][form][cluster', t('You must select a valid Cluster from the elasticsearch clusters dropdown.'));
-    }
-
     // Facet limit.
     if (filter_var($values['facet_limit'], FILTER_VALIDATE_INT, array('options' => array('min_range' => 0))) === FALSE) {
       form_set_error('options][form][facet_limit', t('You must enter a positive integer for the elasticsearch facet limit.'));
@@ -705,6 +700,14 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     else {
       return '';
     }
+  }
+
+  /**
+   * Get the configured cluster; if the cluster is blank, use the default.
+   */
+  public function getCluster() {
+    $cluster_id = $this->getOption('cluster', '');
+    return empty($cluster_id) ? elasticsearch_connector_get_default_connector() : $cluster_id;
   }
 
   /**
