@@ -70,10 +70,7 @@ function elasticsearch_connector_info_cluster($cluster) {
   $cluster_client = $cluster_status['client'];
 
   if (isset($cluster_client)) {
-    // TODO: Think if it is not better to move the stats calling in wrapper function or
-    //       making a new class interface to get the stats!
-
-    $node_stats = $cluster_client->cluster()->nodeStats();
+    $node_stats = elasticsearch_connector_get_cluster_nodes_stat($cluster_client);
     $total_docs = $total_size = 0;
     $node_rows = array();
     if (isset($node_stats)) {
@@ -81,7 +78,7 @@ function elasticsearch_connector_info_cluster($cluster) {
         $row = array();
         $row[] = array('data' => $node_values['name']);
         $row[] = array('data' => $node_values['indices']['docs']['count']);
-        $row[] = array('data' => $node_values['indices']['store']['size']);
+        $row[] = array('data' => format_size($node_values['indices']['store']['size_in_bytes']));
         $total_docs += $node_values['indices']['docs']['count'];
         $total_size += $node_values['indices']['store']['size_in_bytes'];
         $node_rows[] = $row;
@@ -352,7 +349,7 @@ function elasticsearch_connector_edit_cluster_form_info($cluster_info = NULL, $a
 function elasticsearch_connector_edit_cluster_validate($form, &$form_state) {
   $values = (object)$form_state['values'];
   $cluster_info = elasticsearch_connector_get_cluster_info($values);
-  if (!isset($cluster_info['info']) || !$cluster_info['info'] == ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK) {
+  if (!isset($cluster_info['info']) || !elasticsearch_connector_check_status($cluster_info['info'])) {
     form_set_error('url', t('Cannot connect to the cluster!'));
   }
 

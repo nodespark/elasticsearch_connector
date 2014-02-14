@@ -77,7 +77,7 @@ function elasticsearch_watchdog_uninstall() {
          catch (Exception $e) {
 
          }
-         if (!empty($info['ok'])) {
+         if (elasticsearch_connector_check_status($info)) {
            return array(
              'elasticsearch_watchdog' => array(
                'title' => $t('Elasticsearch Watchdog Status'),

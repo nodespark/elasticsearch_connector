@@ -9,7 +9,7 @@
 
 define('ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE', '0');
 define('ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE', '1');
-define('ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK', 'ok');
+define('ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK', '200');
 
 /**
  * Implements hook_init().
@@ -245,6 +245,34 @@ function elasticsearch_connector_load_library($cluster) {
 }
 
 /**
+ * Check if the status is OK.
+ * @param array $status
+ * @return bool
+ */
+function elasticsearch_connector_check_status(array $status) {
+  if ($status['status'] == ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Check if the REST response is successful and with status code 200.
+ * @param array $response
+ * @return boolean
+ */
+function elasticsearch_connector_check_response_ack(array $response) {
+  if (!empty($response['acknowledged'])) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
  * Return cluster info.
  * @param object
  *    $cluster - The cluster object.
@@ -257,10 +285,12 @@ function elasticsearch_connector_get_cluster_info($cluster) {
     try {
       $info = $client->info();
       $result['client'] = $client;
-      if ($info['ok'] == TRUE) {
+      if (elasticsearch_connector_check_status($info)) {
+        //$client = new \Elasticsearch\Client();
         $result['info'] = $info;
         $result['state'] = $client->cluster()->state();
         $result['health'] = $client->cluster()->health();
+        $result['stats'] = $client->nodes()->stats();
       }
     }
     catch (Exception $e) {
@@ -269,4 +299,18 @@ function elasticsearch_connector_get_cluster_info($cluster) {
   }
 
   return $result;
+}
+
+/**
+ * Get the nodes stats from elasticsearch server.
+ * @param \Elasticsearch\Client $client
+ * @return array
+ */
+function elasticsearch_connector_get_cluster_nodes_stat(\Elasticsearch\Client $client) {
+  try {
+    return $client->nodes()->stats();
+  }
+  catch (Exception $e) {
+      drupal_set_message($e->getMessage(), 'error');
+    }
 }

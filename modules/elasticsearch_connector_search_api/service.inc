@@ -137,7 +137,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $output['status'] = array(
       '#type' => 'item',
       '#title' => t('Elasticsearch cluster status'),
-      '#markup' => '<div class="elasticsearch-daemon-status"><em>' . (!empty($status['ok']) ? 'running' : 'not running') . '</em>' .
+      '#markup' => '<div class="elasticsearch-daemon-status"><em>' . ((elasticsearch_connector_check_status($status)) ? 'running' : 'not running') . '</em>' .
                    ' - <a href=" ' . url($elasticsearch_connector_path . '/clusters/' . $this->cluster_id . '/info') .  ' ">' . t('More info') . '</a></div>',
     );
 
@@ -236,7 +236,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
             )
           )
         ));
-        if (empty($response['ok'])) {
+        if (!elasticsearch_connector_check_response_ack($response)) {
           drupal_set_message(t('The elasticsearch client wasn\'t able to create index'), 'error');
         }
         // Update mapping.
@@ -274,8 +274,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
       $params['body'][$params['type']]['properties'] = $properties;
       $results = $this->elasticsearchClient->indices()->putMapping($params);
-      if (empty($results['ok'])) {
-        drupal_set_message(t('Cannot create the matting of the fields!'), 'error');
+      if (!elasticsearch_connector_check_response_ack($results)) {
+        drupal_set_message(t('Cannot create the mapping of the fields!'), 'error');
       }
     }
     catch (Exception $e) {
@@ -384,6 +384,15 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     else {
       $this->deleteItemsIds($ids, $index);
     }
+  }
+
+  /**
+   * TODO: Get all created indexeds and delete them.
+   */
+  protected function getIndexes() {
+    $indices = array();
+
+    return $indices;
   }
 
   /**

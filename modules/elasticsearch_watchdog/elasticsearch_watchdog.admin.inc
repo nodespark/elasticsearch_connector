@@ -73,7 +73,7 @@ function elasticsearch_watchdog_settings_validate($form, &$form_state) {
                     $values['elasticsearch_watchdog_num_of_shards'],
                     $values['elasticsearch_watchdog_num_of_replica']);
 
-      if (empty($result['ok'])) {
+      if (elasticsearch_connector_check_status($result)) {
         form_set_error('elasticsearch_watchdog_cluster_id', $result['error']);
       }
     }
