@@ -131,38 +131,96 @@ function elasticsearch_connector_menu() {
 }
 
 /**
- * Load an cluster object from database.
+ * Save a cluster configuration object.
+ *
+ * @param stdclass $cluster
+ *   The ElasticSearch cluster configuration object. This object should be
+ *   loaded with elasticsearch_connector_cluster_load() or
+ *   elasticsearch_connector_cluster_load_all()--otherwise, it is assumed to be
+ *   a new configuration.
+ */
+function elasticsearch_connector_cluster_save($cluster) {
+  ctools_include('export');
+
+  $cluster = (object) $cluster;
+  $cluster->options = serialize($cluster->options);
+
+  if (isset($cluster->export_type) && $cluster->export_type & EXPORT_IN_DATABASE) {
+    // Record exists in the database.
+    $result = drupal_write_record('elasticsearch_connector_cluster', $cluster, 'cluster_id');
+  }
+  else {
+    // Record is new, or exists only in code.
+    $result = drupal_write_record('elasticsearch_connector_cluster', $cluster);
+  }
+}
+
+/**
+ * Delete an ElasticSearch cluster.
+ *
+ * @param stdclass $cluster
+ *   A cluster configuration object.
+ */
+function elasticsearch_connector_cluster_delete($cluster) {
+  db_delete('elasticsearch_connector_cluster')
+    ->condition('cluster_id', $cluster->cluster_id)
+    ->execute();
+}
+
+/**
+ * Load a cluster object from the database.
+ *
+ * @see ctools_export_load_object().
  *
  * @param string $cluster_id
  * @return object $cluster
  */
 function elasticsearch_connector_cluster_load($cluster_id) {
-  $object = db_select('elasticsearch_connector_cluster', 'ecc')
-          ->fields('ecc')
-          ->condition('cluster_id', $cluster_id, '=')->execute()->fetchObject();
-  if (!empty($object->cluster_id)) {
-    $object->options = unserialize($object->options);
+  ctools_include('export');
+  $result = ctools_export_load_object('elasticsearch_connector_cluster', 'names', array($cluster_id));
+  if (isset($result[$cluster_id])) {
+    return $result[$cluster_id];
+  }
+}
+
+/**
+ * Load all cluster objects.
+ *
+ * @param bool $include_inactive
+ *   Included inactive clusters. Defaults to true.
+ *
+ * @return array
+ *   An array of ElasticSearch connection cluster objects.
+ */
+function elasticsearch_connector_clusters($include_inactive = TRUE) {
+  ctools_include('export');
+  $clusters = ctools_export_load_object('elasticsearch_connector_cluster', 'all');
+
+  // Filter out inactive clusters.
+  if (!$include_inactive) {
+    foreach ($clusters as $cluster_id => $cluster) {
+      if (!$cluster->status) {
+        unset($clusters[$cluster_id]);
+      }
+    }
   }
 
-  return $object;
+  return $clusters;
 }
 
 function elasticsearch_connector_cluster_load_all($active = TRUE, $load_as_options = FALSE) {
-  $query = db_select('elasticsearch_connector_cluster', 'ecc')
-    ->fields('ecc', array('cluster_id', 'name'))
-    ->addTag('elasticsearch_connector_cluster_all');
+  ctools_include('export');
+  $clusters = ctools_export_load_object('elasticsearch_connector_cluster', 'all');
 
-  if ($active) {
-    $query->condition('status', ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE, '=');
-  }
-
-  $result = $query->execute();
   $options = array();
   if ($load_as_options) {
     $options[''] = t('None');
   }
-  while ($row = $result->fetchAssoc()) {
-    $options[$row['cluster_id']] = $row['name'];
+
+  foreach ($clusters as $cluster) {
+    if (!$active || ($active && ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE)) {
+      $options[$cluster->cluster_id] = $cluster->name;
+    }
   }
 
   return $options;

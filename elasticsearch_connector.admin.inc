@@ -5,41 +5,46 @@
  */
 
 /**
- * Building the status page.
+ * Cluster status page callback.
+ *
+ * @return array
+ *   A Drupal render array.
  */
 function elasticsearch_connector_status_page() {
   $headers = array(
-    array('data' => t('Cluster name'), 'field' => 'ecc.name'),
-    array('data' => t('Status'), 'field' => 'ecc.status'),
+    array('data' => t('Cluster name')),
+    array('data' => t('Status')),
     array('data' => t('Cluster Status')),
     array('data' => t('Operations')),
   );
 
   $rows = array();
 
-  $query = db_select('elasticsearch_connector_cluster', 'ecc')
-            ->extend('PagerDefault')
-            ->extend('TableSort');
-
-  $cluster_ids = $query
-  ->fields('ecc', array('cluster_id'))
-  ->limit(25)
-  ->orderByHeader($headers)
-  ->addTag('elasticsearch_connector_cluster')
-  ->execute()
-  ->fetchCol();
-
-  foreach ($cluster_ids as $cluster_id) {
-    $row = array();
-    $cluster = elasticsearch_connector_cluster_load($cluster_id);
+  $clusters = elasticsearch_connector_clusters();
+  foreach ($clusters as $cluster) {
     $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
 
+    $edit_link_title = ($cluster->export_type & EXPORT_IN_CODE) ? t('Override') : t('Edit');
+    if ($cluster->type == 'Overridden') {
+      $edit_link_title = $cluster->type;
+    }
+
+    $operations = theme('links__ctools_dropbutton', array(
+      'links' => array(
+        array('title' => $edit_link_title, 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/edit'),
+        array('title' => t('Info'), 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/info'),
+        array('title' => t('Delete'), 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/delete'),
+      ),
+      'attributes' => array(
+        'class' => array('links', 'inline'),
+      ),
+    ));
+
+    $row = array();
     $row[] = $cluster->name;
     $row[] = (!empty($cluster->status) ? t('Active') : t('Inactive'));
     $row[] = $cluster_info['health']['status'];
-    $row[] = l(t('edit'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/edit')
-      . ' | ' . l(t('info'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/info')
-      . ' | ' . l(t('delete'), elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/delete');
+    $row[] = $operations;
 
     $rows[] = $row;
   }
@@ -50,8 +55,6 @@ function elasticsearch_connector_status_page() {
     '#rows' => $rows,
     '#attributes' => array('class' => array('admin-elasticsearch-connector')),
   );
-
-  $output['pager'] = array('#markup' => theme('pager'));
 
   return $output;
 }
@@ -173,6 +176,11 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     l(t('Elasticsearch Clusters'), elasticsearch_connector_main_settings_path() . '/clusters'))
   );
 
+  $form['cluster'] = array(
+    '#type'  => 'value',
+    '#value' => $cluster,
+  );
+
   $form['name'] = array(
     '#type' => 'textfield',
     '#title' => t('Cluster name'),
@@ -193,13 +201,6 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
       t('Unique, machine-readable identifier for this Elasticsearch environment.'),
     '#required' => TRUE,
   );
-
-  if (isset($cluster)) {
-    $form['cluster'] = array(
-      '#type'  => 'value',
-      '#value' => $cluster
-    );
-  }
 
   $form['url'] = array(
     '#type' => 'textfield',
@@ -367,27 +368,40 @@ function elasticsearch_connector_edit_cluster_validate($form, &$form_state) {
  * @param array $form_state
  */
 function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
-  $values = (object)$form_state['values'];
-  $values->options = serialize($values->options);
-  $cluster = isset($values->cluster) ? $values->cluster : NULL;
+  $cluster = $form_state['values']['cluster'];
+
+  if (!$cluster) {
+    $cluster = new stdClass();
+  }
+
+  // Save specific form values.
+  $cluster->name = $form_state['values']['name'];
+  $cluster->cluster_id = $form_state['values']['cluster_id'];
+  $cluster->url = $form_state['values']['url'];
+  $cluster->status = $form_state['values']['status'];
+  $cluster->options = array(
+    'multiple_nodes_connection' => $form_state['values']['options']['multiple_nodes_connection'],
+  );
 
   // Set default connection if selected or there is no default yet.
   $default = elasticsearch_connector_get_default_connector();
-  if ($values->default == 1 || empty($default)) {
-    elasticsearch_connector_set_default_connector($values->cluster_id);
+  if ($form_state['values']['default'] == 1 || empty($default)) {
+    elasticsearch_connector_set_default_connector($cluster->cluster_id);
   }
 
-  if (isset($cluster)) {
-    drupal_write_record('elasticsearch_connector_cluster', $values,
-      array('cluster_id'));
-    $message = t('The cluster has been updated.');
+  // Save the cluster.
+  elasticsearch_connector_cluster_save($cluster);
+
+  // Set a message for the user.
+  if (empty($form_state['values']['cluster'])) {
+    $message = t('The cluster has been created.');
   }
   else {
-    drupal_write_record('elasticsearch_connector_cluster', $values);
-    $message = t('The cluster has been insert.');
+    $message = t('The cluster has been updated.');
   }
-
   drupal_set_message($message);
+
+  // Redirect to the cluster listing page.
   $form_state['redirect'] = elasticsearch_connector_main_settings_path() . '/clusters';
 }
 
@@ -416,9 +430,7 @@ function elasticsearch_connector_delete_cluster($form, &$form_state, $cluster) {
 function elasticsearch_connector_delete_cluster_submit($form, &$form_state) {
   $cluster = $form_state['values']['cluster'];
   if (isset($cluster)) {
-    db_delete('elasticsearch_connector_cluster')
-      ->condition('cluster_id', $cluster->cluster_id, '=')
-      ->execute();
+    elasticsearch_connector_cluster_delete($cluster);
   }
 
   drupal_set_message(t('%name has been deleted.', array('%name' => $cluster->name)));

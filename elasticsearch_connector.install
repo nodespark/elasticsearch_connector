@@ -54,12 +54,18 @@ function elasticsearch_connector_requirements($phase) {
  * Implements hook_schema().
  */
 function elasticsearch_connector_schema() {
-
-  //TODOs:
-  //TODO: Make the module CTools exportable compatible!
-
   $schema['elasticsearch_connector_cluster'] = array(
     'description' => 'The base table for elasticsearch clusters.',
+    'export' => array(
+      'key' => 'cluster_id',
+      'admin_title' => 'name',
+      'api' => array(
+        'owner' => 'elasticsearch_connector',
+        'api' => 'elasticsearch_connector_defaults',
+        'minimum_version' => 1,
+        'current_version' => 1,
+      ),
+    ),
     'fields' => array(
       'cluster_id' => array(
         'description' => 'Unique identifier for the cluster environment',
