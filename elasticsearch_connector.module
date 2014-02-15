@@ -218,7 +218,7 @@ function elasticsearch_connector_cluster_load_all($active = TRUE, $load_as_optio
   }
 
   foreach ($clusters as $cluster) {
-    if (!$active || ($active && ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE)) {
+    if (!$active || ($active && $cluster->status == ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE)) {
       $options[$cluster->cluster_id] = $cluster->name;
     }
   }
