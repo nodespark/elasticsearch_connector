@@ -4,7 +4,7 @@
  * Created on Jan 06, 2014
  *
  * TODO: Think of building a functionality that log only a specific message
- * severity e.g. only errors.
+ * severity e.g., only errors.
  *
  */
 
@@ -30,7 +30,6 @@ function elasticsearch_watchdog_theme() {
  * Implements hook_menu().
  */
 function elasticsearch_watchdog_menu() {
-  $items = array();
   $settings_path = elasticsearch_connector_main_settings_path();
 
   $items[$settings_path . '/watchdog'] = array(
@@ -83,7 +82,7 @@ function elasticsearch_watchdog_menu() {
  * Implements hook_watchdog().
  */
 function elasticsearch_watchdog_watchdog(array $log_entry) {
-  global $user;
+  $user = $GLOBALS['user'];
 
   $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
   if (!empty($client_id)) {
@@ -205,7 +204,8 @@ function _elasticsearch_watchdog_get_facets($facet_field, $facet_type) {
 }
 
 /**
- * Return the real index name
+ * Return the real index name.
+ *
  * @return string
  */
 function elasticsearch_watchdog_get_realindex_name() {
@@ -214,6 +214,7 @@ function elasticsearch_watchdog_get_realindex_name() {
 
 /**
  * Return the index name (the alias name).
+ *
  * @return string
  */
 function elasticsearch_watchdog_get_index_name() {
@@ -221,10 +222,19 @@ function elasticsearch_watchdog_get_index_name() {
 }
 
 /**
+ * Return the template name (the alias name).
+ *
+ * @return string
+ */
+function elasticsearch_watchdog_get_template_name() {
+  return variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX) . '_template';
+}
+
+/**
  * Return the name of the Elasticsearch type.
+ *
  * @return string
  */
 function elasticsearch_watchdog_get_type_name() {
   return variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
 }
-

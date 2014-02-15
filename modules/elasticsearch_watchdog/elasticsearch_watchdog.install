@@ -24,31 +24,35 @@ function elasticsearch_watchdog_uninstall() {
       $alias_name = elasticsearch_watchdog_get_index_name();
       $template_name = $alias_name . '_template';
 
-      $client->indices()->deleteAlias(array(
-        'index' => $index,
-        'name' => $alias_name
-      ));
-
-      $client->indices()->deleteTemplate(array(
-        'name' => $template_name
-      ));
-
-      $client->indices()->deleteMapping(array(
-        'index' => $index,
-        'type'  => $type
-      ));
-
-
-      $result = $client->indices()->getMapping(array(
+      $index_exists = $client->indices()->exists(array(
         'index' => $index,
       ));
 
-      if (!empty($result) && empty($result[$index])) {
-        $client->indices()->delete(array(
+      if ($index_exists) {
+        $client->indices()->deleteAlias(array(
+          'index' => $index,
+          'name' => $alias_name
+        ));
+
+        $client->indices()->deleteTemplate(array(
+          'name' => $template_name
+        ));
+
+        $client->indices()->deleteMapping(array(
+          'index' => $index,
+          'type'  => $type
+        ));
+
+        $result = $client->indices()->getMapping(array(
           'index' => $index,
         ));
-      }
 
+        if (empty($result)) {
+          $client->indices()->delete(array(
+            'index' => $index,
+          ));
+        }
+      }
     }
   }
 
@@ -62,75 +66,96 @@ function elasticsearch_watchdog_uninstall() {
  *
  * Check Elastica installation.
  */
- function elasticsearch_watchdog_requirements($phase) {
-   $t = get_t();
+function elasticsearch_watchdog_requirements($phase) {
+  $t = get_t();
 
-   if ($phase == 'runtime') {
-     $elasticsearch_connector_path = elasticsearch_connector_main_settings_path();
-     $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
-     if (!empty($client_id)) {
-       $client = elasticsearch_connector_get_client_by_id($client_id);
-       if ($client) {
-         try {
-           $info = $client->info();
-         }
-         catch (Exception $e) {
+  if ($phase == 'runtime') {
+    $elasticsearch_connector_path = elasticsearch_connector_main_settings_path();
+    $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+    if (!empty($client_id)) {
+      $client = elasticsearch_connector_get_client_by_id($client_id);
+      if ($client) {
+        try {
+          $info = $client->info();
+        }
+        catch (Exception $e) {
 
-         }
-         if (elasticsearch_connector_check_status($info)) {
-           return array(
-             'elasticsearch_watchdog' => array(
-               'title' => $t('Elasticsearch Watchdog Status'),
-               'description' => $t('The elasticsearch watchdog module initialize a connection to the cluster successfully.'),
-               'severity' => REQUIREMENT_OK,
-               'value' => $t('Cluster ID: @cluster_id', array('@cluster_id' => $client_id)),
-             ),
-           );
-         }
-         else {
-           return array(
-             'elasticsearch_watchdog' => array(
-               'title' => $t('Elasticsearch Watchdog Status'),
-               'description' => $t('Cluster status is not available. Please check cluster info at ' .
-                                   '<a href="@clusters">Cluster info page</a> or check your Elasticsearch server.', array(
-                                     '@clusters' => url($elasticsearch_connector_path . '/clusters/' . $client_id . '/info', array())
-                                   )
-                                ),
-               'severity' => REQUIREMENT_ERROR,
-               'value' => $t('Cluster information is not available.'),
-             ),
-           );
-         }
-       }
-       else {
-         return array(
-           'elasticsearch_watchdog' => array(
-             'title' => $t('Elasticsearch Watchdog Status'),
-             'description' => $t('The object that Elasticsearch Connector module returns is not available. ' .
-                                   '<a href="@clusters">Check cluster settings</a> or check Elasticsearch cluster itself.', array(
-                                     '@clusters' => url($elasticsearch_connector_path . '/clusters/' . $client_id . '/edit', array())
-                                   )
-                                ),
-             'severity' => REQUIREMENT_ERROR,
-             'value' => $t("Client object is not available."),
-           ),
-         );
-       }
-     }
-     else {
-       return array(
-         'elasticsearch_watchdog' => array(
-           'title' => $t('Elasticsearch Watchdog Status'),
-           'description' => $t('The module settings have not been configured. ' .
-                               '<a href="@clusters">Please go and configure your settings.</a>', array(
-                                 '@clusters' => url($elasticsearch_connector_path . '/watchdog', array())
-                               )
-                              ),
-           'severity' => REQUIREMENT_ERROR,
-           'value' => $t('Module settings not setup correctly.'),
-         ),
-       );
-     }
-   }
-
+        }
+        if (elasticsearch_connector_check_status($info)) {
+          return array(
+            'elasticsearch_watchdog' => array(
+              'title' => $t('Elasticsearch Watchdog Status'),
+              'description' => $t(
+                'The elasticsearch watchdog module initialize a connection to the cluster successfully.'
+              ),
+              'severity' => REQUIREMENT_OK,
+              'value' => $t(
+                'Cluster ID: @cluster_id',
+                array(
+                  '@cluster_id' => $client_id
+                )
+              ),
+            ),
+          );
+        }
+        else {
+          return array(
+            'elasticsearch_watchdog' => array(
+              'title' => $t('Elasticsearch Watchdog Status'),
+              'description' => $t(
+                'Cluster status is not available. Please check cluster info at ' .
+                '<a href="@clusters">Cluster info page</a> or check your Elasticsearch server.',
+                array(
+                  '@clusters' => url(
+                    $elasticsearch_connector_path . '/clusters/' . $client_id . '/info',
+                    array()
+                  )
+                )
+              ),
+              'severity' => REQUIREMENT_ERROR,
+              'value' => $t('Cluster information is not available.'),
+            ),
+          );
+        }
+      }
+      else {
+        return array(
+          'elasticsearch_watchdog' => array(
+            'title' => $t('Elasticsearch Watchdog Status'),
+            'description' => $t(
+              'The object that Elasticsearch Connector module returns is not available. ' .
+              '<a href="@clusters">Check cluster settings</a> or check Elasticsearch cluster itself.',
+              array(
+                '@clusters' => url(
+                  $elasticsearch_connector_path . '/clusters/' . $client_id . '/edit',
+                  array()
+                )
+              )
+            ),
+            'severity' => REQUIREMENT_ERROR,
+            'value' => $t("Client object is not available."),
+          ),
+        );
+      }
+    }
+    else {
+      return array(
+        'elasticsearch_watchdog' => array(
+          'title' => $t('Elasticsearch Watchdog Status'),
+          'description' => $t(
+            'The module settings have not been configured. ' .
+            '<a href="@clusters">Please go and configure your settings.</a>',
+            array(
+              '@clusters' => url(
+                $elasticsearch_connector_path . '/watchdog',
+                array()
+              )
+            )
+          ),
+          'severity' => REQUIREMENT_ERROR,
+          'value' => $t('Module settings not setup correctly.'),
+        ),
+      );
+    }
+  }
 }

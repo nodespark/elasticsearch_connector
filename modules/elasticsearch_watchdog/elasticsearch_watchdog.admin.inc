@@ -64,21 +64,51 @@ function elasticsearch_watchdog_settings_validate($form, &$form_state) {
   $index_name = elasticsearch_watchdog_get_realindex_name();
   $alias_name = elasticsearch_watchdog_get_index_name();
   $type_name = elasticsearch_watchdog_get_type_name();
+  $template_name = elasticsearch_watchdog_get_template_name();
 
   if ($client) {
     $update_settings = TRUE;
     if (!$client->indices()->exists(array('index' => $index_name))) {
       $update_settings = FALSE;
-      $result = elasticsearch_watchdog_create_index_and_mapping($client,
-                    $values['elasticsearch_watchdog_num_of_shards'],
-                    $values['elasticsearch_watchdog_num_of_replica']);
+      $result = elasticsearch_watchdog_create_index_and_mapping(
+        $client,
+        $values['elasticsearch_watchdog_num_of_shards'],
+        $values['elasticsearch_watchdog_num_of_replica']
+      );
 
-      if (elasticsearch_connector_check_status($result)) {
+      if (!elasticsearch_connector_check_response_ack($result)) {
         form_set_error('elasticsearch_watchdog_cluster_id', $result['error']);
       }
     }
-    elseif (!$client->indices()->existsType(array('index' => $index_name, 'type' => $type_name))) {
-      elasticsearch_watchdog_create_type($client, $index_name, $type_name);
+    else {
+      if (!$client->indices()->existsType(array('index' => $index_name, 'type' => $type_name))) {
+        elasticsearch_watchdog_create_type($client, $index_name, $type_name);
+      }
+
+      // Template
+      if (!$client->indices()->existsTemplate(array('name' => $template_name))) {
+        try {
+          $index_params = elasticsearch_watchdog_prepare_index_params(
+            $index_name,
+            $values['elasticsearch_watchdog_num_of_shards'],
+            $values['elasticsearch_watchdog_num_of_replica']
+          );
+          elasticsearch_watchdog_create_template($client, $template_name, $index_params);
+        }
+        catch (Exception $e) {
+          error_log($e->getMessage());
+        }
+      }
+
+      // Alias
+      if (!$client->indices()->existsAlias(array('index' => $index_name, 'name' => $alias_name))) {
+        try {
+          elasticsearch_watchdog_create_alias($client, $index_name, $alias_name);
+        }
+        catch (Exception $e) {
+          error_log($e->getMessage());
+        }
+      }
     }
 
     if ($update_settings) {
@@ -97,6 +127,14 @@ function elasticsearch_watchdog_settings_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Default index mapping for the elasticsearch watchdog index.
+ * @param  integer $ttl
+ *   Time To Live setting.
+ *
+ * @return array
+ *   The mapping index array.
+ */
 function elasticsearch_watchdog_get_mapping($ttl = NULL) {
   if (!isset($ttl)) {
     $ttl = variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL);
@@ -183,9 +221,6 @@ function elasticsearch_watchdog_get_mapping($ttl = NULL) {
  */
 function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_shards = NULL, $number_of_replica = NULL) {
 
-  $index_name = elasticsearch_watchdog_get_realindex_name();
-  $alias_name = elasticsearch_watchdog_get_index_name();
-  $type = elasticsearch_watchdog_get_type_name();
   if (!isset($number_of_shards)) {
     $number_of_shards = variable_get('elasticsearch_watchdog_num_of_shards', ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS);
   }
@@ -194,29 +229,21 @@ function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_sha
     $number_of_replica = (int)variable_get('elasticsearch_watchdog_num_of_replica', ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA);
   }
 
-  // Index
-  $index_params['index']  = $index_name;
-  // Index Settings
-  $index_params['body']['settings']['number_of_shards']   = $number_of_shards;
-  $index_params['body']['settings']['number_of_replicas'] = $number_of_replica;
-  $my_type_mapping = elasticsearch_watchdog_get_mapping();
-  $index_params['body']['mappings'][$type] = $my_type_mapping;
-
   try {
-    $template_body = $index_params['body'];
-    $template_body['template'] = $alias_name . '*';
+    $index_name = elasticsearch_watchdog_get_realindex_name();
+    $index_params = elasticsearch_watchdog_prepare_index_params(
+      $index_name,
+      $number_of_shards,
+      $number_of_replica
+    );
 
-    $client->indices()->putTemplate(array(
-      'name' => $alias_name . '_template',
-      'body' => $template_body,
-    ));
+    $template_name = elasticsearch_watchdog_get_template_name();
+    elasticsearch_watchdog_create_template($client, $template_name, $index_params);
 
     $result = $client->indices()->create($index_params);
 
-    $client->indices()->putAlias(array(
-      'name' => $alias_name,
-      'index' => $index_name,
-    ));
+    $alias_name = elasticsearch_watchdog_get_index_name();
+    elasticsearch_watchdog_create_alias($client, $index_name, $alias_name);
   }
   catch (Exception $e) {
     error_log($e->getMessage());
@@ -226,18 +253,92 @@ function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_sha
 }
 
 /**
+ * Prepare default index params.
+ *
+ * @param  integer $number_of_shards
+ *   How many shards will the index have.
+ * @param  integer $number_of_replica
+ *   How many repicas will the index have.
+ *
+ * @return array
+ *   Array with the default index params.
+ */
+function elasticsearch_watchdog_prepare_index_params($index_name, $number_of_shards, $number_of_replica) {
+  $type = elasticsearch_watchdog_get_type_name();
+
+    // Index
+  $index_params['index']  = $index_name;
+  // Index Settings
+  $index_params['body']['settings']['number_of_shards']   = $number_of_shards;
+  $index_params['body']['settings']['number_of_replicas'] = $number_of_replica;
+  $my_type_mapping = elasticsearch_watchdog_get_mapping();
+  $index_params['body']['mappings'][$type] = $my_type_mapping;
+
+  return $index_params;
+}
+
+/**
+ * Creates template with the default index params.
+ *
+ * @param  stdClass $client
+ *   The ElasticSearch client object.
+ * @param  string $template_name
+ *   Name of the template that will be created.
+ * @param  string $index_params
+ *   Index params settings that the new template will have.
+ */
+function elasticsearch_watchdog_create_template($client, $template_name, $index_params) {
+  try {
+    $alias_name = elasticsearch_watchdog_get_index_name();
+
+    $template_body = $index_params['body'];
+    $template_body['template'] = $alias_name . '*';
+
+    $client->indices()->putTemplate(array(
+      'name' => $template_name,
+      'body' => $template_body,
+    ));
+  }
+  catch (Exception $e) {
+    throw $e;
+  }
+}
+
+/**
+ * Creates alias to the provided index.
+ *
+ * @param  stdClass $client
+ *   The ElasticSearch client object.
+ * @param  string $index_name
+ *   Name of the index to which the alias will be created.
+ * @param  string $alias_name
+ *   Name of the alias that will be created to the provided index.
+ */
+function elasticsearch_watchdog_create_alias($client, $index_name, $alias_name) {
+  try {
+    $client->indices()->putAlias(array(
+      'name' => $alias_name,
+      'index' => $index_name,
+    ));
+  }
+  catch (Exception $e) {
+    throw $e;
+  }
+}
+
+/**
  * Page callback: Displays a listing of log messages.
-*
-* Messages are truncated at 56 chars. Full-length messages can be viewed on the
-* message details page.
-*
-* @see elasticsearch_watchdog_clear_log_form()
-* @see elasticsearch_watchdog_event()
-* @see elasticsearch_watchdog_filter_form()
-* @see elasticsearch_watchdog_menu()
-*
-* @ingroup logging_severity_levels
-*/
+ *
+ * Messages are truncated at 56 chars. Full-length messages can be viewed on the
+ * message details page.
+ *
+ * @see elasticsearch_watchdog_clear_log_form()
+ * @see elasticsearch_watchdog_event()
+ * @see elasticsearch_watchdog_filter_form()
+ * @see elasticsearch_watchdog_menu()
+ *
+ * @ingroup logging_severity_levels
+ */
 function elasticsearch_watchdog_overview() {
   $filter = elasticsearch_watchdog_build_filter_query();
 

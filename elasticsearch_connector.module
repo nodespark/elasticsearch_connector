@@ -19,6 +19,18 @@ function elasticsearch_connector_init() {
 }
 
 /**
+ * Implements hook_help().
+ */
+function elasticsearch_connector_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#elasticsearch_connector':
+      return '<p>' . t('Abstraction of making connection to the elasticsearch
+        server. This module is API for a whole bunch of functionality connected
+        with this module."') . '</p>';
+  }
+}
+
+/**
  * Implements hook_cron()
  */
 function elasticsearch_connector_cron() {
@@ -208,12 +220,23 @@ function elasticsearch_connector_clusters($include_inactive = TRUE) {
   return $clusters;
 }
 
-function elasticsearch_connector_cluster_load_all($active = TRUE, $load_as_options = FALSE) {
+/**
+ * Prepare list of all clusters by status.
+ *
+ * @param bool $active
+ *   Flag to return clusters with certain status.
+ * @param bool $add_empty_option
+ *   Flag whether to add empty option to the list.
+ *
+ * @return array
+ *   An array of ElasticSearch connection cluster names, indexed by id.
+ */
+function elasticsearch_connector_cluster_load_all($active = TRUE, $add_empty_option = FALSE) {
   ctools_include('export');
   $clusters = ctools_export_load_object('elasticsearch_connector_cluster', 'all');
 
   $options = array();
-  if ($load_as_options) {
+  if ($add_empty_option) {
     $options[''] = t('None');
   }
 
