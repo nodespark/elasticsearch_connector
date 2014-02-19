@@ -129,6 +129,43 @@ function elasticsearch_connector_menu() {
     'type'               => MENU_CALLBACK,
   );
 
+  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/indices'] = array(
+    'title'              => 'Elasticsearch cluster indices',
+    'description'        => 'Elasticsearch cluster indices',
+    'page callback'      => 'elasticsearch_connector_cluster_indices',
+    'page arguments'     => array(4),
+    'access arguments'   => array('adminiser elasticsearch connector'),
+    'file'               => 'elasticsearch_connector.admin.inc',
+  );
+
+  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/indices/add'] = array(
+    'title'              => 'Add index',
+    'description'        => 'Add index',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_connector_cluster_indices_add', 4),
+    'access arguments'   => array('adminiser elasticsearch connector'),
+    'file'               => 'elasticsearch_connector.admin.inc',
+    'type'               => MENU_LOCAL_ACTION,
+  );
+
+  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/indices/%elasticsearch_connector_index_valid/aliases'] = array(
+    'title'              => 'Elasticsearch cluster indices',
+    'description'        => 'Elasticsearch cluster indices',
+    'page callback'      => 'elasticsearch_connector_cluster_indices_aliases',
+    'page arguments'     => array(4, 6),
+    'access arguments'   => array('adminiser elasticsearch connector'),
+    'file'               => 'elasticsearch_connector.admin.inc',
+  );
+
+  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/indices/%elasticsearch_connector_index_valid/delete'] = array(
+    'title'              => 'Elasticsearch cluster indices',
+    'description'        => 'Elasticsearch cluster indices',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_connector_cluster_indices_delete', 4, 6),
+    'access arguments'   => array('adminiser elasticsearch connector'),
+    'file'               => 'elasticsearch_connector.admin.inc',
+  );
+
   $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/delete'] = array(
     'title'              => 'Delete cluster',
     'description'        => 'Delete cluster settings',
@@ -136,7 +173,6 @@ function elasticsearch_connector_menu() {
     'page arguments'     => array('elasticsearch_connector_delete_cluster', 4),
     'access arguments'   => array('adminiser elasticsearch connector'),
     'file'               => 'elasticsearch_connector.admin.inc',
-    'type'               => MENU_CALLBACK,
   );
 
   return $items;
@@ -193,6 +229,20 @@ function elasticsearch_connector_cluster_load($cluster_id) {
   if (isset($result[$cluster_id])) {
     return $result[$cluster_id];
   }
+}
+
+/**
+ * Check if the index name has been passed correctly.
+ *
+ * @param string $index_name
+ * @return string boolean
+ */
+function elasticsearch_connector_index_valid_load($index_name) {
+  if (preg_match('/^[a-z][a-z0-9_]*$/i', $index_name)) {
+    return $index_name;
+  }
+
+  return FALSE;
 }
 
 /**
