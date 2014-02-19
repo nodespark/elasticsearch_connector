@@ -116,9 +116,9 @@ class elasticsearch_connector_views_query extends views_plugin_query {
     $view->execute_time = 0;
 
     $base_table_parts = explode('__', $view->base_table);
-    $cluster_id = $base_table_parts[0];
-    $index = $base_table_parts[1];
-    $type = $base_table_parts[2];
+    $cluster_id = $base_table_parts[1];
+    $index = $base_table_parts[2];
+    $type = $base_table_parts[3];
 
     // TODO: Make it Elasticsearch compatible.
     try {
@@ -133,32 +133,32 @@ class elasticsearch_connector_views_query extends views_plugin_query {
           //$query->setAvailableSort($this->params['sort'][0], $this->params['sort'][1]);
           //$query->setSolrsort($this->params['sort'][0], $this->params['sort'][1]);
         }
-      }
 
-      // Execute search.
-      $response = $client->search(array(
-        'index' => $index,
-        'type'  => $type,
-        'body'  => $this->query_params
-      ));
+        // Execute search.
+        $response = $client->search(array(
+          'index' => $index,
+          'type'  => $type,
+          'body'  => $this->query_params
+        ));
 
-      // Store results.
-      if (!empty($response['hits']['hits'])) {
-        foreach ($response['hits']['hits'] as $doc) {
-          $view->result[] = (object)$doc['_source'];
+        // Store results.
+        if (!empty($response['hits']['hits'])) {
+          foreach ($response['hits']['hits'] as $doc) {
+            $view->result[] = (object)$doc['_source'];
+          }
         }
+
+        // Store response into the object.
+        $this->response = $response;
+
+        // Store the results.
+        $this->pager->total_items = $view->total_rows = $response['hits']['total'];
+        $this->pager->update_page_info();
+
+        // We shouldn't use $results['performance']['complete'] here, since
+        // extracting the results probably takes considerable time as well.
+        $view->execute_time = $response['took'];
       }
-
-      // Store response into the object.
-      $this->response = $response;
-
-      // Store the results.
-      $this->pager->total_items = $view->total_rows = $response['hits']['total'];
-      $this->pager->update_page_info();
-
-      // We shouldn't use $results['performance']['complete'] here, since
-      // extracting the results probably takes considerable time as well.
-      $view->execute_time = $response['took'];
     }
     catch (Exception $e) {
       $this->errors[] = $e->getMessage();
