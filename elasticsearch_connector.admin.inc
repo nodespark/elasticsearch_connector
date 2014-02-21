@@ -173,6 +173,7 @@ function elasticsearch_connector_info_cluster($cluster) {
   $cluster_client = $cluster_status['client'];
 
   if (isset($cluster_client)) {
+    // TODO: We call twice the /_nodes/stats
     $node_stats = elasticsearch_connector_get_cluster_nodes_stat($cluster_client);
     $total_docs = $total_size = 0;
     $node_rows = array();

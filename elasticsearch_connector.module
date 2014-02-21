@@ -322,7 +322,7 @@ function elasticsearch_connector_set_default_connector($connection) {
  *
  * @param string $cluster_id
  * @param boolean
- * @return object
+ * @return \Elasticsearch\Client $client
  */
 function elasticsearch_connector_get_client_by_id($cluster_id = NULL, $default_fallback = NULL) {
   if (!isset($cluster_id) && !empty($default_fallback)) {
@@ -416,6 +416,7 @@ function elasticsearch_connector_get_cluster_info($cluster) {
     try {
       $info = $client->info();
       $result['client'] = $client;
+      $result['info'] = $result['state'] = $result['health'] = $result['stats'] = array();
       if (elasticsearch_connector_check_status($info)) {
         //$client = new \Elasticsearch\Client();
         $result['info'] = $info;

@@ -553,7 +553,7 @@ function elasticsearch_watchdog_event($id) {
 
       if ($client->exists($params)) {
         $result = $client->get($params);
-        if (!empty($result['exists'])) {
+        if (!empty($result['_id'])) {
           $source = $result['_source'];
           $account = user_load($source['uid']);
           $rows = array(
@@ -604,6 +604,9 @@ function elasticsearch_watchdog_event($id) {
             '#attributes' => array('class' => array('elasticlog-event')),
           );
           return $build;
+        }
+        else {
+          drupal_set_message(t('The Client ID does not exists in elasticsearch server.'), 'error');
         }
       }
       else {
