@@ -1,11 +1,16 @@
 <?php
+
 /**
  * @file
- *
- * Specific handler for date field for elasticsearch.
- *
+ * Definition of elasticsearch_connector_views_handler_filter_numeric.
  */
-class elasticsearch_connector_views_handler_filter_date extends views_handler_filter_date {
+
+/**
+ * Filter to handle numbers
+ *
+ * @ingroup elasticsearch_connector_views_filter_handlers
+ */
+class elasticsearch_connector_views_handler_filter_numeric extends views_handler_filter_numeric {
   public function query() {
     $this->ensure_my_table();
     $field = $this->real_field;
@@ -15,9 +20,9 @@ class elasticsearch_connector_views_handler_filter_date extends views_handler_fi
       $this->{$info[$this->operator]['method']}($field);
     }
   }
-
+  
   public function op_simple($field) {
-    $value = date_iso8601(strtotime($this->value['value']));
+    $value = $this->value['value'];
     switch ($this->operator) {
       case '<':
         $filter = array('range' => array($field => array('lt' => $value)));
@@ -39,22 +44,21 @@ class elasticsearch_connector_views_handler_filter_date extends views_handler_fi
         $filter = array('term' => array($field => $value));
         break;
     }
-
+    
     $this->query->add_where($this->options['group'], $filter);
-
+    
   }
-
+  
   public function op_between($field) {
-    $min = date_iso8601(strtotime($this->value['min']));
-    $max = date_iso8601(strtotime($this->value['max']));
-
+    $min = $this->value['min'];
+    $max = $this->value['max'];
+    
     $filter = array('range' => array($field => array('gte' => $min, 'lte' => $max)));
-
+    
     if($this->operator != 'between'){
       $filter = array('not' => $filter);
     }
-
+    
     $this->query->add_where($this->options['group'], $filter);
   }
-
 }

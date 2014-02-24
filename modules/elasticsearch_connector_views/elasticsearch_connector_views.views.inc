@@ -53,21 +53,24 @@ function elasticsearch_connector_views_views_data() {
 
           // Get the list of the fields in index directly from Solr.
           $fields = $type_settings['properties'];
-          foreach ($fields as $field_name => $field) {
-            // TODO: Restrict some fields if needed!
-            // We do not allow to display 'sort_*' fields.
 
+          foreach ($fields as $field_name => $field) {
+            // TODO: Restrict some fields if needed.
             $field_type = $field['type'];
             $filter_handler = 'elasticsearch_connector_views_handler_filter';
             // TODO: Handle other types.
             switch ($field_type) {
-            	case 'date':
-            	  $filter_handler = 'elasticsearch_connector_views_handler_filter_date';
-            	  break;
-            	case 'text':
-            	case 'string':
-            	  $filter_handler = 'elasticsearch_connector_views_handler_filter_string';
-            	  break;
+              case 'date':
+                $filter_handler = 'elasticsearch_connector_views_handler_filter_date';
+                break;
+              case 'text':
+              case 'string':
+                $filter_handler = 'elasticsearch_connector_views_handler_filter_string';
+                break;
+
+                case 'integer':
+                 $filter_handler = 'elasticsearch_connector_views_handler_filter_numeric';
+                 break;
             }
 
             $data[$base_table][$field_name] = array(

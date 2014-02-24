@@ -1,6 +1,6 @@
 <?php
-
 /**
+ * @file
  * Class for handling a view that gets its data not from the database, but from
  * a Solr server.
  */
@@ -27,6 +27,11 @@ class elasticsearch_connector_views_query extends views_plugin_query {
    */
   protected $where = array();
 
+  /**
+   * Array holding sort fields and their order (ASC or DESC), to avoid duplication
+   */
+  protected $sort_fields = array();
+
   public function build(&$view) {
     $view->init_pager();
 
@@ -40,22 +45,38 @@ class elasticsearch_connector_views_query extends views_plugin_query {
     }
 
     // Add fields to the query so they will be shown in solr document.
-    //$this->params['fields'] = array_keys($view->field);
+//    $this->params['fields'] = array_keys($view->field);
     $this->params['fields'] = array('_source');
 
     $params = array();
-    if (isset($this->params['q'])) {
-      // TODO: Build the query match.
-      $params['match'] = $this->params['q'];
+    if (isset($this->params['q']) && !empty($this->params['q'])) {
+
+      // If we have more than one field we make a multi match query
+      if (count($this->params['fields']) > 1) {
+
+        $params['query']['multi_match'] = array(
+                                            'query' => $this->params['q'],
+                                            'fields' => $this->params['fulltext_fields']
+                                          );
+      }
+      else {
+
+        $params['query']['match'] = array(
+                                      reset($this->params['fulltext_fields']) => array(
+                                        'query' => $this->params['q'],
+                                        'operator' => $this->params['fulltext_operator'],
+                                      ),
+                                    );
+      }
     }
 
     $params['size'] = $this->pager->options['items_per_page'];
     $params['from'] = $this->pager->current_page * $this->pager->options['items_per_page'];
 
-    // If we display all items without pager.
-    // TODO: Hardcoded 100000 doesn't seems correctly.
+    // If we display all items without pager remove the size limit to return
+    // all documents from elasticsearch.
     if ($params['size'] == 0) {
-      $params['size'] = 100000;
+      unset($params['size']);
     }
 
     // Add fields.
@@ -66,25 +87,30 @@ class elasticsearch_connector_views_query extends views_plugin_query {
     }
 
     $where = $this->where;
-    //Remove any empty conditions (exposed filters), they will cause an error
-    foreach($where as &$where_condition){
-      foreach($where_condition['conditions'] as $index => $condition){
-        if ($condition['value'] == '') {
-          unset($where_condition['conditions'][$index]);
-        }
-      }
-    }
-    // Add conditions to filter parameter.
-    $conditions = array('conditions' => $where, 'type' => '');
-    $conditions_string = $this->build_where_string($conditions);
 
-    if (!empty($conditions_string)) {
-      $params['fq'] = $conditions_string;
+    $params['filter'] = $this->build_filter_array($where);
+
+    // Elastic complains when there is an empty filter array
+    if (empty($params['filter'])) {
+      unset($params['filter']);
     }
 
-    // Set query type if it is present.
-    if (isset($this->params['defType'])) {
-      $params['defType'] = $this->params['defType'];
+    // if a filter and query is set, combine them into a filtered query
+    if (isset($params['filter']) && isset($params['query'])) {
+      $temp = $params['query'];
+      unset($params['query']);
+
+      $params['query']['filtered'] = array(
+        'query' => $temp,
+        'filter' => $params['filter'],
+      );
+
+      unset($params['filter']);
+    }
+
+    // Add sorting.
+    if (!empty($this->sort_fields)) {
+      $params['sort'] = $this->build_sort_array();
     }
 
     $this->query_params = $params;
@@ -120,45 +146,39 @@ class elasticsearch_connector_views_query extends views_plugin_query {
     $index = $base_table_parts[2];
     $type = $base_table_parts[3];
 
-    // TODO: Make it Elasticsearch compatible.
     try {
       $start = microtime(TRUE);
       $client = elasticsearch_connector_get_client_by_id($cluster_id);
       if ($client) {
         $view->execute_time = microtime(TRUE) - $start;
         // Execute the search.
-        // Add sorting.
-        if (isset($this->params['sort'])) {
-          // TODO: Build the sorting parameter.
-          //$query->setAvailableSort($this->params['sort'][0], $this->params['sort'][1]);
-          //$query->setSolrsort($this->params['sort'][0], $this->params['sort'][1]);
-        }
 
-        // Execute search.
-        $response = $client->search(array(
-          'index' => $index,
-          'type'  => $type,
-          'body'  => $this->query_params
-        ));
-
-        // Store results.
-        if (!empty($response['hits']['hits'])) {
-          foreach ($response['hits']['hits'] as $doc) {
-            $view->result[] = (object)$doc['_source'];
-          }
-        }
-
-        // Store response into the object.
-        $this->response = $response;
-
-        // Store the results.
-        $this->pager->total_items = $view->total_rows = $response['hits']['total'];
-        $this->pager->update_page_info();
-
-        // We shouldn't use $results['performance']['complete'] here, since
-        // extracting the results probably takes considerable time as well.
-        $view->execute_time = $response['took'];
       }
+
+      // Execute search.
+      $response = $client->search(array(
+        'index' => $index,
+        'type'  => $type,
+        'body'  => $this->query_params
+      ));
+
+      // Store results.
+      if (!empty($response['hits']['hits'])) {
+        foreach ($response['hits']['hits'] as $doc) {
+          $view->result[] = (object)$doc['_source'];
+        }
+      }
+
+      // Store response into the object.
+      $this->response = $response;
+
+      // Store the results.
+      $this->pager->total_items = $view->total_rows = $response['hits']['total'];
+      $this->pager->update_page_info();
+
+      // We shouldn't use $results['performance']['complete'] here, since
+      // extracting the results probably takes considerable time as well.
+      $view->execute_time = $response['took'];
     }
     catch (Exception $e) {
       $this->errors[] = $e->getMessage();
@@ -166,7 +186,7 @@ class elasticsearch_connector_views_query extends views_plugin_query {
 
     if ($this->errors) {
       foreach ($this->errors as $msg) {
-        drupal_set_message($msg, 'error');
+        drupal_set_message(check_plain($msg), 'error');
       }
       $view->result = array();
       $view->total_rows = 0;
@@ -181,11 +201,24 @@ class elasticsearch_connector_views_query extends views_plugin_query {
   }
 
   public function add_filter_string($string) {
+    // TODO: Rework if necessary.
     $this->params['q.alt'][] = $string;
   }
 
   public function add_sort($field, $order) {
-    $this->params['sort'] = array($field, $order);
+    if(!isset($this->sort_fields[$field]) || $this->sort_fields[$field] != drupal_strtolower($order)){
+      $this->sort_fields[$field] = drupal_strtolower($order);
+    }
+  }
+
+  public function build_sort_array() {
+    $sort = array();
+
+    foreach ($this->sort_fields as $field => $order) {
+      $sort[] = array($field => $order);
+    }
+
+    return $sort;
   }
 
   public function add_parameter($key, $value) {
@@ -202,21 +235,19 @@ class elasticsearch_connector_views_query extends views_plugin_query {
     return $this->params;
   }
 
-  /**
-   *  Build filter string from where array.
-   */
-  function build_where_string($where) {
-//     if (!isset($where['conditions'])) {
-//       return array($where['field'] => $where['value']);
-//     }
-//     else {
-//       $condition_strings = array();
-//       foreach ($where['conditions'] as $condition) {
-//         $condition_strings[] = $this->build_where_string($condition);
-//       }
-//       $condition_strings = array_filter($condition_strings);
-//       return implode(' ' . $where['type'] . ' ', $condition_strings);
-//     }
+  function build_filter_array($where) {
+    $filter = array();
+    foreach ($where as $wh) {
+      foreach ($wh['conditions'] as $cond) {
+        $filter[drupal_strtolower($wh['type'])][] = $cond['field'];
+      }
+    }
+
+    if (count($filter) > 1) {
+      $filter = array(drupal_strtolower($this->group_operator) => $filter);
+    }
+
+    return $filter;
   }
 
   /**
