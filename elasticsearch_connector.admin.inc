@@ -323,8 +323,10 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
   $form_state_active = FALSE;
   if (isset($form_state['values'])) {
     $values = (object)$form_state['values'];
-    $cluster_info = elasticsearch_connector_get_cluster_info($values);
-    $form_state_active = TRUE;
+    if (!empty($values->url)) {
+      $cluster_info = elasticsearch_connector_get_cluster_info($values);
+      $form_state_active = TRUE;
+    }
   }
   elseif (isset($cluster->url)) {
     $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
@@ -555,8 +557,15 @@ function elasticsearch_connector_edit_cluster_validate($form, &$form_state) {
 
   // Complain if we are removing the default.
   $default = elasticsearch_connector_get_default_connector();
-  if ($form_state['values']['default'] == 0 && !empty($default)) {
-    drupal_set_message(t('There must be a default connection. %name is still the default connection. Please change the default setting on the cluster you wish to set as default.', array('%name' => $form_state['values']['name'])), 'warning' );
+  if ($form_state['values']['default'] == 0 && !empty($default) && $default == $form_state['values']['cluster_id']) {
+    drupal_set_message(
+      t('There must be a default connection. %name is still the default connection.'
+        . 'Please change the default setting on the cluster you wish to set as default.',
+      array(
+        '%name' => $form_state['values']['name'])
+      ),
+      'warning'
+    );
   }
 }
 
