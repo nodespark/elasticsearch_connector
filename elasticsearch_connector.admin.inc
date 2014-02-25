@@ -578,9 +578,11 @@ function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
   $cluster->cluster_id = $form_state['values']['cluster_id'];
   $cluster->url = $form_state['values']['url'];
   $cluster->status = $form_state['values']['status'];
-  $cluster->options = array(
-    'multiple_nodes_connection' => $form_state['values']['options']['multiple_nodes_connection'],
-  );
+  $cluster->options = array();
+  // Handle all options automatic if we add more in future.
+  foreach ($form_state['values']['options'] as $option_name => $option_value) {
+    $cluster->options[$option_name] = $option_value;
+  }
 
   // Set default connection if selected or there is no default yet.
   $default = elasticsearch_connector_get_default_connector();

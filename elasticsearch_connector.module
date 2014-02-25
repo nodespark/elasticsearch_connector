@@ -224,11 +224,17 @@ function elasticsearch_connector_cluster_delete($cluster) {
  * @return object $cluster
  */
 function elasticsearch_connector_cluster_load($cluster_id) {
-  ctools_include('export');
-  $result = ctools_export_load_object('elasticsearch_connector_cluster', 'names', array($cluster_id));
-  if (isset($result[$cluster_id])) {
-    return $result[$cluster_id];
+  static $result = array();
+
+  if (!isset($result[$cluster_id])) {
+    ctools_include('export');
+    $result = ctools_export_load_object('elasticsearch_connector_cluster', 'names', array($cluster_id));
+    if (isset($result[$cluster_id])) {
+      $result[$cluster_id]->options = unserialize($result[$cluster_id]->options);
+    }
   }
+
+  return $result[$cluster_id];
 }
 
 /**
@@ -255,19 +261,27 @@ function elasticsearch_connector_index_valid_load($index_name) {
  *   An array of ElasticSearch connection cluster objects.
  */
 function elasticsearch_connector_clusters($include_inactive = TRUE) {
-  ctools_include('export');
-  $clusters = ctools_export_load_object('elasticsearch_connector_cluster', 'all');
+  static $result = array();
 
-  // Filter out inactive clusters.
-  if (!$include_inactive) {
+  if (!isset($result[$include_inactive])) {
+    ctools_include('export');
+    $clusters = ctools_export_load_object('elasticsearch_connector_cluster', 'all');
+
     foreach ($clusters as $cluster_id => $cluster) {
-      if (!$cluster->status) {
-        unset($clusters[$cluster_id]);
+      $cluster->options = unserialize($cluster->options);
+      // Filter out inactive clusters.
+      if (!$include_inactive) {
+        if (!$cluster->status) {
+          unset($clusters[$cluster_id]);
+        }
       }
     }
+
+    // Set static cache
+    $result[$include_inactive] = $clusters;
   }
 
-  return $clusters;
+  return $result[$include_inactive];
 }
 
 /**
@@ -282,8 +296,7 @@ function elasticsearch_connector_clusters($include_inactive = TRUE) {
  *   An array of ElasticSearch connection cluster names, indexed by id.
  */
 function elasticsearch_connector_cluster_load_all($active = TRUE, $add_empty_option = FALSE) {
-  ctools_include('export');
-  $clusters = ctools_export_load_object('elasticsearch_connector_cluster', 'all');
+  $clusters = elasticsearch_connector_clusters();
 
   $options = array();
   if ($add_empty_option) {
