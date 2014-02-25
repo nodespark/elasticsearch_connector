@@ -1,11 +1,17 @@
 <?php
-
+/**
+ * @file
+ * Handle the elasticsearch string fields filter.
+ *
+ * @author nikolayignatov
+ */
 class elasticsearch_connector_views_handler_filter_string extends views_handler_filter_string {
 
   function op_equal($field) {
-    if($this->operator == '='){
+    if ($this->operator == '=') {
       $this->query->add_where($this->options['group'], array('term' => array($field => $this->value)));
-    } else {
+    }
+    else {
       $this->query->add_where($this->options['group'], array('not' => array(
                                                                'filter' => array(
                                                                  'term' => array($field => $this->value)))));
@@ -58,11 +64,11 @@ class elasticsearch_connector_views_handler_filter_string extends views_handler_
   }
 
   function op_ends($field) {
-    $this->query->add_where($this->options['group'], array('regexp' => array($field => ".*".$this->value)));
+    $this->query->add_where($this->options['group'], array('regexp' => array($field => ".*" . $this->value)));
   }
 
   function op_not_ends($field) {
-    $this->query->add_where($this->options['group'], array('not' => array('filter' => array('regexp' => array($field => ".*".$this->value)))));
+    $this->query->add_where($this->options['group'], array('not' => array('filter' => array('regexp' => array($field => ".*" . $this->value)))));
   }
 
   function op_not($field) {

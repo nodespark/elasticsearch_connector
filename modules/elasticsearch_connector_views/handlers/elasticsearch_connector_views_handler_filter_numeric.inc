@@ -20,7 +20,7 @@ class elasticsearch_connector_views_handler_filter_numeric extends views_handler
       $this->{$info[$this->operator]['method']}($field);
     }
   }
-  
+
   public function op_simple($field) {
     $value = $this->value['value'];
     switch ($this->operator) {
@@ -44,21 +44,21 @@ class elasticsearch_connector_views_handler_filter_numeric extends views_handler
         $filter = array('term' => array($field => $value));
         break;
     }
-    
+
     $this->query->add_where($this->options['group'], $filter);
-    
+
   }
-  
+
   public function op_between($field) {
     $min = $this->value['min'];
     $max = $this->value['max'];
-    
+
     $filter = array('range' => array($field => array('gte' => $min, 'lte' => $max)));
-    
-    if($this->operator != 'between'){
+
+    if ($this->operator != 'between') {
       $filter = array('not' => $filter);
     }
-    
+
     $this->query->add_where($this->options['group'], $filter);
   }
 }

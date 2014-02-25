@@ -50,7 +50,7 @@ class elasticsearch_connector_views_handler_filter_date extends views_handler_fi
 
     $filter = array('range' => array($field => array('gte' => $min, 'lte' => $max)));
 
-    if($this->operator != 'between'){
+    if ($this->operator != 'between') {
       $filter = array('not' => $filter);
     }
 

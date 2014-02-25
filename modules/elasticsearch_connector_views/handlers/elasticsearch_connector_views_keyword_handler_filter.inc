@@ -1,6 +1,6 @@
 <?php
-
 /**
+ * @file
  * Fulltext keyword search.
  */
 class elasticsearch_connector_views_keyword_handler_filter extends elasticsearch_connector_views_handler_filter {
@@ -9,11 +9,11 @@ class elasticsearch_connector_views_keyword_handler_filter extends elasticsearch
       $this->query->add_parameter('q', $this->value[0]);
     }
 
-    if(!empty($this->options['fields'])) {
+    if (!empty($this->options['fields'])) {
       $this->query->add_parameter('fulltext_fields', $this->options['fields']);
     }
 
-    if(!empty($this->operator)) {
+    if (!empty($this->operator)) {
       $this->query->add_parameter('fulltext_operator', $this->operator);
     }
 
@@ -89,7 +89,7 @@ class elasticsearch_connector_views_keyword_handler_filter extends elasticsearch
 
     $mapping = $client->indices()->getMapping($params);
 
-    $fulltext_fields = array_keys(array_filter($mapping[$index]['mappings'][$type]['properties'], function($v){
+    $fulltext_fields = array_keys(array_filter($mapping[$index]['mappings'][$type]['properties'], function($v) {
       return $v['type'] == 'string' && (!isset($v['index']) || $v['index'] != 'not_analyzed');
     }));
 

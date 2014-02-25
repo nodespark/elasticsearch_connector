@@ -13,7 +13,7 @@ class elasticsearch_connector_views_handler_filter extends views_handler_filter 
   function value_form(&$form, &$form_state) {
     $form['value'] = array(
       '#type' => 'textfield',
-      '#title' => t($this->definition['title']),
+      '#title' => filter_xss(t($this->definition['title'])),
       '#default_value' => $this->value,
     );
   }

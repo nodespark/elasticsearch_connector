@@ -206,7 +206,7 @@ class elasticsearch_connector_views_query extends views_plugin_query {
   }
 
   public function add_sort($field, $order) {
-    if(!isset($this->sort_fields[$field]) || $this->sort_fields[$field] != drupal_strtolower($order)){
+    if (!isset($this->sort_fields[$field]) || $this->sort_fields[$field] != drupal_strtolower($order)) {
       $this->sort_fields[$field] = drupal_strtolower($order);
     }
   }
