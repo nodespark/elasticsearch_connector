@@ -137,8 +137,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $output['status'] = array(
       '#type' => 'item',
       '#title' => t('Elasticsearch cluster status'),
-      '#markup' => '<div class="elasticsearch-daemon-status"><em>' . ((elasticsearch_connector_check_status($status)) ? 'running' : 'not running') . '</em>' .
-                   ' - <a href=" ' . url($elasticsearch_connector_path . '/clusters/' . $this->cluster_id . '/info') .  ' ">' . t('More info') . '</a></div>',
+      '#markup' => '<div class="elasticsearch-daemon-status"><em>'
+       . ((elasticsearch_connector_check_status($status)) ? 'running' : 'not running')
+       . '</em>' . ' - <a href=" ' . url($elasticsearch_connector_path . '/clusters/' . $this->cluster_id . '/info') . ' ">'
+       . t( 'More info' ) . '</a></div>',
     );
 
     // Display settings.
@@ -748,44 +750,44 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $type = search_api_extract_inner_type($field['type']);
 
     switch ($type) {
-    	case 'text':
-    	  return array(
-    	  'type' => 'string',
-    	  'boost' => $field['boost'],
-    	  );
+      case 'text':
+        return array(
+        'type' => 'string',
+        'boost' => $field['boost'],
+        );
 
-    	case 'uri':
-    	case 'string':
-    	case 'token':
-    	  return array(
-    	  'type' => 'string',
-    	  'index' => 'not_analyzed',
-    	  );
+      case 'uri':
+      case 'string':
+      case 'token':
+        return array(
+        'type' => 'string',
+        'index' => 'not_analyzed',
+        );
 
-    	case 'integer':
-    	case 'duration':
-    	  return array(
-    	  'type' => 'integer',
-    	  );
+      case 'integer':
+      case 'duration':
+        return array(
+        'type' => 'integer',
+        );
 
-    	case 'boolean':
-    	  return array(
-    	  'type' => 'boolean',
-    	  );
+      case 'boolean':
+        return array(
+        'type' => 'boolean',
+        );
 
-    	case 'decimal':
-    	  return array(
-    	  'type' => 'float',
-    	  );
+      case 'decimal':
+        return array(
+        'type' => 'float',
+        );
 
-    	case 'date':
-    	  return array(
-    	  'type' => 'date',
-    	  'format' => 'date_time',
-    	  );
+      case 'date':
+        return array(
+        'type' => 'date',
+        'format' => 'date_time',
+        );
 
-    	default:
-    	  return NULL;
+      default:
+        return NULL;
     }
   }
 
@@ -807,17 +809,17 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $diff = $max - $min;
 
     switch (TRUE) {
-    	case ($diff > 86400 * 365):
-    	  return 'NONE';
+      case ($diff > 86400 * 365):
+        return 'NONE';
 
-    	case ($diff > 86400 * gmdate('t', $min)):
-    	  return 'YEAR';
+      case ($diff > 86400 * gmdate('t', $min)):
+        return 'YEAR';
 
-    	case ($diff > 86400):
-    	  return 'MONTH';
+      case ($diff > 86400):
+        return 'MONTH';
 
-    	default:
-    	  return 'DAY';
+      default:
+        return 'DAY';
     }
   }
 
@@ -1148,23 +1150,23 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     switch ($date_gap) {
       // Already a selected YEAR, we want the months.
-    	case 'YEAR':
-    	  $date_interval = 'month';
-    	  break;
+      case 'YEAR':
+        $date_interval = 'month';
+        break;
 
-    	  // Already a selected MONTH, we want the days.
-    	case 'MONTH':
-    	  $date_interval = 'day';
-    	  break;
+        // Already a selected MONTH, we want the days.
+      case 'MONTH':
+        $date_interval = 'day';
+        break;
 
-    	  // Already a selected DAY, we want the hours and so on.
-    	case 'DAY':
-    	  $date_interval = 'hour';
-    	  break;
+        // Already a selected DAY, we want the hours and so on.
+      case 'DAY':
+        $date_interval = 'hour';
+        break;
 
-    	  // By default we return result counts by year.
-    	default:
-    	  $date_interval = 'year';
+        // By default we return result counts by year.
+      default:
+        $date_interval = 'year';
     }
 
     return $date_interval;

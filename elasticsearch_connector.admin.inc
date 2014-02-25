@@ -598,7 +598,7 @@ function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
   else {
     $message = t('The cluster has been updated.');
   }
-  drupal_set_message($message);
+  drupal_set_message(filter_xss($message));
 
   // Redirect to the cluster listing page.
   $form_state['redirect'] = elasticsearch_connector_main_settings_path() . '/clusters';

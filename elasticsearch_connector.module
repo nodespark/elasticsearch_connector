@@ -366,7 +366,7 @@ function elasticsearch_connector_load_library($cluster) {
         }
         $clients[$cluster->cluster_id] = new \Elasticsearch\Client($options);
       }
-      catch(Exception $e) {
+      catch (Exception $e) {
         drupal_set_message($e->getMessage(), 'error');
       }
     }
