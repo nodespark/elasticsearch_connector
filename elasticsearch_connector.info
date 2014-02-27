@@ -5,5 +5,4 @@ module."
 core = 7.x
 package = Elasticsearch
 configure = admin/config/elasticsearch-connector
-dependencies[] = composer_manager
 dependencies[] = ctools

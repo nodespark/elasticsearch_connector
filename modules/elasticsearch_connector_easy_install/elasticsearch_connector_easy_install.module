@@ -1,0 +1,19 @@
+<?php
+/**
+ * @file
+ * The module just register an autoload class to load the necessary for
+ * Elasticsearch Connector libraries on demand.
+ */
+
+require_once drupal_get_path('module', 'elasticsearch_connector_easy_install') . '/vendor/autoload.php';
+
+/**
+ * Load the files required by Autoloader Class of this module.
+ * Scope isolated include.
+ * Prevents access to $this/self from included files.
+ *
+ * @param string $file
+ */
+function elasticsearch_connector_easy_install_load($file) {
+  include $file;
+}
