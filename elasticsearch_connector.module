@@ -224,17 +224,11 @@ function elasticsearch_connector_cluster_delete($cluster) {
  * @return object $cluster
  */
 function elasticsearch_connector_cluster_load($cluster_id) {
-  static $result = array();
-
-  if (!isset($result[$cluster_id])) {
-    ctools_include('export');
-    $result = ctools_export_load_object('elasticsearch_connector_cluster', 'names', array($cluster_id));
-    if (isset($result[$cluster_id])) {
-      $result[$cluster_id]->options = unserialize($result[$cluster_id]->options);
-    }
+  ctools_include('export');
+  $result = ctools_export_load_object('elasticsearch_connector_cluster', 'names', array($cluster_id));
+  if (isset($result[$cluster_id])) {
+    return $result[$cluster_id];
   }
-
-  return isset($result[$cluster_id]) ? $result[$cluster_id] : FALSE;
 }
 
 /**
@@ -261,27 +255,19 @@ function elasticsearch_connector_index_valid_load($index_name) {
  *   An array of ElasticSearch connection cluster objects.
  */
 function elasticsearch_connector_clusters($include_inactive = TRUE) {
-  static $result = array();
+  ctools_include('export');
+  $clusters = ctools_export_load_object('elasticsearch_connector_cluster', 'all');
 
-  if (!isset($result[$include_inactive])) {
-    ctools_include('export');
-    $clusters = ctools_export_load_object('elasticsearch_connector_cluster', 'all');
-
+  // Filter out inactive clusters.
+  if (!$include_inactive) {
     foreach ($clusters as $cluster_id => $cluster) {
-      $cluster->options = unserialize($cluster->options);
-      // Filter out inactive clusters.
-      if (!$include_inactive) {
-        if (!$cluster->status) {
-          unset($clusters[$cluster_id]);
-        }
+      if (!$cluster->status) {
+        unset($clusters[$cluster_id]);
       }
     }
-
-    // Set static cache
-    $result[$include_inactive] = $clusters;
   }
 
-  return $result[$include_inactive];
+  return $clusters;
 }
 
 /**
@@ -296,17 +282,15 @@ function elasticsearch_connector_clusters($include_inactive = TRUE) {
  *   An array of ElasticSearch connection cluster names, indexed by id.
  */
 function elasticsearch_connector_cluster_load_all($active = TRUE, $add_empty_option = FALSE) {
-  $clusters = elasticsearch_connector_clusters();
-
+  $clusters = elasticsearch_connector_clusters($active);
   $options = array();
+
   if ($add_empty_option) {
     $options[''] = t('None');
   }
 
   foreach ($clusters as $cluster) {
-    if (!$active || ($active && $cluster->status == ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE)) {
-      $options[$cluster->cluster_id] = $cluster->name;
-    }
+    $options[$cluster->cluster_id] = $cluster->name;
   }
 
   return $options;
