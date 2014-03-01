@@ -227,6 +227,9 @@ function elasticsearch_connector_cluster_load($cluster_id) {
   ctools_include('export');
   $result = ctools_export_load_object('elasticsearch_connector_cluster', 'names', array($cluster_id));
   if (isset($result[$cluster_id])) {
+    if (isset($result[$cluster_id]->options) && !is_array($result[$cluster_id]->options)) {
+      $result[$cluster_id]->options = unserialize($result[$cluster_id]->options);
+    }
     return $result[$cluster_id];
   }
 }
@@ -259,11 +262,14 @@ function elasticsearch_connector_clusters($include_inactive = TRUE) {
   $clusters = ctools_export_load_object('elasticsearch_connector_cluster', 'all');
 
   // Filter out inactive clusters.
-  if (!$include_inactive) {
-    foreach ($clusters as $cluster_id => $cluster) {
-      if (!$cluster->status) {
-        unset($clusters[$cluster_id]);
-      }
+  foreach ($clusters as $cluster_id => $cluster) {
+    // Unserialize the options if they are loaded from database.
+    // If they are loaded from exported object it will be array.
+    if (isset($cluster->options) && !is_array($cluster->options)) {
+      $cluster->options = unserialize($cluster->options);
+    }
+    if (!$include_inactive && !$cluster->status) {
+      unset($clusters[$cluster_id]);
     }
   }
 
