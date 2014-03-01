@@ -12,13 +12,6 @@ define('ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE', '1');
 define('ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK', '200');
 
 /**
- * Implements hook_init().
- */
-function elasticsearch_connector_init() {
-
-}
-
-/**
  * Implements hook_help().
  */
 function elasticsearch_connector_help($path, $arg) {
@@ -421,7 +414,6 @@ function elasticsearch_connector_get_cluster_info($cluster) {
       $result['client'] = $client;
       $result['info'] = $result['state'] = $result['health'] = $result['stats'] = array();
       if (elasticsearch_connector_check_status($info)) {
-        //$client = new \Elasticsearch\Client();
         $result['info'] = $info;
         $result['state'] = $client->cluster()->state();
         $result['health'] = $client->cluster()->health();
