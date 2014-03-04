@@ -5,3 +5,22 @@
  * similar to MySQL sequence and PostgreSQL
  */
 
+define('ELASTICSEARCH_CONNECTOR_SEQUENCE_DEFAULT_TYPE',     'sequence');
+
+/**
+ * Implements hook_menu().
+ */
+function elasticsearch_connector_sequence_menu() {
+  $settings_path = elasticsearch_connector_main_settings_path();
+
+  $items[$settings_path . '/sequence'] = array(
+    'title'             => 'Elasticsearch Sequence Settings',
+    'description'       => 'Setup the sequence module settings.',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_connector_sequence_settings'),
+    'access arguments'  => array('adminiser elasticsearch connector'),
+    'file'              => 'elasticsearch_connector_sequence.admin.inc',
+  );
+
+  return $items;
+}
