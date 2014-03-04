@@ -24,3 +24,57 @@ function elasticsearch_connector_sequence_menu() {
 
   return $items;
 }
+
+/**
+ * Generate a sequence/autoincrement id.
+ * @param string $sequence_id
+ * @return integer
+ */
+function elasticsearch_connector_sequence_get_next($sequence_id) {
+  $cluster_id = elasticsearch_connector_sequence_get_cluster_id();
+  if ($cluster_id) {
+    $client = elasticsearch_connector_get_client_by_id($cluster_id);
+    $index_name = elasticsearch_connector_sequence_get_index_name();
+    $type = variable_get('elasticsearch_connector_sequence_type', ELASTICSEARCH_CONNECTOR_SEQUENCE_DEFAULT_TYPE);
+    if ($client && $index_name) {
+      $doc['index'] = $index_name;
+      $doc['type']  = $type;
+      $doc['id']  = $sequence_id;
+      $doc['body'] = array();
+
+      try {
+        $response = $client->index($doc);
+        return $response['_version'];
+      }
+      catch (Exception $e) {
+        watchdog('ec_sequence', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
+    }
+  }
+}
+
+/**
+ * Return the cluster_id based on the settings.
+ * @return array
+ */
+function elasticsearch_connector_sequence_get_cluster_id() {
+  $cluster_info = variable_get('elasticsearch_connector_sequence_cluster', array());
+  if (isset($cluster_info['cluster_id'])) {
+    return $cluster_info['cluster_id'];
+  }
+
+  return FALSE;
+}
+
+/**
+ * Return the index name based on the settings.
+ * @return array
+ */
+function elasticsearch_connector_sequence_get_index_name() {
+  $cluster_info = variable_get('elasticsearch_connector_sequence_cluster', array());
+  if (isset($cluster_info['index'])) {
+    return $cluster_info['index'];
+  }
+
+  return FALSE;
+}

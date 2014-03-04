@@ -36,7 +36,7 @@ function elasticsearch_connector_sequence_submit($form, &$form_state) {
       $mapping_params['index'] = $index_name;
       $mapping_params['type'] = $type_name;
       $my_type_mapping = elasticsearch_connector_sequence_get_mapping();
-      $mapping_params['body'][$type] = $my_type_mapping;
+      $mapping_params['body'][$type_name] = $my_type_mapping;
       $client->indices()->putMapping(
           $mapping_params
       );
@@ -61,11 +61,6 @@ function elasticsearch_connector_sequence_get_mapping() {
     '_all' => array(
       'enabled' => FALSE
     ),
-    'properties' => array(
-      'sequence_id' => array(
-        'type' => 'integer',
-      ),
-    )
   );
 
   return $my_type_mapping;
