@@ -48,9 +48,12 @@ function elasticsearch_connector_sequence_get_next($sequence_id) {
       }
       catch (Exception $e) {
         watchdog('ec_sequence', $e->getMessage(), array(), WATCHDOG_ERROR);
+        return FALSE;
       }
     }
   }
+
+  return FALSE;
 }
 
 /**

@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Building the settings form
+ * @return array
+ */
 function elasticsearch_connector_sequence_settings() {
   $form = array();
 
