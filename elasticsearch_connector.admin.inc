@@ -414,9 +414,6 @@ function elasticsearch_connector_cluster_indices_add($form, &$form_state, $clust
     '#description' => t('Enter the number of shards replicas.')
   );
 
-  // TODO: Add other options if necessary at later stage.
-
-
   $form['actions'] = array(
     '#type' => 'actions',
   );
@@ -442,7 +439,7 @@ function elasticsearch_connector_cluster_indices_add_validate($form, &$form_stat
     form_set_error('index_name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
   }
 
-  if (!is_numeric($values['num_of_shards'])) {
+  if (!is_numeric($values['num_of_shards']) || $values['num_of_shards'] < 1) {
     form_set_error('num_of_shards', t('Invalid number of shards.'));
   }
 
@@ -458,7 +455,8 @@ function elasticsearch_connector_cluster_indices_add_validate($form, &$form_stat
  */
 function elasticsearch_connector_cluster_indices_add_submit($form, &$form_state) {
   $values = $form_state['values'];
-  $client = elasticsearch_connector_load_library($form['#cluster']);
+  $cluster = $form['#cluster'];
+  $client = elasticsearch_connector_load_library($cluster);
   if ($client) {
     try {
       $index_params['index'] = $values['index_name'];
@@ -470,6 +468,12 @@ function elasticsearch_connector_cluster_indices_add_submit($form, &$form_state)
       }
       else {
         drupal_set_message(t('Fail to create the index %index', array('%index' => $values['index_name'])), 'error');
+      }
+
+      // If the form has been opened in dialog, close the window if it was
+      // setup to do so.
+      if (elasticsearch_connector_in_dialog() && elasticsearch_connector_close_on_submit()) {
+        elasticsearch_connector_close_on_redirect($cluster->cluster_id, $values['index_name']);
       }
     }
     catch (Exception $e) {

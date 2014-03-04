@@ -79,18 +79,31 @@ function elasticsearch_watchdog_menu() {
 }
 
 /**
+ * Get the cluster_id from settings.
+ * @return string
+ */
+function elasticsearch_watchdog_get_cluster_id() {
+  $client_info = variable_get('elasticsearch_watchdog_cluster_id', array());
+  if (isset($client_info['cluster_id'])) {
+    return $client_info['cluster_id'];
+  }
+
+  return FALSE;
+}
+
+/**
  * Implements hook_watchdog().
  */
 function elasticsearch_watchdog_watchdog(array $log_entry) {
   $user = $GLOBALS['user'];
 
-  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+  $client_id = elasticsearch_watchdog_get_cluster_id();
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
     if ($client) {
       $doc = array();
-      $doc['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
-      $doc['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+      $doc['index'] = elasticsearch_watchdog_get_index_name();
+      $doc['type']  = elasticsearch_watchdog_get_type_name();
 
       // Workaround to order the logs if the same timestamp based on microtime.
       $microtime_float = explode('.', microtime(TRUE));
@@ -165,8 +178,8 @@ function _elasticsearch_watchdog_get_facets($facet_field, $facet_type) {
     );
 
     $params = array();
-    $params['index'] = variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
-    $params['type']  = variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+    $params['index'] = elasticsearch_watchdog_get_index_name();
+    $params['type']  = elasticsearch_watchdog_get_type_name();
     $params['search_type'] = 'count';
 
     foreach ($facets as $facet_name => $facet_params) {
@@ -175,7 +188,7 @@ function _elasticsearch_watchdog_get_facets($facet_field, $facet_type) {
       $params['body']['facets'][$facet_name][$facet_params['type']]['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
     }
 
-    $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+    $client_id = elasticsearch_watchdog_get_cluster_id();
     if (!empty($client_id)) {
       $client = elasticsearch_connector_get_client_by_id($client_id);
       if ($client) {
@@ -208,8 +221,13 @@ function _elasticsearch_watchdog_get_facets($facet_field, $facet_type) {
  *
  * @return string
  */
-function elasticsearch_watchdog_get_realindex_name() {
-  return variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX) . '_index';
+function elasticsearch_watchdog_get_realindex_name($index_name = NULL) {
+  if (!isset($index_name)) {
+    $cluster_info = variable_get('elasticsearch_watchdog_cluster_id', array());
+    $index_name = $cluster_info['index'];
+  }
+
+  return $index_name;
 }
 
 /**
@@ -217,17 +235,13 @@ function elasticsearch_watchdog_get_realindex_name() {
  *
  * @return string
  */
-function elasticsearch_watchdog_get_index_name() {
-  return variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX);
-}
+function elasticsearch_watchdog_get_index_name($index_name = NULL) {
+  if (!isset($index_name)) {
+    $cluster_info = variable_get('elasticsearch_watchdog_cluster_id', array());
+    $index_name = $cluster_info['index'];
+  }
 
-/**
- * Return the template name (the alias name).
- *
- * @return string
- */
-function elasticsearch_watchdog_get_template_name() {
-  return variable_get('elasticsearch_watchdog_index', ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX) . '_template';
+  return $index_name . '_alias';
 }
 
 /**

@@ -17,33 +17,14 @@ function elasticsearch_watchdog_settings() {
   $form = array();
 
   $clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
-  $form['#old_cluster_id'] = variable_get('elasticsearch_watchdog_cluster_id', '');
+  $form['#old_cluster_id'] = variable_get('elasticsearch_watchdog_cluster_id', array());
 
   $form['elasticsearch_watchdog_cluster_id'] = array(
-    '#type' => 'select',
+    '#type' => 'ec_index',
     '#title' => t('Select cluster'),
     '#required' => TRUE,
-    '#default_value' => variable_get('elasticsearch_watchdog_cluster_id', ''),
-    '#options' => $clusters,
-    '#description' => t('Select the cluster you want to hold the logs.')
-  );
-
-  // TODO: Select and existing index where the content type to be created!
-  // In this case we neeed to hide the options to select number of shards and s.o.
-
-  $form['elasticsearch_watchdog_num_of_shards'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Number of shards'),
-    '#required' => TRUE,
-    '#default_value' => variable_get('elasticsearch_watchdog_num_of_shards', ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS),
-    '#description' => t('Enter the number of shards for the index.')
-  );
-
-  $form['elasticsearch_watchdog_num_of_replica'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Number of replica'),
-    '#default_value' => variable_get('elasticsearch_watchdog_num_of_replica', ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA),
-    '#description' => t('Enter the number of shards replicas.')
+    '#default_value' => variable_get('elasticsearch_watchdog_cluster_id', array()),
+    '#description' => t('Select the settings in order to be able to hold the logs.')
   );
 
   $form['#validate'] = array('elasticsearch_watchdog_settings_validate');
@@ -59,45 +40,22 @@ function elasticsearch_watchdog_settings() {
  */
 function elasticsearch_watchdog_settings_validate($form, &$form_state) {
   $values = $form_state['values'];
-  $client = elasticsearch_connector_get_client_by_id($values['elasticsearch_watchdog_cluster_id']);
+  if (!empty($form_state['triggering_element']['#ajax']) || empty($values['elasticsearch_watchdog_cluster_id']['index'])) {
+    return;
+  }
 
-  $index_name = elasticsearch_watchdog_get_realindex_name();
-  $alias_name = elasticsearch_watchdog_get_index_name();
+  $client = elasticsearch_connector_get_client_by_id($values['elasticsearch_watchdog_cluster_id']['cluster_id']);
+
+  $index_name = elasticsearch_watchdog_get_realindex_name($values['elasticsearch_watchdog_cluster_id']['index']);
+  $alias_name = elasticsearch_watchdog_get_index_name($values['elasticsearch_watchdog_cluster_id']['index']);
   $type_name = elasticsearch_watchdog_get_type_name();
-  $template_name = elasticsearch_watchdog_get_template_name();
-
   if ($client) {
-    $update_settings = TRUE;
     if (!$client->indices()->exists(array('index' => $index_name))) {
-      $update_settings = FALSE;
-      $result = elasticsearch_watchdog_create_index_and_mapping(
-        $client,
-        $values['elasticsearch_watchdog_num_of_shards'],
-        $values['elasticsearch_watchdog_num_of_replica']
-      );
-
-      if (!elasticsearch_connector_check_response_ack($result)) {
-        form_set_error('elasticsearch_watchdog_cluster_id', $result['error']);
-      }
+      form_set_error('elasticsearch_watchdog_cluster_id', t('The index doesn\'t exists. Please created it before continue.'));
     }
     else {
       if (!$client->indices()->existsType(array('index' => $index_name, 'type' => $type_name))) {
         elasticsearch_watchdog_create_type($client, $index_name, $type_name);
-      }
-
-      // Template
-      if (!$client->indices()->existsTemplate(array('name' => $template_name))) {
-        try {
-          $index_params = elasticsearch_watchdog_prepare_index_params(
-            $index_name,
-            $values['elasticsearch_watchdog_num_of_shards'],
-            $values['elasticsearch_watchdog_num_of_replica']
-          );
-          elasticsearch_watchdog_create_template($client, $template_name, $index_params);
-        }
-        catch (Exception $e) {
-          error_log($e->getMessage());
-        }
       }
 
       // Alias
@@ -110,17 +68,6 @@ function elasticsearch_watchdog_settings_validate($form, &$form_state) {
         }
       }
     }
-
-    if ($update_settings) {
-      $settings['settings']['index.number_of_replicas'] = $values['elasticsearch_watchdog_num_of_replica'];
-      $settings = $client->indices()->putSettings(
-        array(
-          'index' => $index_name,
-          'body' => $settings,
-        )
-      );
-    }
-
   }
   else {
     form_set_error('elasticsearch_watchdog_cluster_id', t('Cannot connect to the cluster for some reason! Please contact your system administrator.'));
@@ -215,44 +162,6 @@ function elasticsearch_watchdog_get_mapping($ttl = NULL) {
 }
 
 /**
- *
- * @param object $client
- * @return mixed $result from Elasticsearch\Client object.
- */
-function elasticsearch_watchdog_create_index_and_mapping($client, $number_of_shards = NULL, $number_of_replica = NULL) {
-
-  if (!isset($number_of_shards)) {
-    $number_of_shards = variable_get('elasticsearch_watchdog_num_of_shards', ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS);
-  }
-
-  if (!isset($number_of_replica)) {
-    $number_of_replica = (int)variable_get('elasticsearch_watchdog_num_of_replica', ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA);
-  }
-
-  try {
-    $index_name = elasticsearch_watchdog_get_realindex_name();
-    $index_params = elasticsearch_watchdog_prepare_index_params(
-      $index_name,
-      $number_of_shards,
-      $number_of_replica
-    );
-
-    $template_name = elasticsearch_watchdog_get_template_name();
-    elasticsearch_watchdog_create_template($client, $template_name, $index_params);
-
-    $result = $client->indices()->create($index_params);
-
-    $alias_name = elasticsearch_watchdog_get_index_name();
-    elasticsearch_watchdog_create_alias($client, $index_name, $alias_name);
-  }
-  catch (Exception $e) {
-    error_log($e->getMessage());
-  }
-
-  return $result;
-}
-
-/**
  * Prepare default index params.
  *
  * @param  integer $number_of_shards
@@ -275,33 +184,6 @@ function elasticsearch_watchdog_prepare_index_params($index_name, $number_of_sha
   $index_params['body']['mappings'][$type] = $my_type_mapping;
 
   return $index_params;
-}
-
-/**
- * Creates template with the default index params.
- *
- * @param  stdClass $client
- *   The ElasticSearch client object.
- * @param  string $template_name
- *   Name of the template that will be created.
- * @param  string $index_params
- *   Index params settings that the new template will have.
- */
-function elasticsearch_watchdog_create_template($client, $template_name, $index_params) {
-  try {
-    $alias_name = elasticsearch_watchdog_get_index_name();
-
-    $template_body = $index_params['body'];
-    $template_body['template'] = $alias_name . '*';
-
-    $client->indices()->putTemplate(array(
-      'name' => $template_name,
-      'body' => $template_body,
-    ));
-  }
-  catch (Exception $e) {
-    throw $e;
-  }
 }
 
 /**
@@ -366,7 +248,7 @@ function elasticsearch_watchdog_overview() {
     array('data' => t('Operations')),
   );
 
-  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+  $client_id = elasticsearch_watchdog_get_cluster_id();
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
     if ($client) {
@@ -493,7 +375,7 @@ function elasticsearch_watchdog_top($type) {
 
   $global_facet_name = 'facetname_message';
   $field_faceting = 'message';
-  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+  $client_id = elasticsearch_watchdog_get_cluster_id();
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
     if ($client) {
@@ -542,7 +424,7 @@ function elasticsearch_watchdog_top($type) {
  */
 function elasticsearch_watchdog_event($id) {
   $severity = watchdog_severity_levels();
-  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+  $client_id = elasticsearch_watchdog_get_cluster_id();
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
     if ($client) {
@@ -908,7 +790,7 @@ function elasticsearch_watchdog_create_type(Elasticsearch\Client $client, $index
 function elasticsearch_watchdog_clear_log_submit() {
   $_SESSION['elasticsearch_watchdog_overview_filter'] = array();
   // Delete the index and recreate it.
-  $client_id = variable_get('elasticsearch_watchdog_cluster_id', '');
+  $client_id = elasticsearch_watchdog_get_cluster_id();
   $index = elasticsearch_watchdog_get_index_name();
   $type = elasticsearch_watchdog_get_type_name();
   if (!empty($client_id)) {

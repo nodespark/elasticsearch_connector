@@ -44,26 +44,16 @@ function elasticsearch_connector_permission() {
   );
 }
 
-function elasticsearch_connector_main_settings_path() {
-  $settings_path = 'admin/config/elasticsearch-connector';
-  return $settings_path;
-}
-
-function elasticsearch_connector_set_breadcrumb($links = array()) {
-  $breadcrumb = array(
-    l(t('Home'), '<front>'),
-    l(t('Administration'), 'admin'),
-    l(t('Configuration'), 'admin/config'),
-    l(t('Elasticsearch connector'), elasticsearch_connector_main_settings_path()),
+/**
+ * Implements hook_theme().
+ */
+function elasticsearch_connector_theme() {
+  return array(
+    'elasticsearch_connector_page' => array(
+      'render element' => 'page',
+      'template' => 'elasticsearch-connector-dialog-page',
+    ),
   );
-
-  if (!empty($links)) {
-    foreach ($links as $link) {
-      $breadcrumb[] = $link;
-    }
-  }
-
-  drupal_set_breadcrumb($breadcrumb);
 }
 
 /**
@@ -168,7 +158,271 @@ function elasticsearch_connector_menu() {
     'file'               => 'elasticsearch_connector.admin.inc',
   );
 
+  $items['elasticsearch-connector-dialog/redirect/%elasticsearch_connector_cluster/%elasticsearch_connector_index_valid'] = array(
+    'page callback' => 'elasticsearch_connector_redirect_page',
+    'page arguments' => array(2, 3),
+    'access arguments' => array('adminiser elasticsearch connector'),
+  );
+
   return $items;
+}
+
+/**
+ * Implements hook_element_info()
+ */
+function elasticsearch_connector_element_info() {
+  return array(
+    'ec_clusters' => array(
+      '#input' => TRUE,
+      '#multiple' => FALSE,
+      '#theme' => 'select',
+      '#theme_wrappers' => array('form_element'),
+      '#process' => array('_elasticsearch_connector_ec_clusters_process'),
+    ),
+    'ec_index' => array(
+      '#input' => TRUE,
+      '#tree' => TRUE,
+      '#multiple' => FALSE,
+      '#theme_wrappers' => array('form_element'),
+      '#process' => array('_elasticsearch_connector_ec_index_process'),
+      '#attached' => _elasticsearch_connector_ec_index_attached(),
+    ),
+  );
+}
+
+/**
+ * Process the ec_cluster element type.
+ *
+ * @param array $element
+ * @return array $element
+ */
+function _elasticsearch_connector_ec_clusters_process($element, &$form_state, $form) {
+  $element = form_process_select($element);
+
+  if (empty($element['#skip_default_options'])) {
+    $element['#only_active'] = isset($element['#only_active']) ? $element['#only_active'] : TRUE;
+    $element['#empty_option'] = isset($element['#empty_option']) ? $element['#empty_option'] : TRUE;
+    $clusters = elasticsearch_connector_cluster_load_all($element['#only_active'], $element['#empty_option']);
+    $element['#options'] = $clusters;
+  }
+
+  return $element;
+}
+
+/**
+ * Attach required javascript for the ec_index element.
+ * @return array
+ */
+function _elasticsearch_connector_ec_index_attached() {
+  return array(
+    'js' => array(drupal_get_path('module', 'elasticsearch_connector') . '/js/ec-index.js'),
+    'css' => array(drupal_get_path('module', 'elasticsearch_connector') . '/css/ec-index.css'),
+    'library' => array(array('system', 'ui.dialog')),
+  );
+}
+
+/**
+ * Build two dropdowns, one for the cluster and one for the indices.
+ * @param array $element
+ * @return arrat $element
+ */
+function _elasticsearch_connector_ec_index_process($element, &$form_state, $form) {
+  $element['#tree'] = TRUE;
+  $element_id = $element['#id'];
+  $wrapper_id = $element_id . '-index-wrapper';
+
+  $element['cluster_id'] = array(
+    '#type' => 'select',
+    '#id' => $element_id . '-cluster-id',
+    '#title' => t('Select cluster'),
+    '#required' => $element['#required'],
+    '#default_value' => isset($element['#default_value'])
+                    && is_array($element['#default_value'])
+                    && isset($element['#default_value']['cluster_id'])
+                    ? $element['#default_value']['cluster_id'] : '',
+    // TODO: Allow this option to be overwritten and #value if we had such.
+    '#description' => t('Select the cluster.'),
+    '#ajax' => array(
+      'callback' => '_elasticsearch_connector_ec_index_ajax',
+      'wrapper' => $wrapper_id,
+      'method' => 'replace',
+      'effect' => 'fade',
+    )
+  );
+
+  if (!isset($element['cluster_id']['#current_path'])) {
+    $element['cluster_id']['#current_path'] = current_path();
+  }
+
+  if (empty($element['#skip_default_options'])) {
+    $element['#only_active'] = isset($element['#only_active']) ? $element['#only_active'] : TRUE;
+    $element['#empty_option'] = isset($element['#empty_option']) ? $element['#empty_option'] : TRUE;
+    $clusters = elasticsearch_connector_cluster_load_all($element['#only_active'], $element['#empty_option']);
+    $element['cluster_id']['#options'] = $clusters;
+  }
+
+  // TODO: We need to handle the incomming tree name if such.
+  $links = array();
+  $index_options = array('' => t('Select index'));
+  if (is_array($element['#value']) && !empty($element['#value']['cluster_id'])) {
+    $index_options = elasticsearch_connector_get_indices_options($element['#value']['cluster_id'], TRUE);
+    $links[] = array(
+      'title' => t('Add index'),
+      'href' => 'admin/config/elasticsearch-connector/clusters/' . $element['#value']['cluster_id'] . '/indices/add',
+      'attributes' => array('target' => '_blank', 'class' => 'ec-index-dialog'),
+      'query' => array(
+        'render' => 'elasticsearch-connector-dialog',
+        'index_element_id' => $element_id . '-index',
+        'cluster_element_id' => $element_id . '-cluster-id'
+      )
+    );
+  }
+
+  $element['index'] = array(
+    '#type' => 'select',
+    '#title' => t('Select index'),
+    '#id' => $element_id . '-index',
+    '#required' => $element['#required'],
+    '#default_value' => isset($element['#default_value'])
+                    && is_array($element['#default_value'])
+                    && isset($element['#default_value']['index'])
+                    ? $element['#default_value']['index'] : '',
+    '#description' => t('Select the index.'),
+    '#options' => $index_options,
+    '#prefix' => '<div id="' . $wrapper_id . '">',
+    '#suffix' =>'<div class="dialog-links ' . $element['#id'] . '">'
+        . theme('links__es_index_links', array(
+            'links' => $links,
+            'attributes' => array('class' => 'index-dialog-links')
+          ))
+        . '</div></div>'
+  );
+
+  unset($element['#title']);
+  $context = array(
+    'form' => $form,
+  );
+  drupal_alter('ec_index_process', $element, $form_state, $context);
+
+  return $element;
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function elasticsearch_connector_page_alter(&$page) {
+  if (elasticsearch_connector_in_dialog()) {
+    unset($page['page_top']);
+    unset($page['page_bottom']);
+
+    $page['#theme'] = 'elasticsearch_connector_page';
+  }
+}
+
+/**
+ * Check if we are in a references dialog.
+ * @return boolean if we are in a dialog.
+ */
+function elasticsearch_connector_in_dialog() {
+  return (isset($_GET['render']) && $_GET['render'] == 'elasticsearch-connector-dialog');
+}
+
+/**
+ * Check if we should close the dialog upon submition.
+ */
+function elasticsearch_connector_close_on_submit() {
+  return (!isset($_GET['closeonsubmit']) || $_GET['closeonsubmit']);
+}
+
+/**
+ * Sets our destination parameter so that the dialog will close itself after
+ * redirect is completed.
+ */
+function elasticsearch_connector_close_on_redirect($cluster_id, $index_name) {
+  // We use $_GET['destination'] since that overrides anything that happens
+  // in the form. It is a hack, but it is very effective, since we don't have
+  // to be worried about getting overrun by other form submit handlers.
+  $_GET['destination'] = 'elasticsearch-connector-dialog/redirect/' .
+      $cluster_id . '/' . $index_name .
+      '?elasticsearch-connector-dialog-close=1&render=elasticsearch-connector-dialog';
+
+  if (isset($_GET['cluster_element_id'])) {
+    $_GET['destination'] .= '&index_element_id=' . $_GET['index_element_id'];
+  }
+
+  if (isset($_GET['cluster_element_id'])) {
+    $_GET['destination'] .= '&cluster_element_id=' . $_GET['cluster_element_id'];
+  }
+
+}
+
+/**
+ * Page callback for our redirect page.
+ */
+function elasticsearch_connector_redirect_page($cluster, $index_name) {
+  // Add appropriate javascript that will be used by the parent page to
+  // fill in the required data.
+  if (elasticsearch_connector_in_dialog() && isset($_GET['elasticsearch-connector-dialog-close'])) {
+    drupal_add_js(drupal_get_path('module', 'elasticsearch_connector') . '/js/ec-index-child.js');
+    drupal_add_js(array(
+    'elasticsearch_connector' =>
+      array(
+        'dialog' => array(
+          'cluster_id' => $cluster->cluster_id,
+          'index_name' => $index_name,
+          'index_element_id' => (string)$_GET['index_element_id'],
+          'cluster_element_id' => (string)$_GET['cluster_element_id'],
+        ),
+      )
+    ), 'setting');
+  }
+
+  return '';
+}
+
+/**
+ * ec_index element ajax callback.
+ * @param array $form
+ * @param array $form_state
+ */
+function _elasticsearch_connector_ec_index_ajax($form, $form_state) {
+  $element_name = $form_state['triggering_element']['#name'];
+  $parents = $form_state['triggering_element']['#parents'];
+  $search_key = array_search('cluster_id', $parents);
+  $parents[$search_key] = 'index';
+  $index_element = drupal_array_get_nested_value($form, $parents);
+
+  return $index_element;
+}
+
+/**
+ * Return the main path of the elasticsearch connector module.
+ * @return string
+ */
+function elasticsearch_connector_main_settings_path() {
+  $settings_path = 'admin/config/elasticsearch-connector';
+  return $settings_path;
+}
+
+/**
+ * Return the basic breadcrumb for the connector module.
+ * @param array $links
+ */
+function elasticsearch_connector_set_breadcrumb($links = array()) {
+  $breadcrumb = array(
+    l(t('Home'), '<front>'),
+    l(t('Administration'), 'admin'),
+    l(t('Configuration'), 'admin/config'),
+    l(t('Elasticsearch connector'), elasticsearch_connector_main_settings_path()),
+  );
+
+  if (!empty($links)) {
+    foreach ($links as $link) {
+      $breadcrumb[] = $link;
+    }
+  }
+
+  drupal_set_breadcrumb($breadcrumb);
 }
 
 /**
@@ -206,6 +460,30 @@ function elasticsearch_connector_cluster_delete($cluster) {
   db_delete('elasticsearch_connector_cluster')
     ->condition('cluster_id', $cluster->cluster_id)
     ->execute();
+}
+
+/**
+ * Get the indeces based on cluster id.
+ * @param string $cluster_id
+ * @return array Indices
+ */
+function elasticsearch_connector_get_indices_options($cluster_id, $empty_option = FALSE) {
+  $result = array();
+
+  $client = elasticsearch_connector_get_client_by_id($cluster_id);
+  if ($client) {
+    $indices = $client->indices()->stats();
+    drupal_alter('elasticsearch_connector_indices', $indices);
+    if ($empty_option) {
+      $result[''] = t('Select index');
+    }
+    foreach ($indices['indices'] as $index_name => $index_info) {
+      // TODO: Check index status if such e.g. index closed or s.o.
+      $result[$index_name] = $index_name;
+    }
+  }
+
+  return $result;
 }
 
 /**
@@ -440,4 +718,15 @@ function elasticsearch_connector_get_cluster_nodes_stat(\Elasticsearch\Client $c
   catch (Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
+}
+
+/**
+ * Process variables for references_dialog_page.
+ */
+function template_process_elasticsearch_connector_page(&$variables) {
+  // Generate messages last in order to capture as many as possible for the
+  // current page.
+  if (!isset($variables['messages'])) {
+    $variables['messages'] = $variables['page']['#show_messages'] ? theme('status_messages') : '';
+  }
 }
