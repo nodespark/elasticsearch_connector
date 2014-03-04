@@ -721,6 +721,48 @@ function elasticsearch_connector_get_cluster_nodes_stat(\Elasticsearch\Client $c
 }
 
 /**
+ * Check if a specific plugin exists on all nodes.
+ * TODO: This should be changed to check all data Nodes only but for now lets check all of them.
+ *
+ * Read more about pluggins system here:
+ * http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-plugins.html
+ *
+ * @param \Elasticsearch\Client $client
+ * @param string $plugin
+ * @return boolean
+ */
+function elasticsearch_connector_check_plugin_exists(\Elasticsearch\Client $client, $plugin_name) {
+  $nodes_plugins = array();
+  $result = FALSE;
+
+  try {
+    $plugins = $client->nodes()->info(array('node_id' => '_all'));
+    foreach ($plugins['nodes'] as $elastic_node_id => $elastic_node) {
+      $nodes_plugins[$elastic_node_id][$plugin_name] = FALSE;
+      foreach($elastic_node['plugins'] as $plugin) {
+        if ($plugin['name'] == $plugin_name) {
+          $nodes_plugins[$elastic_node_id][$plugin_name] = TRUE;
+        }
+      }
+
+      if (empty($nodes_plugins[$elastic_node_id][$plugin_name])) {
+        $result = FALSE;
+        break;
+      }
+      else {
+        $result = TRUE;
+      }
+    }
+
+    return $result;
+  }
+  catch (Exception $e) {
+    drupal_set_message($e->getMessage(), 'error');
+    return FALSE;
+  }
+}
+
+/**
  * Process variables for references_dialog_page.
  */
 function template_process_elasticsearch_connector_page(&$variables) {
