@@ -1,0 +1,46 @@
+<?php
+
+/**
+ * Implements hook_uninstall().
+ */
+function elasticsearch_connector_sequence_uninstall() {
+  if (!module_exists('elasticsearch_connector')) {
+    module_load_include('module', 'elasticsearch_connector');
+  }
+
+  module_load_include('module', 'elasticsearch_connector_sequence');
+
+  $client_id = elasticsearch_connector_sequence_get_cluster_id();
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      $index = elasticsearch_connector_sequence_get_index_name();
+      $type = variable_get('elasticsearch_connector_sequence_type', ELASTICSEARCH_CONNECTOR_SEQUENCE_DEFAULT_TYPE);
+
+      $index_exists = $client->indices()->exists(array(
+        'index' => $index,
+      ));
+
+      if ($index_exists) {
+        $client->indices()->deleteMapping(array(
+          'index' => $index,
+          'type'  => $type
+        ));
+
+        $result = $client->indices()->getMapping(array(
+          'index' => $index,
+        ));
+
+        if (empty($result)) {
+          $client->indices()->delete(array(
+            'index' => $index,
+          ));
+        }
+      }
+    }
+  }
+
+  variable_del('elasticsearch_connector_sequence_cluster');
+  variable_del('elasticsearch_connector_sequence_type');
+
+}
