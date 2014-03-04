@@ -726,21 +726,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    */
   public function getIndexName(SearchApiIndex $index) {
     global $databases;
-
     $site_database = $databases['default']['default']['database'];
-
-    $index_machine_name = is_string($index) ? $index : $index->machine_name;
-
-    return self::escapeName('elasticsearch_index_' . $site_database . '_' . $index_machine_name);
-  }
-
-  /**
-   * Helper function. Escape a field or index name.
-   *
-   * Force names to be strictly alphanumeric-plus-underscore.
-   */
-  public static function escapeName($name) {
-    return preg_replace('/[^A-Za-z0-9_]+/', '', $name);
+    return !empty($index->options['index_name']) ? $index->options['index_name'] : $site_database;
   }
 
   /**

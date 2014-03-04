@@ -151,9 +151,12 @@ function elasticsearch_connector_search_api_get_server_id_by_name($server_machin
  * @param array $default_values
  */
 function elasticsearch_connector_search_api_return_form_options(&$form, &$form_state, $default_values = array(), $flag) {
+  global $databases;
+
   $default_options = $default_values + array(
     'number_of_shards' => 1,
     'number_of_replicas' => 0,
+    'index_name' => $databases['default']['default']['database']
   );
 
   $form['options']['number_of_shards'] = array(
@@ -169,6 +172,22 @@ function elasticsearch_connector_search_api_return_form_options(&$form, &$form_s
     '#size' => 4,
     '#title' => t('Number of replicas'),
   );
+
+  $form['options']['index_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Index name'),
+    '#required' => TRUE,
+    '#element_validate' => array('elasticsearch_connector_search_api_index_name_validate'),
+    '#default_value' => $default_options['index_name'],
+    '#description' => t('The name of the ElasticSearch index to use. If this index does not already exist, it will be created.'),
+  );
+}
+
+function elasticsearch_connector_search_api_index_name_validate($element, &$form_state, $form) {
+  // Make sure the index name contains appropriate characters.
+  if (!preg_match('/^[a-z][a-z0-9_]*$/i', $element['#value'])) {
+    form_error($element, t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
+  }
 }
 
 /**
