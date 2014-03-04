@@ -2,5 +2,5 @@ name = Elasticsearch Connector Sequence
 description = "Use Elasticsearch to generate sequences. Similar to MySQL auto increment functionality."
 core = 7.x
 package = Elasticsearch
-
+configure = admin/config/elasticsearch-connector/sequence
 dependencies[] = elasticsearch_connector
