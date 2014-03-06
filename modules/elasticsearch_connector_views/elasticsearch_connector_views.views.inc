@@ -30,7 +30,8 @@ function elasticsearch_connector_views_views_plugins() {
  * Implementation of hook_views_data().
  */
 function elasticsearch_connector_views_views_data() {
-  // TODO: Rework.
+  $data = array();
+
   foreach (elasticsearch_connector_clusters(FALSE) as $cluster) {
     $info = elasticsearch_connector_get_cluster_info($cluster);
     if (!empty($info['client'])) {
