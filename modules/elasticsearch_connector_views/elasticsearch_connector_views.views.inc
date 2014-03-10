@@ -59,7 +59,7 @@ function elasticsearch_connector_views_views_data() {
             // TODO: Restrict some fields if needed.
             $field_type = $field['type'];
             $filter_handler = 'elasticsearch_connector_views_handler_filter';
-            // TODO: Handle other types.
+            // TODO: Handle boolean.
             switch ($field_type) {
               case 'date':
                 $filter_handler = 'elasticsearch_connector_views_handler_filter_date';
@@ -69,9 +69,13 @@ function elasticsearch_connector_views_views_data() {
                 $filter_handler = 'elasticsearch_connector_views_handler_filter_string';
                 break;
 
-                case 'integer':
-                 $filter_handler = 'elasticsearch_connector_views_handler_filter_numeric';
-                 break;
+              case 'integer':
+              case 'long':
+              case 'float':
+              case 'double':
+               $filter_handler = 'elasticsearch_connector_views_handler_filter_numeric';
+               break;
+
             }
 
             $data[$base_table][$field_name] = array(
