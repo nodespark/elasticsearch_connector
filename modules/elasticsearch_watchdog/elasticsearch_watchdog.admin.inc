@@ -16,7 +16,6 @@
 function elasticsearch_watchdog_settings() {
   $form = array();
 
-  $clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
   $form['#old_cluster_id'] = variable_get('elasticsearch_watchdog_cluster_id', array());
 
   $form['elasticsearch_watchdog_cluster_id'] = array(

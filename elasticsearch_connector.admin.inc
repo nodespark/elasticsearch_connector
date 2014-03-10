@@ -23,7 +23,6 @@ function elasticsearch_connector_status_page() {
   $clusters = elasticsearch_connector_clusters();
   foreach ($clusters as $cluster) {
     $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
-
     $edit_link_title = ($cluster->export_type & EXPORT_IN_CODE) ? t('Override') : t('Edit');
     if ($cluster->type == 'Overridden') {
       $edit_link_title = $cluster->type;
@@ -41,10 +40,17 @@ function elasticsearch_connector_status_page() {
       ),
     ));
 
+    if (!empty($cluster_info['info']) && elasticsearch_connector_check_status($cluster_info['info'])) {
+      $info = $cluster_info['health']['status'];
+    }
+    else {
+      $info = t('Not available');
+    }
+
     $row = array();
     $row[] = $cluster->name;
     $row[] = (!empty($cluster->status) ? t('Active') : t('Inactive'));
-    $row[] = $cluster_info['health']['status'];
+    $row[] = $info;
     $row[] = $operations;
 
     $rows[] = $row;
@@ -75,9 +81,10 @@ function elasticsearch_connector_cluster_indices($cluster) {
   );
 
   $rows = array();
+  $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
+  $client = $cluster_info['client'];
 
-  $client = elasticsearch_connector_load_library($cluster);
-  if ($client) {
+  if ($client && !empty($cluster_info['info']) && elasticsearch_connector_check_status($cluster_info['info'])) {
     $indices = $client->indices()->stats();
     foreach ($indices['indices'] as $index_name => $index_info) {
       $row = array();
@@ -128,8 +135,10 @@ function elasticsearch_connector_cluster_indices_aliases($cluster, $index_name) 
 
   $rows = array();
 
-  $client = elasticsearch_connector_load_library($cluster);
-  if ($client) {
+  $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
+  $client = $cluster_info['client'];
+
+  if ($client && !empty($cluster_info['info']) && elasticsearch_connector_check_status($cluster_info['info'])) {
     try {
       $aliases = $client->indices()->getAliases(array('index' => $index_name));
       foreach ($aliases[$index_name]['aliases'] as $alias_name => $alias_info) {
@@ -172,11 +181,12 @@ function elasticsearch_connector_info_cluster($cluster) {
   $cluster_status = elasticsearch_connector_get_cluster_info($cluster);
   $cluster_client = $cluster_status['client'];
 
-  if (isset($cluster_client)) {
+  $node_rows = $cluster_statistics_rows = $cluster_health_rows = array();
+
+  if (isset($cluster_client) && !empty($cluster_status['info']) && elasticsearch_connector_check_status($cluster_status['info'])) {
     // TODO: We call twice the /_nodes/stats
     $node_stats = elasticsearch_connector_get_cluster_nodes_stat($cluster_client);
     $total_docs = $total_size = 0;
-    $node_rows = array();
     if (isset($node_stats)) {
       foreach ($node_stats['nodes'] as $node_key => $node_values) {
         $row = array();
@@ -188,40 +198,40 @@ function elasticsearch_connector_info_cluster($cluster) {
         $node_rows[] = $row;
       }
     }
-  }
 
-  $cluster_statistics_rows = array(
-    array(
-      array('data' => $cluster_status['health']['number_of_nodes'] . '<br/>' . t('Nodes')),
-      array('data' => $cluster_status['health']['active_shards'] + $cluster_status['health']['unassigned_shards']
-            . '<br/>' . t('Total Shards')),
-      array('data' => $cluster_status['health']['active_shards'] . '<br/>' . t('Successful Shards')),
-      array('data' => count($cluster_status['state']['metadata']['indices']) . '<br/>' . t('Indices')),
-      array('data' => $total_docs . '<br/>' . t('Total Documents')),
-      array('data' => format_size($total_size) . '<br/>' . t('Total Size')),
-    )
-  );
+    $cluster_statistics_rows = array(
+      array(
+        array('data' => $cluster_status['health']['number_of_nodes'] . '<br/>' . t('Nodes')),
+        array('data' => $cluster_status['health']['active_shards'] + $cluster_status['health']['unassigned_shards']
+              . '<br/>' . t('Total Shards')),
+        array('data' => $cluster_status['health']['active_shards'] . '<br/>' . t('Successful Shards')),
+        array('data' => count($cluster_status['state']['metadata']['indices']) . '<br/>' . t('Indices')),
+        array('data' => $total_docs . '<br/>' . t('Total Documents')),
+        array('data' => format_size($total_size) . '<br/>' . t('Total Size')),
+      )
+    );
 
-  $cluster_health_rows = array();
-  // TODO: Think of moving this mapping to a separate class.
-  $cluster_health_mapping = array(
-    'cluster_name'  => t('Cluster name'),
-    'status'        => t('Status'),
-    'timed_out'     => t('Time out'),
-    'number_of_nodes' => t('Number of nodes'),
-    'number_of_data_nodes'  => t('Number of data nodes'),
-    'active_primary_shards' => t('Active primary shards'),
-    'active_shards'         => t('Active shards'),
-    'relocating_shards'     => t('Relocating shards'),
-    'initializing_shards'   => t('Initializing shards'),
-    'unassigned_shards'     => t('Unassigned shards')
-  );
+    $cluster_health_rows = array();
+    // TODO: Think of moving this mapping to a separate class.
+    $cluster_health_mapping = array(
+      'cluster_name'  => t('Cluster name'),
+      'status'        => t('Status'),
+      'timed_out'     => t('Time out'),
+      'number_of_nodes' => t('Number of nodes'),
+      'number_of_data_nodes'  => t('Number of data nodes'),
+      'active_primary_shards' => t('Active primary shards'),
+      'active_shards'         => t('Active shards'),
+      'relocating_shards'     => t('Relocating shards'),
+      'initializing_shards'   => t('Initializing shards'),
+      'unassigned_shards'     => t('Unassigned shards')
+    );
 
-  foreach ($cluster_status['health'] as $health_key => $health_value) {
-    $row = array();
-    $row[] = array('data' => $cluster_health_mapping[$health_key]);
-    $row[] = array('data' => ($health_value === FALSE ? 'False' : $health_value));
-    $cluster_health_rows[] = $row;
+    foreach ($cluster_status['health'] as $health_key => $health_value) {
+      $row = array();
+      $row[] = array('data' => $cluster_health_mapping[$health_key]);
+      $row[] = array('data' => ($health_value === FALSE ? 'False' : $health_value));
+      $cluster_health_rows[] = $row;
+    }
   }
 
   $output['cluster_statistics_wrapper'] = array(

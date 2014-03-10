@@ -77,45 +77,45 @@ function elasticsearch_watchdog_requirements($phase) {
       if ($client) {
         try {
           $info = $client->info();
+          if (!empty($info) && elasticsearch_connector_check_status($info)) {
+            return array(
+              'elasticsearch_watchdog' => array(
+                'title' => $t('Elasticsearch Watchdog Status'),
+                'description' => $t(
+                    'The elasticsearch watchdog module initialize a connection to the cluster successfully.'
+                ),
+                'severity' => REQUIREMENT_OK,
+                'value' => $t(
+                    'Cluster ID: @cluster_id',
+                    array(
+                      '@cluster_id' => $client_id
+                    )
+                ),
+              ),
+            );
+          }
+          else {
+            return array(
+              'elasticsearch_watchdog' => array(
+                'title' => $t('Elasticsearch Watchdog Status'),
+                'description' => $t(
+                    'Cluster status is not available. Please check cluster info at ' .
+                    '<a href="@clusters">Cluster info page</a> or check your Elasticsearch server.',
+                    array(
+                      '@clusters' => url(
+                          $elasticsearch_connector_path . '/clusters/' . $client_id . '/info',
+                          array()
+                      )
+                    )
+                ),
+                'severity' => REQUIREMENT_ERROR,
+                'value' => $t('Cluster information is not available.'),
+              ),
+            );
+          }
         }
         catch (Exception $e) {
-
-        }
-        if (elasticsearch_connector_check_status($info)) {
-          return array(
-            'elasticsearch_watchdog' => array(
-              'title' => $t('Elasticsearch Watchdog Status'),
-              'description' => $t(
-                'The elasticsearch watchdog module initialize a connection to the cluster successfully.'
-              ),
-              'severity' => REQUIREMENT_OK,
-              'value' => $t(
-                'Cluster ID: @cluster_id',
-                array(
-                  '@cluster_id' => $client_id
-                )
-              ),
-            ),
-          );
-        }
-        else {
-          return array(
-            'elasticsearch_watchdog' => array(
-              'title' => $t('Elasticsearch Watchdog Status'),
-              'description' => $t(
-                'Cluster status is not available. Please check cluster info at ' .
-                '<a href="@clusters">Cluster info page</a> or check your Elasticsearch server.',
-                array(
-                  '@clusters' => url(
-                    $elasticsearch_connector_path . '/clusters/' . $client_id . '/info',
-                    array()
-                  )
-                )
-              ),
-              'severity' => REQUIREMENT_ERROR,
-              'value' => $t('Cluster information is not available.'),
-            ),
-          );
+          error_log($e->getMessage());
         }
       }
       else {
