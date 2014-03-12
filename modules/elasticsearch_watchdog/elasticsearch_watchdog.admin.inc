@@ -383,6 +383,7 @@ function elasticsearch_watchdog_top($type) {
         $params['index'] = elasticsearch_watchdog_get_index_name();
         $params['type']  = elasticsearch_watchdog_get_type_name();
         $params['search_type'] = 'count';
+        // TODO: Change this to be filter because this is a term query!
         $params['body']['query']['term']['type'] = $type;
         $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
         $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);

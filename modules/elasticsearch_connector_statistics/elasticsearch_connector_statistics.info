@@ -1,0 +1,11 @@
+name = Elasticsearch Connector Statistics
+description = "Logs access statistics for your site in Elasticsearch using 
+Elasticsearch connector module."
+package = Core
+version = VERSION
+core = 7.x
+dependencies[] = elasticsearch_connector
+
+; Module configuration path
+configure = admin/config/elasticsearch-connector/statistics
+
