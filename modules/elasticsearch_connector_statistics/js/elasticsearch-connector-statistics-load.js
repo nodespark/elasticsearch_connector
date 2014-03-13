@@ -1,3 +1,7 @@
+/**
+ * @file
+ * Asyncronyously load and image that will trgger the statistics collector. 
+ */
 (function ($) {
   var img = $("<img />").attr('src', Drupal.settings.elasticsearch_connector.statistics.image_src)
     .load(function() {
