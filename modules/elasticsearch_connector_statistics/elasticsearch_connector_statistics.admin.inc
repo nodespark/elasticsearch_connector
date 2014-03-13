@@ -110,7 +110,7 @@ function elasticsearch_connector_statistics_settings_form_submit($form, &$form_s
  */
 function elasticsearch_connector_statistics_recent_hits() {
   $header = array(
-    array('data' => t('Timestamp'), 'field' => array('_timestamp'), 'sort' => 'desc'),
+    array('data' => t('Timestamp'), 'field' => array('timestamp'), 'sort' => 'desc'),
     array('data' => t('Page'), 'field' => array('path')),
     array('data' => t('User'), 'field' => array('username')),
     array('data' => t('Operations'))
@@ -150,7 +150,7 @@ function elasticsearch_connector_statistics_recent_hits() {
             foreach ($results['hits']['hits'] as $log) {
               $account = user_load($log['_source']['uid']);
               $rows[] = array(
-                array('data' => format_date($log['_source']['_timestamp'], 'short'), 'class' => array('nowrap')),
+                array('data' => format_date($log['_source']['timestamp'], 'short'), 'class' => array('nowrap')),
                 _elasticsearch_connector_statistics_format_item($log['_source']['title'], $log['_source']['path']),
                 theme('username', array('account' => $account)),
                 l(t('details'), "admin/reports/ecs-access/" . $log['_id']));
@@ -439,7 +439,7 @@ function elasticsearch_connector_statistics_access_log($aid) {
             );
             $rows[] = array(
               array('data' => t('Date'), 'header' => TRUE),
-              format_date($result['_source']['_timestamp'], 'long')
+              format_date($result['_source']['timestamp'], 'long')
             );
             $rows[] = array(
               array('data' => t('User'), 'header' => TRUE),

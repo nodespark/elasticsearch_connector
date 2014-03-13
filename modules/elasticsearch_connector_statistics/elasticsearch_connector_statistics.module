@@ -6,6 +6,7 @@
 
 define('ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_INTERVAL', '365d');
 define('ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE', 'statlogs');
+define('ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW', 'page_view');
 
 /**
  * Implements hook_help().
@@ -179,6 +180,17 @@ function elasticsearch_connector_statistics_user_delete($account) {
   // that we need to remove the statistics for this user also.
 }
 
+/**
+ * Implements hook_node_delete().
+ */
+function elasticsearch_connector_statistics_node_delete($node) {
+  // TODO: Delete the logs for this entity.
+}
+
+/**
+ * Check if everything is OK and log the statistics.
+ * @return void
+ */
 function elasticsearch_connector_statistics_log_statistics() {
   if (variable_get('elasticsearch_connector_statistics_enable_access_log', 0)) {
     $client_id = elasticsearch_connector_statistics_get_cluster_vars();
@@ -196,8 +208,37 @@ function elasticsearch_connector_statistics_log_statistics() {
  *
  * @param unknown $path
  */
-function _elasticsearch_connector_statistics_match_entity($path) {
+function _elasticsearch_connector_statistics_match_entity(&$path, $account) {
   $entity = new stdClass();
+
+  if (arg(0, $path) == 'node' && arg(1, $path) > 0) {
+    $entity->entity_type = 'node';
+    $entity->entity_id = arg(1, $path);
+    $entity->page = ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW;
+    if (arg(2, $path)) {
+      $entity->page = arg(2, $path);
+    }
+  }
+  elseif (arg(0, $path) == 'taxonomy' && arg(1, $path) == 'term' && arg(2, $path) > 0) {
+    $entity->entity_type = 'term';
+    $entity->entity_id = arg(2, $path);
+    $entity->page = ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW;
+    if (arg(3, $path)) {
+      $entity->page = arg(3, $path);
+    }
+  }
+  elseif (arg(0, $path) == 'user') {
+    if (arg(1, $path) && preg_match('/[\d]+/', arg(1, $path)) && $account->uid != arg(1, $path)) {
+      $entity->entity_type = 'user';
+      $entity->entity_id = arg(1, $path);
+      $entity->page = ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW;
+      if (arg(2, $path)) {
+        $entity->page = arg(2, $path);
+      }
+    }
+  }
+
+  return $entity;
 }
 
 /**
@@ -219,10 +260,11 @@ function elasticsearch_connector_statistics_log_data(\Elasticsearch\Client $clie
     elasticsearch_connector_statistics_create_type($client, $doc['index'], $doc['type'], $ttl);
   }
 
-  $entity = _elasticsearch_connector_statistics_match_entity($_GET['current_path']);
+  $path = $_GET['current_path'];
+  $entity = _elasticsearch_connector_statistics_match_entity($path, $user);
   $doc['body']  = array(
     'title'           => $_GET['title'],
-    'path'             => $_GET['current_path'],
+    'path'             => $path,
     'domain'          => $_SERVER['SERVER_NAME'],
     'ip'              => ip_address(),
     'uid'             => $user->uid,
@@ -230,7 +272,7 @@ function elasticsearch_connector_statistics_log_data(\Elasticsearch\Client $clie
     'page_language'   => $_GET['page_language'],
     'entity'          => $entity,
     'referer'         => $_GET['referer'],
-    '_timestamp'      => time(),
+    'timestamp'      => time(),
     '_ttl'            => $ttl,
   );
 
@@ -273,9 +315,6 @@ function elasticsearch_connector_statistics_get_mapping($ttl = NULL) {
       'enabled' => TRUE,
       'default' => $ttl,
     ),
-    '_timestamp' => array(
-      'enabled' => TRUE
-    ),
     'properties' => array(
       'title' => array(
         'type' => 'string',
@@ -294,6 +333,9 @@ function elasticsearch_connector_statistics_get_mapping($ttl = NULL) {
       ),
       'uid' => array(
         'type' => 'long',
+      ),
+      'timestamp' => array(
+        'type' => 'date',
       ),
       'username' => array(
         'type' => 'string',
@@ -347,6 +389,208 @@ function elasticsearch_connector_statistics_get_cluster_vars($key = 'cluster_id'
   }
 
   return FALSE;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function elasticsearch_connector_statistics_block_info() {
+  $blocks = array();
+
+  $blocks['popular']['info'] = t('Popular content');
+  // Too dynamic to cache.
+  $blocks['popular']['cache'] = DRUPAL_NO_CACHE;
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function elasticsearch_connector_statistics_block_configure($delta = '') {
+  // Popular content block settings
+  $numbers = array('0' => t('Disabled')) + drupal_map_assoc(array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40));
+  $form['elasticsearch_connector_statistics_block_top_day_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => variable_get('elasticsearch_connector_statistics_block_top_day_num', 0), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
+  $form['elasticsearch_connector_statistics_block_top_all_num'] = array('#type' => 'select', '#title' => t('Number of all time views to display'), '#default_value' => variable_get('elasticsearch_connector_statistics_block_top_all_num', 0), '#options' => $numbers, '#description' => t('How many content items to display in "all time" list.'));
+  return $form;
+}
+
+/**
+ * Implements hook_block_save().
+ */
+function elasticsearch_connector_statistics_block_save($delta = '', $edit = array()) {
+  variable_set('elasticsearch_connector_statistics_block_top_day_num', $edit['elasticsearch_connector_statistics_block_top_day_num']);
+  variable_set('elasticsearch_connector_statistics_block_top_all_num', $edit['elasticsearch_connector_statistics_block_top_all_num']);
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function elasticsearch_connector_statistics_block_view($delta = '') {
+  if (user_access('access content')) {
+    $content = array();
+
+    $daytop = variable_get('elasticsearch_connector_statistics_block_top_day_num', 0);
+    if ($daytop && ($result = elasticsearch_connector_statistics_title_list_today($daytop)) && ($node_title_list = node_title_list($result, t("Today's:")))) {
+      $content['top_day'] = $node_title_list;
+      $content['top_day']['#suffix'] = '<br />';
+    }
+
+    $alltimetop = variable_get('elasticsearch_connector_statistics_block_top_all_num', 0);
+    if ($alltimetop && ($result = elasticsearch_connector_statistics_title_list_alltime($alltimetop)) && ($node_title_list = node_title_list($result, t('All time:')))) {
+      $content['top_all'] = $node_title_list;
+      $content['top_all']['#suffix'] = '<br />';
+    }
+
+    if (count($content)) {
+      $block['content'] = $content;
+      $block['subject'] = t('Popular content');
+      return $block;
+    }
+  }
+}
+
+/**
+ * Returns the most viewed content for today.
+ *
+ * @param $rows
+ *   The number of rows to be returned.
+ *
+ * @return array|FALSE
+ */
+function elasticsearch_connector_statistics_title_list_today($rows) {
+  $result = array();
+  $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      try {
+        $params = array();
+        $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
+        $params['index'] = $index_name;
+        $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
+        $params['search_type'] = 'count';
+
+        $date = new DateTime();
+        $date->setTime('0', '0', '0');
+        $from_date = $date->getTimestamp();
+        $date->setTime('23', '59', '59');
+        $to_date = $date->getTimestamp();
+        $params['body']['query'] = array(
+          'filtered' => array(
+            'query' => array(
+              'match_all' => array()
+            ),
+            'filter' => array(
+              'and' => array(
+                array(
+                  'term' => array(
+                    'entity.entity_type' => 'node'
+                  )
+                ),
+                array(
+                  'term' => array(
+                    'entity.page' => ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW
+                  )
+                ),
+                array(
+                  'range' => array(
+                    'timestamp' => array(
+                      'from' => $from_date,
+                      'to' => $to_date,
+                    )
+                  )
+                )
+              )
+            ),
+          )
+        );
+
+        $field_faceting = 'entity.entity_id';
+        $facet_name = 'facet_' . $field_faceting;
+        $params['body']['facets'][$facet_name]['terms']['field'] = $field_faceting;
+        $params['body']['facets'][$facet_name]['terms']['size'] = $rows;
+
+        $search_result = $client->search($params);
+        if (!empty($search_result['facets'])) {
+          foreach ($search_result['facets'][$facet_name]['terms'] as $facet) {
+            $node = node_load($facet['term']);
+            $result[] = $node;
+          }
+        }
+      }
+      catch (Exception $e) {
+        watchdog('elasticsearch_connector_statistics', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
+    }
+  }
+
+  return $result;
+}
+
+/**
+ * Returns the most viewed content for today.
+ *
+ * @param $rows
+ *   The number of rows to be returned.
+ *
+ * @return array|FALSE
+ */
+function elasticsearch_connector_statistics_title_list_alltime($rows) {
+  $result = array();
+  $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      try {
+        $params = array();
+        $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
+        $params['index'] = $index_name;
+        $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
+        $params['search_type'] = 'count';
+
+        $params['body']['query'] = array(
+          'filtered' => array(
+            'query' => array(
+              'match_all' => array()
+            ),
+            'filter' => array(
+              'and' => array(
+                array(
+                  'term' => array(
+                    'entity.entity_type' => 'node'
+                  )
+                ),
+                array(
+                  'term' => array(
+                    'entity.page' => ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW
+                  )
+                ),
+              )
+            ),
+          )
+        );
+
+        $field_faceting = 'entity.entity_id';
+        $facet_name = 'facet_' . $field_faceting;
+        $params['body']['facets'][$facet_name]['terms']['field'] = $field_faceting;
+        $params['body']['facets'][$facet_name]['terms']['size'] = $rows;
+
+        $search_result = $client->search($params);
+        if (!empty($search_result['facets'])) {
+          foreach ($search_result['facets'][$facet_name]['terms'] as $facet) {
+            $node = node_load($facet['term']);
+            $result[] = $node;
+          }
+        }
+      }
+      catch (Exception $e) {
+        watchdog('elasticsearch_connector_statistics', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
+    }
+  }
+
+  return $result;
 }
 
 /**

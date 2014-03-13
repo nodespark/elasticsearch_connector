@@ -796,7 +796,7 @@ function template_process_elasticsearch_connector_page(&$variables) {
  * @return void
  */
 function _elasticsearch_connector_validate_ttl_field($element, &$form_state, $form) {
-   if (!empty($element['#value']) && !preg_match('/^([\d]+)(d|m|h|ms|w)$/', $element['#value'])) {
-     form_error($element, t('Invalid elasticsearch TTL value. Please use the proper syntax e.g. 1d (d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks)).'));
-   }
+  if (!empty($element['#value']) && !preg_match('/^([\d]+)(d|m|h|ms|w)$/', $element['#value'])) {
+    form_error($element, t('Invalid elasticsearch TTL value. Please use the proper syntax e.g. 1d (d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks)).'));
+  }
 }
