@@ -43,6 +43,7 @@ function elasticsearch_connector_statistics_settings_form() {
     '#type' => 'textfield',
     '#title' => t('Elasticsearch TTL Interval'),
     '#default_value' => variable_get('elasticsearch_connector_statistics_ttl', ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_INTERVAL),
+    '#element_validate' => array('_elasticsearch_connector_validate_ttl_field'),
     '#description' => t('Use format like 1d. Suffix can be d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks).'
         . ' You can dynamically update the default interval.'
         . ' However it won\'t change the TTL of already indexed messages but will be used for future logs.'),
