@@ -13,11 +13,11 @@
 function elasticsearch_connector_requirements($phase) {
   $t = get_t();
   if ($phase === 'install') {
-    if (!PHP_MAJOR_VERSION >= 5 || (PHP_MAJOR_VERSION >= 5 && !PHP_MINOR_VERSION >= 3)) {
+    if (version_compare(phpversion(), '5.3.9', '<')) {
       return array(
         'elasticsearch_connector' => array(
-          'title' => $t('The version of PHP is not compatible with this module.'),
-          'description' => $t('The module requires PHP version bigger than version 5.3.'),
+          'title' => $t('The PHP version is not compatible with this module.'),
+          'description' => $t('The module requires PHP version bigger than or equal to version 5.3.9.'),
           'severity' => REQUIREMENT_ERROR,
           'value' => $t('PHP version not compatible.'),
         ),
