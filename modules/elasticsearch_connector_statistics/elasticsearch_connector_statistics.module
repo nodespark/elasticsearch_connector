@@ -184,7 +184,54 @@ function elasticsearch_connector_statistics_user_delete($account) {
  * Implements hook_node_delete().
  */
 function elasticsearch_connector_statistics_node_delete($node) {
-  // TODO: Delete the logs for this entity.
+  elasticsearch_connector_statistics_delete_node_logs($node->nid);
+}
+
+/**
+ * Delete the node logs based on NID.
+ * @param int $nid
+ */
+function elasticsearch_connector_statistics_delete_node_logs($nid) {
+  $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
+      $params['index'] = $index_name;
+      $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
+      $params['body']['query'] = array(
+          'filtered' => array(
+            'query' => array(
+              'match_all' => array()
+            ),
+            'filter' => array(
+              'and' => array(
+                array(
+                  'term' => array(
+                    'entity.entity_nid' => $nid
+                  )
+                ),
+                array(
+                  'term' => array(
+                    'entity.entity_type' => 'node'
+                  )
+                ),
+              )
+            ),
+          )
+        );
+
+      try {
+        // TODO: It seems there is a problem with this function in the elasticsearch client.
+        // I've made a bug report and fix this issue after get response from client maintainer.
+        $response = $client->deleteByQuery($params);
+      }
+      catch (Exception $e) {
+        watchdog('elasticsearch_connector_statistics', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
+
+    }
+  }
 }
 
 /**
