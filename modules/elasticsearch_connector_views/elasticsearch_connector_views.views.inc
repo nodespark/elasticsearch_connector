@@ -41,108 +41,111 @@ function elasticsearch_connector_views_views_data() {
         // In elasticsearch the table is actually the document type.
         // So get all types and build data array.
         $mapping = $elastic_client->indices()->getMapping(array('index' => $index_name));
-        foreach ($mapping[$index_name]['mappings'] as $type_name => $type_settings) {
-          $name = format_string('@cluster (@index_name:@type)', array('@cluster' => $cluster->name, '@index_name' => $index_name, '@type' => $type_name));
-          $base_table = 'elsv__' . $cluster->cluster_id . '__' . $index_name . '__' . $type_name;
+        if (!empty($mapping[$index_name]['mappings'])) {
+          foreach ($mapping[$index_name]['mappings'] as $type_name => $type_settings) {
+            $name = format_string('@cluster (@index_name:@type)', array('@cluster' => $cluster->name, '@index_name' => $index_name, '@type' => $type_name));
+            $base_table = 'elsv__' . $cluster->cluster_id . '__' . $index_name . '__' . $type_name;
 
-          $data[$base_table]['table']['group'] = t('Elasticsearch Connector');
-          $data[$base_table]['table']['base'] = array(
-            'query class' => 'elasticsearch_connector_views_query',
-            'title' => t('Cluster !name', array('!name' => $name)),
-            'help' => t('Searches the site with the Elasticsearch search engine for !name', array('!name' => $name)),
-          );
+            $data[$base_table]['table']['group'] = t('Elasticsearch Connector');
+            $data[$base_table]['table']['base'] = array(
+              'query class' => 'elasticsearch_connector_views_query',
+              'title' => t('Cluster !name', array('!name' => $name)),
+              'help' => t('Searches the site with the Elasticsearch search engine for !name', array('!name' => $name)),
+            );
 
-          // Get the list of the fields in index directly from Solr.
-          $fields = $type_settings['properties'];
+            // Get the list of the fields in index directly from Solr.
+            $fields = $type_settings['properties'];
 
-          foreach ($fields as $field_name => $field) {
-            // TODO: Restrict some fields if needed.
-            $field_type = $field['type'];
-            $filter_handler = 'elasticsearch_connector_views_handler_filter';
-            // TODO: Handle boolean.
-            switch ($field_type) {
-              case 'date':
-                $filter_handler = 'elasticsearch_connector_views_handler_filter_date';
-                break;
-              case 'text':
-              case 'string':
-                $filter_handler = 'elasticsearch_connector_views_handler_filter_string';
-                break;
+            foreach ($fields as $field_name => $field) {
+              // TODO: Restrict some fields if needed.
+              // TODO: Handle object types e.g. nested structures.
+              // TODO: Handle boolean.
+              $field_type = $field['type'];
+              $filter_handler = 'elasticsearch_connector_views_handler_filter';
+              switch ($field_type) {
+                case 'date':
+                  $filter_handler = 'elasticsearch_connector_views_handler_filter_date';
+                  break;
+                case 'text':
+                case 'string':
+                  $filter_handler = 'elasticsearch_connector_views_handler_filter_string';
+                  break;
 
-              case 'integer':
-              case 'long':
-              case 'float':
-              case 'double':
-               $filter_handler = 'elasticsearch_connector_views_handler_filter_numeric';
-               break;
+                // Handle numeric filter type.
+                case 'integer':
+                case 'long':
+                case 'float':
+                case 'double':
+                 $filter_handler = 'elasticsearch_connector_views_handler_filter_numeric';
+                 break;
+              }
 
+              $data[$base_table][$field_name] = array(
+                'title' => $field_name,
+                'help' => $field_name,
+                'field' => array(
+                  'handler' => 'elasticsearch_connector_views_handler_field',
+                  'click sortable' => TRUE,
+                ),
+                'filter' => array(
+                  'handler' => $filter_handler,
+                ),
+                'sort' => array(
+                  'handler' => 'elasticsearch_connector_views_handler_sort',
+                ),
+                'argument' => array(
+                  'handler' => 'elasticsearch_connector_views_handler_argument',
+                ),
+              );
+
+              // Default sort field for label.
+              $sort_field_name = ($field_name == 'label') ? 'sort_label' : '';
+              // Check if corresponding sort_ field exists. We remove prefix from field
+              // name (for example prefix "ss_" from "ss_name") and check if "sort_*"
+              // field is available.
+
+              // TODO: Handle sorting field.
+
+  //             if (array_key_exists('sort_' . substr($field_name, 2), $solr_fields)) {
+  //               $sort_field_name = 'sort_' . substr($field_name, 2);
+  //             }
+  //             if (!empty($sort_field_name)) {
+  //               // Use the sort field for click sorting.
+  //               $data[$base_table][$field_name]['field']['click sort field'] = $sort_field_name;
+  //               // And use the sort field for explicit sorts.
+  //               $data[$base_table][$field_name]['sort']['real field'] = $sort_field_name;
+  //             }
             }
 
-            $data[$base_table][$field_name] = array(
-              'title' => $field_name,
-              'help' => $field_name,
+            // Keyword field.
+            $data[$base_table]['keyword'] = array(
+              'title' => t('Search'),
+              'help' => t('Fulltext search'),
+              'filter' => array(
+                'handler' => 'elasticsearch_connector_views_keyword_handler_filter',
+              ),
+            );
+
+            // Snippet field.
+            $data[$base_table]['snippet'] = array(
+              'title' => t('Snippet'),
+              'help' => t('Search snippet'),
+              'field' => array(
+                'handler' => 'elasticsearch_connector_views_snippet_handler_field',
+                'click sortable' => TRUE,
+              ),
+            );
+
+            // Score field.
+            $data[$base_table]['score'] = array(
+              'title' => t('Score'),
+              'help' => t('Score'),
               'field' => array(
                 'handler' => 'elasticsearch_connector_views_handler_field',
                 'click sortable' => TRUE,
               ),
-              'filter' => array(
-                'handler' => $filter_handler,
-              ),
-              'sort' => array(
-                'handler' => 'elasticsearch_connector_views_handler_sort',
-              ),
-              'argument' => array(
-                'handler' => 'elasticsearch_connector_views_handler_argument',
-              ),
             );
-
-            // Default sort field for label.
-            $sort_field_name = ($field_name == 'label') ? 'sort_label' : '';
-            // Check if corresponding sort_ field exists. We remove prefix from field
-            // name (for example prefix "ss_" from "ss_name") and check if "sort_*"
-            // field is available.
-
-            // TODO: Handle sorting field.
-
-//             if (array_key_exists('sort_' . substr($field_name, 2), $solr_fields)) {
-//               $sort_field_name = 'sort_' . substr($field_name, 2);
-//             }
-//             if (!empty($sort_field_name)) {
-//               // Use the sort field for click sorting.
-//               $data[$base_table][$field_name]['field']['click sort field'] = $sort_field_name;
-//               // And use the sort field for explicit sorts.
-//               $data[$base_table][$field_name]['sort']['real field'] = $sort_field_name;
-//             }
           }
-
-          // Keyword field.
-          $data[$base_table]['keyword'] = array(
-            'title' => t('Search'),
-            'help' => t('Fulltext search'),
-            'filter' => array(
-              'handler' => 'elasticsearch_connector_views_keyword_handler_filter',
-            ),
-          );
-
-          // Snippet field.
-          $data[$base_table]['snippet'] = array(
-            'title' => t('Snippet'),
-            'help' => t('Search snippet'),
-            'field' => array(
-              'handler' => 'elasticsearch_connector_views_snippet_handler_field',
-              'click sortable' => TRUE,
-            ),
-          );
-
-          // Score field.
-          $data[$base_table]['score'] = array(
-            'title' => t('Score'),
-            'help' => t('Score'),
-            'field' => array(
-              'handler' => 'elasticsearch_connector_views_handler_field',
-              'click sortable' => TRUE,
-            ),
-          );
 
         }
       }

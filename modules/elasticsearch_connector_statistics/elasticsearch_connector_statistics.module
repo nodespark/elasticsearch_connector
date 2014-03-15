@@ -108,7 +108,7 @@ function elasticsearch_connector_statistics_menu() {
   $settings_path = elasticsearch_connector_main_settings_path();
 
   $items[$settings_path . '/statistics'] = array(
-    'title' => 'Elasticsearch Statistics',
+    'title' => 'Elasticsearch Statistics Settings',
     'description' => 'Control details about what and how your site logs access elasticsearch_connector_statistics.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('elasticsearch_connector_statistics_settings_form'),

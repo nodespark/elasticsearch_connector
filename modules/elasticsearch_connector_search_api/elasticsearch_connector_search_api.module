@@ -13,6 +13,7 @@
  * Implements hook_search_api_service_info().
  */
 function elasticsearch_connector_search_api_search_api_service_info() {
+  $services = array();
   $services['search_api_elasticsearch_connector'] = array(
     'name' => t('Elasticsearch Connector service'),
     'description' => t('
@@ -24,7 +25,8 @@ function elasticsearch_connector_search_api_search_api_service_info() {
     <li>See the README.txt file provided with this module for details.</li>
     </ul>',
         array(
-          '!url_elasticsearch' => l(t('Elasticsearch'), 'http://www.elasticsearch.org/'),
+          // Use directly the <a> tag because l() function break the building at some point.
+          '!url_elasticsearch' => '<a href="' . url('http://www.elasticsearch.org/') . '">' . t('Elasticsearch') . '</a>',
         )),
     'class' => 'SearchApiElasticsearchConnector',
   );
