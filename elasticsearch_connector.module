@@ -264,6 +264,17 @@ function _elasticsearch_connector_check_if_index_locked($cluster, $index) {
 }
 
 /**
+ * Implements hook_elasticsearch_connector_edit_lock().
+ */
+function elasticsearch_connector_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
+  if ($type == 'cluster' && $cluster->cluster_id == elasticsearch_connector_get_default_connector()) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+/**
  * Build two dropdowns, one for the cluster and one for the indices.
  * @param array $element
  * @return arrat $element
