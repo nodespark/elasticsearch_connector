@@ -81,3 +81,24 @@ function elasticsearch_connector_sequence_get_index_name() {
 
   return FALSE;
 }
+
+/**
+ * Implemens hook_elasticsearch_connector_edit_lock().
+ */
+function elasticsearch_connector_sequence_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
+  $client_id = elasticsearch_connector_sequence_get_cluster_id();
+  if (!empty($client_id) && $client_id == $cluster->cluster_id) {
+    if ($type == 'cluster') {
+      return TRUE;
+    }
+    elseif ($type == 'index') {
+      $index_name = elasticsearch_connector_sequence_get_index_name();
+      if ($index == $index_name) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+

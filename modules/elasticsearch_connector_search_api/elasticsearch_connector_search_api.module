@@ -225,3 +225,11 @@ function elasticsearch_connector_search_api_search_api_index_update(SearchApiInd
 function elasticsearch_connector_search_api_ajax_callback($form, &$form_state) {
   return $form['options'];
 }
+
+/**
+ * Implemens hook_elasticsearch_connector_edit_lock().
+ */
+function elasticsearch_connector_search_api_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
+  // TODO: Check if the cluster or the index can be editted or lock it by returning TRUE.
+  return FALSE;
+}

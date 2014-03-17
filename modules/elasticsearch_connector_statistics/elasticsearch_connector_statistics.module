@@ -674,3 +674,23 @@ function _elasticsearch_connector_statistics_format_item($title, $path) {
   $output .= _elasticsearch_connector_statistics_link($path);
   return $output;
 }
+
+/**
+ * Implemens hook_elasticsearch_connector_edit_lock().
+ */
+function elasticsearch_connector_statistics_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
+  $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+  if (!empty($client_id) && $client_id == $cluster->cluster_id) {
+    if ($type == 'cluster') {
+      return TRUE;
+    }
+    elseif ($type == 'index') {
+      $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
+      if ($index == $index_name) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}

@@ -384,7 +384,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#type' => 'submit',
     '#validate' => array('elasticsearch_connector_edit_cluster_validate'),
     '#submit' => array('elasticsearch_connector_edit_cluster_submit'),
-    '#value' => t('Save'),
+    '#value' => t('Save')
   );
 
   return $form;
@@ -635,19 +635,32 @@ function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
  * @see elasticsearch_connector_cluster_indices_delete_submit()
  */
 function elasticsearch_connector_cluster_indices_delete($form, &$form_state, $cluster, $index) {
-  $form['cluster'] = array('#type' => 'value', '#value' => $cluster);
-  $form['index'] = array('#type' => 'value', '#value' => $index);
-  return confirm_form($form,
-      t('Are you sure you want to delete the index %index from cluster %name?',
-        array(
-          '%index' => $index,
-          '%name' => $cluster->name)
-        ),
-      elasticsearch_connector_main_settings_path() . '/clusters',
-      t('This action cannot be undone.'),
-      t('Delete'),
-      t('Cancel')
-  );
+  $form = array();
+  $locked = _elasticsearch_connector_check_if_index_locked($cluster, $index);
+  if (empty($locked)) {
+    $form['cluster'] = array('#type' => 'value', '#value' => $cluster);
+    $form['index'] = array('#type' => 'value', '#value' => $index);
+    return confirm_form($form,
+        t('Are you sure you want to delete the index %index from cluster %name?',
+          array(
+            '%index' => $index,
+            '%name' => $cluster->name)
+          ),
+        elasticsearch_connector_main_settings_path() . '/clusters',
+        t('This action cannot be undone.'),
+        t('Delete'),
+        t('Cancel')
+    );
+  }
+  else {
+    $form['item'] = array(
+      '#type' => 'item',
+      '#markup' => t('Unable the delete this index because it\'s locked by following modules:')
+      . theme('item_list', array('items' => $locked)),
+    );
+
+    return $form;
+  }
 }
 
 /**
@@ -676,14 +689,27 @@ function elasticsearch_connector_cluster_indices_delete_submit($form, &$form_sta
  * @see elasticsearch_connector_delete_cluster_submit()
  */
 function elasticsearch_connector_delete_cluster($form, &$form_state, $cluster) {
-  $form['cluster'] = array('#type' => 'value', '#value' => $cluster);
-  return confirm_form($form,
-      t('Are you sure you want to delete %name?', array('%name' => $cluster->name)),
-      elasticsearch_connector_main_settings_path() . '/clusters',
-      t('This action cannot be undone.'),
-      t('Delete'),
-      t('Cancel')
-  );
+  $locked = _elasticsearch_connector_check_if_cluster_locked($cluster);
+
+  if (empty($locked)) {
+    $form['cluster'] = array('#type' => 'value', '#value' => $cluster);
+    return confirm_form($form,
+        t('Are you sure you want to delete %name?', array('%name' => $cluster->name)),
+        elasticsearch_connector_main_settings_path() . '/clusters',
+        t('This action cannot be undone.'),
+        t('Delete'),
+        t('Cancel')
+    );
+  }
+  else {
+    $form['item'] = array(
+      '#type' => 'item',
+      '#markup' => t('Unable the delete this cluster because it\'s locked by following modules:')
+       . theme('item_list', array('items' => $locked)),
+    );
+
+    return $form;
+  }
 }
 
 /**

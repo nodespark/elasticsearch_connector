@@ -20,3 +20,12 @@ function elasticsearch_connector_views_views_api() {
 function elasticsearch_connector_views_views_query_alter($view, $query) {
 
 }
+
+/**
+ * Implemens hook_elasticsearch_connector_edit_lock().
+ */
+function elasticsearch_connector_views_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
+  // TODO: Check if the cluster or the index can be editted or lock it by returning TRUE.
+  // We need to think if this is necessary.
+  return FALSE;
+}
