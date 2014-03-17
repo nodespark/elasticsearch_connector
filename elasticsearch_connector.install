@@ -26,8 +26,7 @@ function elasticsearch_connector_requirements($phase) {
   }
 
   if ($phase == 'runtime') {
-    //TODO: Handle dynamic checks. This is only for tests.
-    if (!class_exists('Elasticsearch\Client')) {
+    if (!class_exists('\Elasticsearch\Client')) {
       return array(
         'elasticsearch_connector' => array(
           'title' => $t('The Elasticsearch library is missing.'),
