@@ -100,7 +100,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 //       'search_api_grouping',
 //       'search_api_multi',
 //       'search_api_service_extra',
-//       'search_api_spellcheck',
+      'search_api_spellcheck',
 //       'search_api_data_type_location',
 //       'search_api_data_type_geohash',
     ));
@@ -457,6 +457,31 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     // Parse response.
     return $this->parseSearchResponse($response, $query);
+  }
+
+  /**
+   * Handle the spellcheck
+   * @param SearchApiQueryInterface $query
+   */
+  protected function buildSpellcheckQuery(SearchApiQueryInterface $query, &$params) {
+    $options = $query->getOptions();
+    $keys = $query->getOriginalKeys();
+    if (!empty($options['search_api_spellcheck']) && !empty($keys)) {
+      $fields = $query->getFields();
+      if (!empty($fields)) {
+        $params['body']['suggest'] = array(
+          'text' => $query->getOriginalKeys(),
+        );
+
+        foreach ($fields as $field) {
+          $params['body']['suggest'][$field . '_spellcheck'] = array(
+            'phrase' => array(
+              'field' =>$field
+            )
+          );
+        }
+      }
+    }
   }
 
   /**
@@ -857,6 +882,9 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $body['fields'] = array();
     $fields = &$body['fields'];
 
+    // Handle spellcheck if enabled
+    $this->buildSpellcheckQuery($query, $params);
+
     // More Like This
     if (!empty($query_options['mlt'])) {
       $mlt_query['more_like_this'] = array();
@@ -939,15 +967,17 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
       if (!empty($search_string)) {
         $query_search_string = array('query_string' => array());
+        // TODO: Think of using bool query where default will be OR operator and should cause will be the AND operator.
+        // This way we will have more results to the user and the one that match AND will be more relevant.
         $query_search_string['query_string']['query'] = $search_string;
         $query_search_string['query_string']['fields'] = array_values($query_full_text_fields);
+        // TODO: To use snowball here we need to index the string as snowball, otherwise no result will match.
         $query_search_string['query_string']['analyzer'] = 'snowball';
       }
     }
 
     // Sort.
     try {
-      // TODO: Why we are calling SolrSearchQuery????
       $sort = $this->getSortSearchQuery($query);
     }
     catch (Exception $e) {
@@ -1216,6 +1246,11 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
 
     $search_result['search_api_facets'] = $this->parseSearchFacets($response, $query);
+
+    // Check for spellcheck suggestions.
+    if (module_exists('search_api_spellcheck') && $query->getOption('search_api_spellcheck')) {
+      $search_result['search_api_spellcheck'] = new SearchApiSpellcheckElasticsearch($response);
+    }
 
     return $search_result;
   }

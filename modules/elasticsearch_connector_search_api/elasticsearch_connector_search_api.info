@@ -7,3 +7,4 @@ dependencies[] = elasticsearch_connector
 dependencies[] = search_api
 
 files[] = service.inc
+files[] = includes/spellcheck.inc
