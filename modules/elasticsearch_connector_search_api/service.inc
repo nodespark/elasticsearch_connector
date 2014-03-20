@@ -6,6 +6,8 @@
  * Elasticsearch Connector module.
  */
 
+class SearchApiElasticsearchConnectorException extends Exception {}
+
 /**
  * Search service class.
  */
@@ -229,18 +231,23 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $index_name = $this->getIndexName($index);
     if (!empty($index_name)) {
       try {
-        $response = $this->elasticsearchClient->indices()->create(array(
-          'index' => $index_name,
-          'body' => array(
-            'settings' => array(
-              'number_of_shards' => $index->options['number_of_shards'],
-              'number_of_replicas' => $index->options['number_of_replicas'],
+        $client = $this->elasticsearchClient;
+        if (!$client->indices()->exists(array('index' => $index_name))) {
+          $params = array(
+            'index' => $index_name,
+            'body' => array(
+              'settings' => array(
+                'number_of_shards' => $index->options['number_of_shards'],
+                'number_of_replicas' => $index->options['number_of_replicas'],
+              )
             )
-          )
-        ));
-        if (!elasticsearch_connector_check_response_ack($response)) {
-          drupal_set_message(t('The elasticsearch client wasn\'t able to create index'), 'error');
+          );
+          $response = $client->indices()->create($params);
+          if (!elasticsearch_connector_check_response_ack($response)) {
+            drupal_set_message(t('The elasticsearch client wasn\'t able to create index'), 'error');
+          }
         }
+
         // Update mapping.
         $this->fieldsUpdated($index);
       }
@@ -341,10 +348,14 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    */
   public function indexItems(SearchApiIndex $index, array $items) {
     $elastic_type_exists = $this->getElasticsearchTypeExists($index);
+    if (!$elastic_type_exists) {
+      throw new SearchApiElasticsearchConnectorException('ElasticSearch type does not exist.');
+    }
 
-    if (empty($elastic_type_exists) || empty($items)) {
+    if (empty($items)) {
       return array();
     }
+
     $params = $this->getIndexParam($index, TRUE);
 
     $documents = array();
@@ -363,7 +374,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $this->elasticsearchClient->bulk($params);
     }
     catch (Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      throw new SearchApiElasticsearchConnectorException($e->getMessage, NULL, $e);
     }
 
     return array_keys($items);
@@ -379,9 +390,17 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       }
     }
     elseif ($ids === 'all') {
-      // Faster to delete the index and recreate it.
-      $this->removeIndex($index);
-      $this->addIndex($index);
+      $params = $this->getIndexParam($index, TRUE);
+      $params['body'] = array('query' => array('match_all' => array()));
+
+      // The 'delete by query' API request changed in version 1.0.0RC1.
+      // @see http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-delete-by-query.html
+      $info = $this->elasticsearchClient->info();
+      if ($info['version']['number'] < '1.0.0') {
+        $params['body'] = $params['body']['query'];
+      }
+
+      $this->elasticsearchClient->deleteByQuery($params);
     }
     else {
       $this->deleteItemsIds($ids, $index);
