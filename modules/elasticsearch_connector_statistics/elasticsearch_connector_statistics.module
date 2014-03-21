@@ -222,8 +222,6 @@ function elasticsearch_connector_statistics_delete_node_logs($nid) {
         );
 
       try {
-        // TODO: It seems there is a problem with this function in the elasticsearch client.
-        // I've made a bug report and fix this issue after get response from client maintainer.
         $response = $client->deleteByQuery($params);
       }
       catch (Exception $e) {
