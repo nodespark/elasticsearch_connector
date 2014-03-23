@@ -30,6 +30,12 @@ function elasticsearch_connector_search_api_search_api_service_info() {
         )),
     'class' => 'SearchApiElasticsearchConnector',
   );
+
+  // If the ElasticSearch library isn't available, use a dummy service class.
+  if (!class_exists('\Elasticsearch\Client')) {
+    $services['search_api_elasticsearch_connector']['class'] = 'SearchApiElasticsearchConnectorMissing';
+  }
+
   return $services;
 }
 

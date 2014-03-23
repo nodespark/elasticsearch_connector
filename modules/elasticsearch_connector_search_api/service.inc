@@ -9,6 +9,32 @@
 class SearchApiElasticsearchConnectorException extends Exception {}
 
 /**
+ * Dummy search service for when the ElasticSearch library isn't available.
+ */
+class SearchApiElasticsearchConnectorMissing extends SearchApiAbstractService {
+
+  /**
+   * {@inheritdoc}
+   */
+  public function indexItems(SearchApiIndex $index, array $items) {
+    return array();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function deleteItems($ids = 'all', SearchApiIndex $index = NULL) {}
+
+  /**
+   * {@inheritdoc}
+   */
+  public function search(SearchApiQueryInterface $query) {
+    return array();
+  }
+
+}
+
+/**
  * Search service class.
  */
 class SearchApiElasticsearchConnector extends SearchApiAbstractService {
