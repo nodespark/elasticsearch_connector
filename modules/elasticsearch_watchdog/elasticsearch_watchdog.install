@@ -156,6 +156,8 @@ function elasticsearch_watchdog_requirements($phase) {
       );
     }
   }
+
+  return array();
 }
 
 /**

@@ -47,6 +47,8 @@ function elasticsearch_connector_requirements($phase) {
       );
     }
   }
+
+  return array();
 }
 
 /**

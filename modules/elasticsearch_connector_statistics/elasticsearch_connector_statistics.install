@@ -153,4 +153,6 @@ function elasticsearch_connector_statistics_requirements($phase) {
       );
     }
   }
+
+  return array();
 }
