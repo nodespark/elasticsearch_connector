@@ -124,13 +124,13 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       'search_api_facets',
       'search_api_facets_operator_or',
       'search_api_mlt',
-      // TODO: Implement the rest of the features available!
-//       'search_api_grouping',
-//       'search_api_multi',
-//       'search_api_service_extra',
       'search_api_spellcheck',
-//       'search_api_data_type_location',
-//       'search_api_data_type_geohash',
+      'search_api_data_type_location',
+      // TODO: Implement the rest of the features available!
+      // 'search_api_grouping',
+      // 'search_api_multi',
+      // 'search_api_service_extra',
+      // 'search_api_data_type_geohash',
     ));
     return isset($supported[$feature]);
   }
@@ -804,7 +804,11 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    * Helper function. Get the elasticsearch mapping for a field.
    */
   public function getFieldMapping($field) {
-    $type = search_api_extract_inner_type($field['type']);
+    // Support of the custom data types. When such is implemented the type is
+    // stored in the $field['real_type'] and the $field['type'] contains the
+    // fallback type that will be used if the custom one is not supported.
+    $field_type = (isset($field['real_type'])) ? $field['real_type'] : $field['type'];
+    $type = search_api_extract_inner_type($field_type);
 
     switch ($type) {
       case 'text':
@@ -841,6 +845,12 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         return array(
         'type' => 'date',
         'format' => 'date_time',
+        );
+
+      case 'location':
+        return array(
+          'type' => 'geo_point',
+          'lat_lon'=> TRUE,
         );
 
       default:
@@ -943,6 +953,107 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $body['query'] = $mlt_query;
     }
 
+    /**
+     * $query_options['spatials']:
+     * - field: The Search API field identifier of the location field. Must be indexed
+     *   as type "location".
+     * - lat: The latitude of the point on which this location parameter is centered.
+     * - lon: The longitude of that point.
+     * - radius: (optional) If results should be filtered according to their distance
+     *   to the point, the maximum distance at which a point should be included (in
+     *   kilometers).
+     * - method: (optional) The method to use for filtering. This is backend-specific
+     *   and not guaranteed to have an effect. Service classes should ignore values of
+     *   this option which they don't recognize.
+     */
+    // Search API Location support.
+    if (!empty($query_options['spatials'])) {
+      foreach ($query_options['spatials'] as $i => $spatial) {
+        if (empty($spatial['field']) || empty($spatial['lat']) || empty($spatial['lon'])) {
+          continue;
+        }
+
+        // Shortcut to easily reuse the field and point.
+        $field = $spatial['field'];
+        $point = array(
+          'lat' => (float) $spatial['lat'],
+          'lon' => (float) $spatial['lon'],
+        );
+
+        // Prepare the filter settings.
+        if (isset($spatial['radius'])) {
+          $radius = (float) $spatial['radius'];
+        }
+
+        // TODO: Implement the other geo filter types.
+        // TODO: Implement the functionality to have multiple filters together
+        // with the geo filters.
+
+        // // Geo bounding box filter.
+        // $query_options['query_search_filter'] = array(
+        //   'geo_bounding_box' => array(
+        //     $spatial['field'] => array(
+        //       'top_left' => array(
+        //         'lat' => '',
+        //         'lon' => '',
+        //       ),
+        //       'bottom_right' => array(
+        //         'lat' => '',
+        //         'lon' => '',
+        //       ),
+        //     ),
+        //   ),
+        // );
+
+        // Geo Distance filter.
+        $query_options['query_search_filter'] = array(
+          'geo_distance' => array(
+            'distance' => $radius . 'km',
+            $spatial['field'] => $point,
+          ),
+        );
+
+        // // Geo distance range filter.
+        // $query_options['query_search_filter'] = array(
+        //   'geo_distance_range' => array(
+        //     'from' => '',
+        //     'to' => '',
+        //     $spatial['field'] => $point,
+        //   ),
+        // );
+
+        // // Geo polygon filter.
+        // $query_options['query_search_filter'] = array(
+        //   'geo_polygon' => array(
+        //     $spatial['field'] => array(
+        //       'points' => array(),
+        //     ),
+        //   ),
+        // );
+
+        // // Geoshape filter.
+        // $query_options['query_search_filter'] = array(
+        //   'geo_shape' => array(
+        //     $spatial['field'] => array(
+        //       'shape' => array(
+        //         'type' => 'envelope',
+        //         'coordinates' => array(),
+        //       ),
+        //     ),
+        //   ),
+        // );
+
+        // // Geohash cell filter.
+        // $query_options['query_search_filter'] = array(
+        //   'geohash_cell' => array(
+        //     $spatial['field'] => $point,
+        //     'precision' => '',
+        //     'neighbors' => '',
+        //   ),
+        // );
+      }
+    }
+
     // Build the query.
     if (!empty($query_options['query_search_string']) && !empty($query_options['query_search_filter'])) {
       $body['query']['filtered']['query'] = $query_options['query_search_string'];
@@ -1042,6 +1153,12 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $mlt = $query_options['search_api_mlt'];
     }
 
+    // Handle spatial filters.
+    $spatial = array();
+    if (isset($query_options['search_api_location'])) {
+      $spatial = $query_options['search_api_location'];
+    }
+
     return array(
       'query_offset' => $query_offset,
       'query_limit' => $query_limit,
@@ -1049,6 +1166,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       'query_search_filter' => $query_search_filter,
       'sort' => $sort,
       'mlt' => $mlt,
+      'spatials' => $spatial,
     );
   }
 
