@@ -58,6 +58,14 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   }
 
   /**
+   * Get the Elasticsearch connector object.
+   * @return object <\Elasticsearch\Client, boolean, >
+   */
+  public function getConnectorObject() {
+    return $this->elasticsearchClient;
+  }
+
+  /**
    * Overrides configurationForm().
    */
   public function configurationForm(array $form, array &$form_state) {
@@ -326,7 +334,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    * @param SearchApiIndex $index
    * @return array
    */
-  protected function getIndexParam(SearchApiIndex $index, $with_type = FALSE) {
+  public function getIndexParam(SearchApiIndex $index, $with_type = FALSE) {
     $index_name = $this->getIndexName($index);
 
     $params = array();
@@ -475,7 +483,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   /**
    * Overrides search().
    */
-  public function search(SearchApiQueryInterface $query) {
+  public function search(SearchApiQueryInterface $query, $suggestions = FALSE) {
 
     // Results.
     $search_result = array('result count' => 0);
@@ -499,6 +507,13 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     // Do search.
     $response = $this->elasticsearchClient->search($params);
+
+    // TODO: Fix the logging to be accurate!
+    if (!empty($index->options['collect_index_statistics']) && !$suggestions
+        && class_exists('SearchApiElasticsearchConnectorStats')) {
+      $stats = new SearchApiElasticsearchConnectorStats($query, $this);
+      $stats->logStat($response);
+    }
 
     // Parse response.
     return $this->parseSearchResponse($response, $query);
@@ -1486,7 +1501,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     try {
       // TODO: Making autocomplete to work as autocomplete instead of exact string match.
-      $response = $this->search($query);
+      $response = $this->search($query, TRUE);
     }
     catch (Exception $e) {
       watchdog('Elasticsearch Search API', check_plain($e->getMessage()), array(), WATCHDOG_ERROR);

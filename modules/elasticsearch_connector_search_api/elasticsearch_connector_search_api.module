@@ -181,6 +181,7 @@ function elasticsearch_connector_search_api_return_form_options(&$form, &$form_s
     '#title' => t('Number of replicas'),
   );
 
+  // TODO: Build this an elasticsearch connector element with dropdown and add popup.
   $form['options']['index_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Index name'),
@@ -188,6 +189,30 @@ function elasticsearch_connector_search_api_return_form_options(&$form, &$form_s
     '#element_validate' => array('elasticsearch_connector_search_api_index_name_validate'),
     '#default_value' => $default_options['index_name'],
     '#description' => t('The name of the ElasticSearch index to use. If this index does not already exist, it will be created.'),
+  );
+
+  $form['options']['collect_index_statistics'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Collect index statistics'),
+    '#default_value' => isset($default_options['collect_index_statistics']) ? $default_options['collect_index_statistics'] : 0,
+    '#description' => t('Enable the statistics collection that will help you to better analys what the users are searching for.')
+  );
+
+  $form['options']['log_only_not_found'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Log only the "Not found" results'),
+    '#default_value' => isset($default_options['log_only_not_found']) ? $default_options['log_only_not_found'] : 0,
+    '#description' => t('Log only the "Not found" results by skipping the rest.')
+  );
+
+  $form['options']['index_statistics_ttl'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Statistics TTL interval'),
+    '#element_validate' => array('_elasticsearch_connector_validate_ttl_field'),
+    '#default_value' => isset($default_options['index_statistics_ttl']) ? $default_options['index_statistics_ttl'] : SearchApiElasticsearchConnectorStats::TTL,
+    '#description' => t('Use format like 1d. Suffix can be d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks).'
+        . ' You can dynamically update the default interval.'
+        . ' However it won\'t change the TTL of already indexed messages but will be used for future logs.')
   );
 }
 
