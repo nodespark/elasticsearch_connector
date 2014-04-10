@@ -383,7 +383,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   public function indexItems(SearchApiIndex $index, array $items) {
     $elastic_type_exists = $this->getElasticsearchTypeExists($index);
     if (!$elastic_type_exists) {
-      throw new SearchApiElasticsearchConnectorException('ElasticSearch type does not exist.');
+      $this->fieldsUpdated($index);
     }
 
     if (empty($items)) {
