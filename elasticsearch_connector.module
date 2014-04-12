@@ -696,6 +696,7 @@ function elasticsearch_connector_load_library($cluster) {
       $options = array(
         'hosts' => array($cluster->url),
       );
+      drupal_alter('elasticsearch_connector_load_library_options', $options);
       try {
         if (!class_exists('\Elasticsearch\Client') && module_exists('composer_manager')) {
           // If the class doesn't exists try to explicity load the classes!
