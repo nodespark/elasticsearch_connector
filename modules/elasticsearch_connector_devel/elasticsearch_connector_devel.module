@@ -38,14 +38,11 @@ function elasticsearch_connector_devel_elasticsearch_connector_load_library_opti
  */
 function elasticsearch_connector_devel_block_view($delta = '') {
 
-  if ('elasticsearch_debug' == $delta) {
+  if ('elasticsearch_debug' == $delta && class_exists('\Elasticsearch\Connections\GuzzleConnectionDebug')) {
     $debug = array();
-
-
-
     // If we have debug information, display.
-    $debug[] = \Elasticsearch\Connections\GuzzleConnectionDebug::$debugOutput;
-    if (1 || $debug) {
+    $debug = \Elasticsearch\Connections\GuzzleConnectionDebug::$debugOutput;
+    if (!empty($debug)) {
       return array(
         'subject' => t('Elasticsearch debugger'),
         'content' => kprint_r($debug, TRUE),
