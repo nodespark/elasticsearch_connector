@@ -4,6 +4,9 @@
  * @file
  * Provides a Elasticsearch-based service class for the Search API using
  * Elasticsearch Connector module.
+ *
+ * TODO: Describe the hooks in elasticsearch_connector_search_api.api.php
+ *
  */
 
 class SearchApiElasticsearchConnectorException extends Exception {}
@@ -306,6 +309,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $properties[$field_id] = $this->getFieldMapping($field_data);
     }
 
+    drupal_alter('elasticsearch_connector_search_api_field_update', $index, $properties);
+
     try {
       if ($this->elasticsearchClient->indices()->existsType($params)) {
         $current_mapping = $this->elasticsearchClient->indices()->getMapping($params);
@@ -505,6 +510,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     // Add facets.
     $this->addSearchFacets($params, $query);
 
+    // Alter the query and params.
+    drupal_alter('elasticsearch_connector_search_api_query', $query, $params);
     // Do search.
     $response = $this->elasticsearchClient->search($params);
 
