@@ -244,16 +244,17 @@ function elasticsearch_connector_search_api_entity_presave($entity, $entity_type
  *   The edited index.
  */
 function elasticsearch_connector_search_api_search_api_index_update(SearchApiIndex $index) {
-  // TODO: Update the elastic settings!
-  //$elastic_server->updateSettings($index, $merge_types);
-
-  // TODO: Check what happen if we change the server of the index!
-  // We need to remove the index data from the index if we are going to change
-  // the server.
   $original_server = $index->original->server();
   $current_server = $index->server();
   if (!empty($original_server) && $original_server->class == 'search_api_elasticsearch_connector' && (empty($current_server) || $current_server->class != 'search_api_elasticsearch_connector')) {
-    // Delete the elasticsearch index or content type.
+    // We need to remove the index data from the index if we are going to change
+    // the server.
+  }
+
+  if ($current_server->class == 'search_api_elasticsearch_connector') {
+    // TODO: Update the elastic settings!
+    // $current_server->updateSettings($index, $merge_types);
+    // TODO: Create the index and the type if doesn't exists.
   }
 
 }
@@ -274,8 +275,6 @@ function elasticsearch_connector_search_api_ajax_callback($form, &$form_state) {
  * Implemens hook_elasticsearch_connector_edit_lock().
  */
 function elasticsearch_connector_search_api_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
-  // TODO: Check if the cluster or the index can be editted or lock it by returning TRUE.
-  // Select all servers that are using an elasticsearch cluster and lock this cluster for editing/deleting.
   if ('cluster' == $type) {
     $servers = search_api_server_load_multiple(FALSE);
     foreach ($servers as $id => $server) {

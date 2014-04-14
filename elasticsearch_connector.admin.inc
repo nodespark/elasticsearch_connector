@@ -215,8 +215,6 @@ function elasticsearch_connector_info_cluster($cluster) {
     );
 
     $cluster_health_rows = array();
-    // TODO: Think of moving this mapping to a separate class.
-    // For now it is not necessary cause this is the only place we are using it.
     $cluster_health_mapping = array(
       'cluster_name'  => t('Cluster name'),
       'status'        => t('Status'),
