@@ -9,7 +9,7 @@
  *
  */
 
-class SearchApiElasticsearchConnectorException extends Exception {}
+class SearchApiElasticsearchConnectorException extends SearchApiException {}
 
 /**
  * Dummy search service for when the ElasticSearch library isn't available.
@@ -410,10 +410,21 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
 
     try {
-      $this->elasticsearchClient->bulk($params);
+      $response = $this->elasticsearchClient->bulk($params);
+      // If error throw the error we have.
+      if (!empty($response['errors'])) {
+        foreach($response['items'] as $item) {
+          if (!empty($item['index']['status']) && $item['index']['status'] == '400') {
+            // TODO: This foreach maybe is better to return only the indexed items for return
+            // instead of throwing an error and stop the process cause we are in bulk
+            // and some of the items can be indexed successfully.
+            throw new SearchApiElasticsearchConnectorException($item['index']['error']);
+          }
+        }
+      }
     }
     catch (Exception $e) {
-      throw new SearchApiElasticsearchConnectorException($e->getMessage, NULL, $e);
+      throw new SearchApiElasticsearchConnectorException($e->getMessage(), NULL, $e);
     }
 
     return array_keys($items);

@@ -36,7 +36,8 @@ function elasticsearch_connector_cron() {
  * Implements hook_permission().
  */
 function elasticsearch_connector_permission() {
-   return array(
+  // TODO: Fix the typo and make an update hook to fix the roles.
+  return array(
     'adminiser elasticsearch connector' => array(
       'title' => t('Administer elasticsearch connector'),
       'description' => t('Giving you access to administer elasticsearch clusters.'),
