@@ -2,6 +2,10 @@
 /**
  * @file
  * Created on Dec 23, 2013
+ *
+ * TODO: Handle index edit to update the replicas settings.
+ *
+ *
  */
 
 /**
@@ -184,8 +188,7 @@ function elasticsearch_connector_info_cluster($cluster) {
   $node_rows = $cluster_statistics_rows = $cluster_health_rows = array();
 
   if (isset($cluster_client) && !empty($cluster_status['info']) && elasticsearch_connector_check_status($cluster_status['info'])) {
-    // TODO: We call twice the /_nodes/stats
-    $node_stats = elasticsearch_connector_get_cluster_nodes_stat($cluster_client);
+    $node_stats = $cluster_status['stats'];
     $total_docs = $total_size = 0;
     if (isset($node_stats)) {
       foreach ($node_stats['nodes'] as $node_key => $node_values) {
@@ -213,6 +216,7 @@ function elasticsearch_connector_info_cluster($cluster) {
 
     $cluster_health_rows = array();
     // TODO: Think of moving this mapping to a separate class.
+    // For now it is not necessary cause this is the only place we are using it.
     $cluster_health_mapping = array(
       'cluster_name'  => t('Cluster name'),
       'status'        => t('Status'),
@@ -646,7 +650,7 @@ function elasticsearch_connector_cluster_indices_delete($form, &$form_state, $cl
             '%index' => $index,
             '%name' => $cluster->name)
           ),
-        elasticsearch_connector_main_settings_path() . '/clusters',
+        elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices',
         t('This action cannot be undone.'),
         t('Delete'),
         t('Cancel')

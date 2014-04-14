@@ -224,6 +224,8 @@ function _elasticsearch_connector_ec_index_attached() {
 
 /**
  * Check if some of the modules locked a major changes on the cluster settings and deletion.
+ * Invoke the hooks similar to the module_invoke.
+ *
  * @param object $cluster
  * @return array
  */

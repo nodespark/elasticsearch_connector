@@ -2,11 +2,6 @@
 /**
  * @file
  * Provides a elasticsearch-based service class for the Search API.
- *
- * TODO: Check what happen if we change the server of the index!
- * We need to remove the index data from the index if we are going to change
- * the server.
- *
  */
 
 /**
@@ -249,9 +244,18 @@ function elasticsearch_connector_search_api_entity_presave($entity, $entity_type
  *   The edited index.
  */
 function elasticsearch_connector_search_api_search_api_index_update(SearchApiIndex $index) {
-  // TODO: Update processors for this index to be unset.
   // TODO: Update the elastic settings!
   //$elastic_server->updateSettings($index, $merge_types);
+
+  // TODO: Check what happen if we change the server of the index!
+  // We need to remove the index data from the index if we are going to change
+  // the server.
+  $original_server = $index->original->server();
+  $current_server = $index->server();
+  if (!empty($original_server) && $original_server->class == 'search_api_elasticsearch_connector' && (empty($current_server) || $current_server->class != 'search_api_elasticsearch_connector')) {
+    // Delete the elasticsearch index or content type.
+  }
+
 }
 
 /**
@@ -271,5 +275,23 @@ function elasticsearch_connector_search_api_ajax_callback($form, &$form_state) {
  */
 function elasticsearch_connector_search_api_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
   // TODO: Check if the cluster or the index can be editted or lock it by returning TRUE.
+  // Select all servers that are using an elasticsearch cluster and lock this cluster for editing/deleting.
+  if ('cluster' == $type) {
+    $servers = search_api_server_load_multiple(FALSE);
+    foreach ($servers as $id => $server) {
+      if ('search_api_elasticsearch_connector' == $server->class) {
+        return TRUE;
+      }
+    }
+  }
+  elseif ('index' == $type) {
+    $indexes = search_api_index_load_multiple(FALSE);
+    foreach($indexes as $id => $search_api_index) {
+      if (!empty($search_api_index->options['index_name']) && $search_api_index->options['index_name'] == $index) {
+        return TRUE;
+      }
+    }
+  }
+
   return FALSE;
 }
