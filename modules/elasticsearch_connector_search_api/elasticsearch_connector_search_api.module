@@ -224,13 +224,22 @@ function elasticsearch_connector_search_api_index_name_validate($element, &$form
 }
 
 /**
- * Implements hook_search_api_index_insert().
- *
- * @param SearchApiIndex $index
- *   The new index.
+ * Implementation of hook_entity_presave().
+ * @param object $entity
+ * @param string $entity_type
  */
-function elasticsearch_connector_search_api_search_api_index_insert(SearchApiIndex $index) {
-  // TODO: Update processors for this index to be unset.
+function elasticsearch_connector_search_api_entity_presave($entity, $entity_type) {
+  if ('search_api_index' == $entity_type) {
+    // If we are saving an index with elasticsearch server, unset all processors.
+    $server = $entity->server();
+    if (!empty($server) && $server->class == 'search_api_elasticsearch_connector') {
+      if (!empty($entity->options['processors'])) {
+        foreach($entity->options['processors'] as $proc_key => $proc_options) {
+          $entity->options['processors'][$proc_key]['status'] = 0;
+        }
+      }
+    }
+  }
 }
 
 /**
