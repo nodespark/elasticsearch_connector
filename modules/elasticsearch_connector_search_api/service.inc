@@ -1164,7 +1164,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           $boost = isset($index_fields[$fulltext_field]['boost']) ? '^' . $index_fields[$fulltext_field]['boost'] : '';
           $query_search_string['query_string']['fields'][] = $fulltext_field . $boost;
         }
-        var_dump($query_search_string);exit;
 
         // TODO: To use snowball here we need to index the string as snowball, otherwise no result will match.
         $query_search_string['query_string']['analyzer'] = 'snowball';
