@@ -1159,7 +1159,13 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         // TODO: Think of using bool query where default will be OR operator and should cause will be the AND operator.
         // This way we will have more results to the user and the one that match AND will be more relevant.
         $query_search_string['query_string']['query'] = $search_string;
-        $query_search_string['query_string']['fields'] = array_values($query_full_text_fields);
+
+        foreach ($query_full_text_fields as $fulltext_field) {
+          $boost = isset($index_fields[$fulltext_field]['boost']) ? '^' . $index_fields[$fulltext_field]['boost'] : '';
+          $query_search_string['query_string']['fields'][] = $fulltext_field . $boost;
+        }
+        var_dump($query_search_string);exit;
+
         // TODO: To use snowball here we need to index the string as snowball, otherwise no result will match.
         $query_search_string['query_string']['analyzer'] = 'snowball';
       }
