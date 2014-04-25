@@ -534,7 +534,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
 
     // Parse response.
-    return $this->parseSearchResponse($response, $query);
+    $results = $this->parseSearchResponse($response, $query);
+    drupal_alter('elasticsearch_connector_search_api_results', $results, $query, $response);
+
+    return $results;
   }
 
   /**
