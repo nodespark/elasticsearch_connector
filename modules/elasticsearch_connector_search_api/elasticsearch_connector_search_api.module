@@ -279,7 +279,13 @@ function elasticsearch_connector_search_api_elasticsearch_connector_edit_lock($t
     $servers = search_api_server_load_multiple(FALSE);
     foreach ($servers as $id => $server) {
       if ('search_api_elasticsearch_connector' == $server->class) {
-        return TRUE;
+        $server_cluster = $server->options['cluster'];
+        if (empty($server_cluster)) {
+          $server_cluster = elasticsearch_connector_get_default_connector();
+        }
+        if ($server_cluster == $cluster) {
+          return TRUE;
+        }
       }
     }
   }
