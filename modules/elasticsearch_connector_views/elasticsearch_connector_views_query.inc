@@ -45,8 +45,9 @@ class elasticsearch_connector_views_query extends views_plugin_query {
     }
 
     // Add fields to the query so they will be shown in solr document.
-//    $this->params['fields'] = array_keys($view->field);
-    $this->params['fields'] = array('_source');
+    $this->params['fields'] = array_keys($view->field);
+    $this->params['fields'][] = '_source';
+    //$this->params['fields'] = array('_source');
 
     $params = array();
     if (isset($this->params['q']) && !empty($this->params['q'])) {
@@ -165,7 +166,12 @@ class elasticsearch_connector_views_query extends views_plugin_query {
       // Store results.
       if (!empty($response['hits']['hits'])) {
         foreach ($response['hits']['hits'] as $doc) {
-          $view->result[] = (object)$doc['_source'];
+          $result_doc = array();
+          foreach ($doc['fields'] as $field_name => $field_value) {
+            // TODO: Think of handling multy value fields somehow.
+            $result_doc[$field_name] = reset($field_value);
+          }
+          $view->result[] = (object)$result_doc;
         }
       }
 

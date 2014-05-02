@@ -54,68 +54,7 @@ function elasticsearch_connector_views_views_data() {
             );
 
             // Get the list of the fields in index directly from Solr.
-            $fields = $type_settings['properties'];
-
-            foreach ($fields as $field_name => $field) {
-              // TODO: Restrict some fields if needed.
-              // TODO: Handle object types e.g. nested structures.
-              // TODO: Handle boolean.
-              $field_type = $field['type'];
-              $filter_handler = 'elasticsearch_connector_views_handler_filter';
-              switch ($field_type) {
-                case 'date':
-                  $filter_handler = 'elasticsearch_connector_views_handler_filter_date';
-                  break;
-                case 'text':
-                case 'string':
-                  $filter_handler = 'elasticsearch_connector_views_handler_filter_string';
-                  break;
-
-                // Handle numeric filter type.
-                case 'integer':
-                case 'long':
-                case 'float':
-                case 'double':
-                 $filter_handler = 'elasticsearch_connector_views_handler_filter_numeric';
-                 break;
-              }
-
-              $data[$base_table][$field_name] = array(
-                'title' => $field_name,
-                'help' => $field_name,
-                'field' => array(
-                  'handler' => 'elasticsearch_connector_views_handler_field',
-                  'click sortable' => TRUE,
-                ),
-                'filter' => array(
-                  'handler' => $filter_handler,
-                ),
-                'sort' => array(
-                  'handler' => 'elasticsearch_connector_views_handler_sort',
-                ),
-                'argument' => array(
-                  'handler' => 'elasticsearch_connector_views_handler_argument',
-                ),
-              );
-
-              // Default sort field for label.
-              $sort_field_name = ($field_name == 'label') ? 'sort_label' : '';
-              // Check if corresponding sort_ field exists. We remove prefix from field
-              // name (for example prefix "ss_" from "ss_name") and check if "sort_*"
-              // field is available.
-
-              // TODO: Handle sorting field.
-
-  //             if (array_key_exists('sort_' . substr($field_name, 2), $solr_fields)) {
-  //               $sort_field_name = 'sort_' . substr($field_name, 2);
-  //             }
-  //             if (!empty($sort_field_name)) {
-  //               // Use the sort field for click sorting.
-  //               $data[$base_table][$field_name]['field']['click sort field'] = $sort_field_name;
-  //               // And use the sort field for explicit sorts.
-  //               $data[$base_table][$field_name]['sort']['real field'] = $sort_field_name;
-  //             }
-            }
+            $fields = _elasticsearch_connector_views_handle_fields($base_table, $data, $type_settings['properties']);
 
             // Keyword field.
             $data[$base_table]['keyword'] = array(
@@ -154,3 +93,88 @@ function elasticsearch_connector_views_views_data() {
 
   return $data;
 }
+
+/**
+ * Handle the fields mapping and handle nested data types.
+ *
+ * @param string $base_table
+ * @param array $data
+ * @param array $fields
+ * @param string $base_field_name
+ */
+function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fields, $base_field_name = '') {
+  if (!empty($fields)) {
+    foreach ($fields as $field_name => $field) {
+      // TODO: Restrict some fields if needed.
+      // TODO: Handle boolean.
+      if (empty($field['type']) && isset($field['properties'])) {
+        $field_type = 'object';
+      }
+      else {
+        $field_type = $field['type'];
+      }
+      $filter_handler = 'elasticsearch_connector_views_handler_filter';
+      $set = TRUE;
+      switch ($field_type) {
+        case 'object':
+          _elasticsearch_connector_views_handle_fields($base_table, $data, $field['properties'], $base_field_name . $field_name . '.');
+          $set = FALSE;
+          break;
+        case 'date':
+          $filter_handler = 'elasticsearch_connector_views_handler_filter_date';
+          break;
+        case 'text':
+        case 'string':
+          $filter_handler = 'elasticsearch_connector_views_handler_filter_string';
+          break;
+
+          // Handle numeric filter type.
+        case 'integer':
+        case 'long':
+        case 'float':
+        case 'double':
+          $filter_handler = 'elasticsearch_connector_views_handler_filter_numeric';
+          break;
+      }
+
+      if ($set) {
+        $data[$base_table][$base_field_name . $field_name] = array(
+          'title' => $base_field_name . $field_name,
+          'help' => $base_field_name . $field_name,
+          'field' => array(
+            'handler' => 'elasticsearch_connector_views_handler_field',
+            'click sortable' => TRUE,
+          ),
+          'filter' => array(
+            'handler' => $filter_handler,
+          ),
+          'sort' => array(
+            'handler' => 'elasticsearch_connector_views_handler_sort',
+          ),
+          'argument' => array(
+            'handler' => 'elasticsearch_connector_views_handler_argument',
+          ),
+        );
+
+        // Default sort field for label.
+        $sort_field_name = ($field_name == 'label') ? 'sort_label' : '';
+        // Check if corresponding sort_ field exists. We remove prefix from field
+        // name (for example prefix "ss_" from "ss_name") and check if "sort_*"
+        // field is available.
+
+        // TODO: Handle sorting field.
+
+        //             if (array_key_exists('sort_' . substr($field_name, 2), $solr_fields)) {
+        //               $sort_field_name = 'sort_' . substr($field_name, 2);
+        //             }
+        //             if (!empty($sort_field_name)) {
+        //               // Use the sort field for click sorting.
+        //               $data[$base_table][$field_name]['field']['click sort field'] = $sort_field_name;
+        //               // And use the sort field for explicit sorts.
+        //               $data[$base_table][$field_name]['sort']['real field'] = $sort_field_name;
+        //             }
+      }
+    }
+  }
+}
+
