@@ -167,8 +167,8 @@ class elasticsearch_connector_views_query extends views_plugin_query {
         foreach ($response['hits']['hits'] as $doc) {
           $result_doc = array();
           foreach ($doc['fields'] as $field_name => $field_value) {
-            // TODO: Think of handling multy value fields somehow.
-            $result_doc[$field_name] = reset($field_value);
+            // Handle multivalue with concatenation for now.
+            $result_doc[$field_name] = implode(' | ', $field_value);
           }
           $result_doc['_source'] = $doc['_source'];
           $view->result[] = (object)$result_doc;
