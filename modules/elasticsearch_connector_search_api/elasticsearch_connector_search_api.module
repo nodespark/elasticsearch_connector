@@ -283,7 +283,7 @@ function elasticsearch_connector_search_api_elasticsearch_connector_edit_lock($t
         if (empty($server_cluster)) {
           $server_cluster = elasticsearch_connector_get_default_connector();
         }
-        if ($server_cluster == $cluster) {
+        if ($server_cluster == $cluster->cluster_id) {
           return TRUE;
         }
       }
