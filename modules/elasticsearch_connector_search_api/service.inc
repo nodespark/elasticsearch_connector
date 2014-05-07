@@ -359,6 +359,9 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $params = $this->getIndexParam($index);
 
     try {
+      // TODO: Delete the mapping.
+      // TODO: Check if there are other mappings.
+      // TODO: If not other mappings delete the index then.
       $response = $this->elasticsearchClient->indices()->delete($params);
     }
     catch (Exception $e) {
