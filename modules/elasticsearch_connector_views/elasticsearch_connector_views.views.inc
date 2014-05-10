@@ -114,6 +114,7 @@ function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fiel
         $field_type = $field['type'];
       }
       $filter_handler = 'elasticsearch_connector_views_handler_filter';
+      $field_handler = 'elasticsearch_connector_views_handler_field';
       $set = TRUE;
       switch ($field_type) {
         case 'object':
@@ -122,6 +123,7 @@ function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fiel
           break;
         case 'date':
           $filter_handler = 'elasticsearch_connector_views_handler_filter_date';
+          $field_handler = 'elasticsearch_connector_views_handler_field_date';
           break;
         case 'text':
         case 'string':
@@ -142,7 +144,7 @@ function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fiel
           'title' => $base_field_name . $field_name,
           'help' => $base_field_name . $field_name,
           'field' => array(
-            'handler' => 'elasticsearch_connector_views_handler_field',
+            'handler' => $field_handler,
             'click sortable' => TRUE,
           ),
           'filter' => array(
