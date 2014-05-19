@@ -1497,9 +1497,16 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           else {
             foreach ($facet_data['terms'] as $term) {
               if ($term['count'] >= $facet_min_count) {
+                if ($field_type == 'boolean') {
+                  $term_value = ($term['term'] == 'T' ? TRUE : FALSE);
+                }
+                else {
+                  $term_value = '"' . $term['term'] . '"';
+                }
+
                 $result[$facet_id][] = array(
                   'count' => $term['count'],
-                  'filter' => '"' . $term['term'] . '"',
+                  'filter' => $term_value,
                 );
               }
             }
