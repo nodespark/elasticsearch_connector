@@ -589,8 +589,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           if (is_array($filter_info)) {
             $filter_assoc = $this->getAssociativeFilter($filter_info);
             $this->correctFilter($filter_assoc, $index_fields, $ignored_field_id);
-            // Check field.
-            $filter = $this->getFilter($filter_assoc);
+            // Check if we need to ignore the filter!
+            if ($filter_assoc['field_id'] != $ignored_field_id) {
+              $filter = $this->getFilter($filter_assoc);
+            }
 
             if (!empty($filter)) {
               $filters[] = $filter;
