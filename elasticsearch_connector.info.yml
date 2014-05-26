@@ -1,0 +1,10 @@
+name: 
+  'Elasticsearch Connector'
+description: 
+  'Abstraction of making connection to the elasticsearch server. This module is API for a whole bunch of functionality connected with this module.'
+type: module
+package: Elasticsearch
+version: VERSION
+core: 8.x
+dependencies:
+  - ctools

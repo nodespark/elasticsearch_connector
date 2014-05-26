@@ -1,7 +1,0 @@
-name = Elasticsearch Connector Devel
-description = "The module provide debugging information for the developers."
-core = 7.x
-package = Elasticsearch
-
-dependencies[] = elasticsearch_connector
-dependencies[] = devel
