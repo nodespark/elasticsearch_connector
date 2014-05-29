@@ -1,0 +1,26 @@
+This module requires to install the needed PHP extensions, otherwise it will 
+not works correctly. There are two ways to install them:
+
+ * Install the "Elasticsearch Connector Easy Install" module, packing the 
+libraries for you. In this way the upgrade of the libraries is much more 
+harder instead of using the composer and composer manager to do this.
+However it is a great starting point if you do not want to deal with libraries,
+for click/install/play. 
+
+OR YOU CAN
+
+ * Use composer_manager module - https://drupal.org/project/composer_manager. 
+This module handle the requirements by looking the composer.json file. 
+Learn more about the composer at here: 
+https://github.com/composer/composer/blob/master/doc/00-intro.md
+After you configure the composer_manager module, go to the 
+composer folder where the json file is generated. The default path will be: 
+sites/default/files/composer and execute the composer install file e.g.: 
+
+cd [DRUPAL ROOT]/sites/default/files/composer;
+composer.phar install;
+
+If the above command is not available in CLI go to:
+https://github.com/composer/composer/blob/master/doc/00-intro.md 
+and follow the install instructions.
+-------------------------------------------------------------------------------
