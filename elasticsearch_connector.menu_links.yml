@@ -1,0 +1,11 @@
+elasticsearch_connector.admin_config_elasticsearch_connector:
+  title: 'Elasticsearch connector'
+  parent: system.admin_config
+  description: 'Administer Elasticsearch Connector clusters and settings.'
+  route_name: elasticsearch_connector.admin_config_elasticsearch_connector
+  weight: 0
+elasticsearch_connector.clusters:
+  route_name: elasticsearch_connector.clusters
+  parent: elasticsearch_connector.admin_config_elasticsearch_connector
+  title: 'Elasticsearch Clusters'
+  weight: -10

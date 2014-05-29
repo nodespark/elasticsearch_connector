@@ -1,0 +1,15 @@
+elasticsearch_connector.admin_config_elasticsearch_connector:
+  path: '/admin/config/elasticsearch-connector'
+  defaults:
+    _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Elasticsearch connector'
+  requirements:
+    _permission: 'administer elasticsearch connector'
+
+elasticsearch_connector.clusters:
+  path: '/admin/config/elasticsearch-connector/clusters'
+  defaults:
+    _content: '\Drupal\elasticsearch_connector\Controller\ElasticsearchConnectorController::adminClusters'
+    _title: 'Elasticsearch Clusters'
+  requirements:
+    _permission: 'administer elasticsearch connector'

@@ -11,15 +11,14 @@
  * Check Elastica installation.
  */
 function elasticsearch_connector_requirements($phase) {
-  $t = get_t();
   if ($phase === 'install') {
     if (version_compare(phpversion(), '5.3.9', '<')) {
       return array(
         'elasticsearch_connector' => array(
-          'title' => $t('The PHP version is not compatible with this module.'),
-          'description' => $t('The module requires PHP version bigger than or equal to version 5.3.9.'),
+          'title' => t('The PHP version is not compatible with this module.'),
+          'description' => t('The module requires PHP version bigger than or equal to version 5.3.9.'),
           'severity' => REQUIREMENT_ERROR,
-          'value' => $t('PHP version not compatible.'),
+          'value' => t('PHP version not compatible.'),
         ),
       );
     }
@@ -29,20 +28,20 @@ function elasticsearch_connector_requirements($phase) {
     if (!class_exists('\Elasticsearch\Client')) {
       return array(
         'elasticsearch_connector' => array(
-          'title' => $t('The Elasticsearch library is missing.'),
-          'description' => $t('The official library for Elasticsearch connection is missing.'),
+          'title' => t('The Elasticsearch library is missing.'),
+          'description' => t('The official library for Elasticsearch connection is missing.'),
           'severity' => REQUIREMENT_ERROR,
-          'value' => $t('Elasticsearch library missing.'),
+          'value' => t('Elasticsearch library missing.'),
         ),
       );
     }
     else {
       return array(
         'elasticsearch_connector' => array(
-          'title' => $t('Elasticsearch PHP library'),
-          'description' => $t('The official Elasticsearch library was correctly installed.'),
+          'title' => t('Elasticsearch PHP library'),
+          'description' => t('The official Elasticsearch library was correctly installed.'),
           'severity' => REQUIREMENT_OK,
-          'value' => $t('OK'),
+          'value' => t('OK'),
         ),
       );
     }
