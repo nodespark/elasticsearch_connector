@@ -11,11 +11,13 @@ define('ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE', '0');
 define('ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE', '1');
 define('ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK', '200');
 
+use Symfony\Component\HttpFoundation\Request;
+
 /**
  * Implements hook_help().
  */
-function elasticsearch_connector_help($path, $arg) {
-  switch ($path) {
+function elasticsearch_connector_help($route_name, Request $request) {
+  switch ($route_name) {
     case 'admin/help#elasticsearch_connector':
       return '<p>' . t('Abstraction of making connection to the elasticsearch
         server. This module is API for a whole bunch of functionality connected
