@@ -9,7 +9,15 @@ elasticsearch_connector.admin_config_elasticsearch_connector:
 elasticsearch_connector.clusters:
   path: '/admin/config/elasticsearch-connector/clusters'
   defaults:
-    _content: '\Drupal\elasticsearch_connector\Controller\ElasticsearchConnectorController::adminClusters'
+    _entity_list: 'elasticsearch_connector_cluster'
     _title: 'Elasticsearch Clusters'
   requirements:
     _permission: 'administer elasticsearch connector'
+
+elasticsearch_connector.add:
+  path: '/admin/config/elasticsearch-connector/clusters/add'
+  defaults:
+    _entity_form: 'elasticsearch_connector_cluster.add'
+    _title: 'Cluster'
+  requirements:
+    _entity_create_access: 'elasticsearch_connector_cluster'
