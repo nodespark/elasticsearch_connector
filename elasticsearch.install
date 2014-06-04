@@ -2,7 +2,7 @@
 /**
  * @file
  *
- * The installtion file for elasticsearch_connector module.
+ * The installtion file for elasticsearch module.
  */
 
 /**
@@ -10,16 +10,15 @@
  *
  * Check Elastica installation.
  */
-function elasticsearch_connector_requirements($phase) {
-  $t = get_t();
+function elasticsearch_requirements($phase) {
   if ($phase === 'install') {
     if (version_compare(phpversion(), '5.3.9', '<')) {
       return array(
-        'elasticsearch_connector' => array(
-          'title' => $t('The PHP version is not compatible with this module.'),
-          'description' => $t('The module requires PHP version bigger than or equal to version 5.3.9.'),
+        'elasticsearch' => array(
+          'title' => t('The PHP version is not compatible with this module.'),
+          'description' => t('The module requires PHP version bigger than or equal to version 5.3.9.'),
           'severity' => REQUIREMENT_ERROR,
-          'value' => $t('PHP version not compatible.'),
+          'value' => t('PHP version not compatible.'),
         ),
       );
     }
@@ -28,21 +27,21 @@ function elasticsearch_connector_requirements($phase) {
   if ($phase == 'runtime') {
     if (!class_exists('\Elasticsearch\Client')) {
       return array(
-        'elasticsearch_connector' => array(
-          'title' => $t('The Elasticsearch library is missing.'),
-          'description' => $t('The official library for Elasticsearch connection is missing.'),
+        'elasticsearch' => array(
+          'title' => t('The Elasticsearch library is missing.'),
+          'description' => t('The official library for Elasticsearch connection is missing.'),
           'severity' => REQUIREMENT_ERROR,
-          'value' => $t('Elasticsearch library missing.'),
+          'value' => t('Elasticsearch library missing.'),
         ),
       );
     }
     else {
       return array(
-        'elasticsearch_connector' => array(
-          'title' => $t('Elasticsearch PHP library'),
-          'description' => $t('The official Elasticsearch library was correctly installed.'),
+        'elasticsearch' => array(
+          'title' => t('Elasticsearch PHP library'),
+          'description' => t('The official Elasticsearch library was correctly installed.'),
           'severity' => REQUIREMENT_OK,
-          'value' => $t('OK'),
+          'value' => t('OK'),
         ),
       );
     }
@@ -55,14 +54,14 @@ function elasticsearch_connector_requirements($phase) {
  * Implements hook_schema().
  */
 function elasticsearch_connector_schema() {
-  $schema['elasticsearch_connector_cluster'] = array(
+  $schema['elasticsearch'] = array(
     'description' => 'The base table for elasticsearch clusters.',
     'export' => array(
       'key' => 'cluster_id',
       'admin_title' => 'name',
       'api' => array(
-        'owner' => 'elasticsearch_connector',
-        'api' => 'elasticsearch_connector_defaults',
+        'owner' => 'elasticsearch',
+        'api' => 'elasticsearch_defaults',
         'minimum_version' => 1,
         'current_version' => 1,
       ),
