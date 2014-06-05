@@ -7,18 +7,18 @@
  * Created on Dec 21, 2013
  */
 
-define('ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE', '0');
-define('ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE', '1');
-define('ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK', '200');
+define('ELASTICSEARCH_STATUS_INACTIVE', '0');
+define('ELASTICSEARCH_STATUS_ACTIVE', '1');
+define('ELASTICSEARCH_CLUSTER_STATUS_OK', '200');
 
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Implements hook_help().
  */
-function elasticsearch_connector_help($route_name, Request $request) {
+function elasticsearch_help($route_name, Request $request) {
   switch ($route_name) {
-    case 'admin/help#elasticsearch_connector':
+    case 'admin/help#elasticsearch':
       return '<p>' . t('Abstraction of making connection to the elasticsearch
         server. This module is API for a whole bunch of functionality connected
         with this module."') . '</p>';
@@ -28,7 +28,7 @@ function elasticsearch_connector_help($route_name, Request $request) {
 /**
  * Implements hook_cron()
  */
-function elasticsearch_connector_cron() {
+function elasticsearch_cron() {
   // TODO: Check cluster node state and update cluster nodes if any changes.
   // Do this only if we have auto-node update configuration enabled.
   // The default state of the auto mode will be activeated!
@@ -37,11 +37,10 @@ function elasticsearch_connector_cron() {
 /**
  * Implements hook_permission().
  */
-function elasticsearch_connector_permission() {
-  // TODO: Fix the typo and make an update hook to fix the roles.
+function elasticsearch_permission() {
   return array(
-    'adminiser elasticsearch connector' => array(
-      'title' => t('Administer elasticsearch connector'),
+    'adminiser elasticsearch' => array(
+      'title' => t('Administer elasticsearch'),
       'description' => t('Giving you access to administer elasticsearch clusters.'),
     ),
   );
@@ -50,11 +49,11 @@ function elasticsearch_connector_permission() {
 /**
  * Implements hook_theme().
  */
-function elasticsearch_connector_theme() {
+function elasticsearch_theme() {
   return array(
-    'elasticsearch_connector_page' => array(
+    'elasticsearch_page' => array(
       'render element' => 'page',
-      'template' => 'elasticsearch-connector-dialog-page',
+      'template' => 'elasticsearch-dialog-page',
     ),
   );
 }
@@ -62,15 +61,15 @@ function elasticsearch_connector_theme() {
 /**
  * Implements hook_menu().
  */
-function elasticsearch_connector_menu() {
+function elasticsearch_menu() {
   $items = array();
-  $settings_path = elasticsearch_connector_main_settings_path();
+  $settings_path = elasticsearch_main_settings_path();
 
   $items[$settings_path] = array(
-    'title'              => 'Elasticsearch connector',
-    'description'        => 'Administer Elasticsearch connector module',
+    'title'              => 'Elasticsearch',
+    'description'        => 'Administer Elasticsearch module',
     'position'           => 'left',
-    'access arguments'   => array('adminiser elasticsearch connector'),
+    'access arguments'   => array('adminiser elasticsearch'),
     'page callback'      => 'system_admin_menu_block_page',
     'file'               => 'system.admin.inc',
     'file path'          => drupal_get_path('module', 'system'),
@@ -80,8 +79,8 @@ function elasticsearch_connector_menu() {
     'title'             => 'Elasticsearch Clusters',
     'description'       => 'Showing all available clusters',
     'page callback'     => 'elasticsearch_connector_status_page',
-    'access arguments'  => array('adminiser elasticsearch connector'),
-    'file'              => 'elasticsearch_connector.admin.inc',
+    'access arguments'  => array('adminiser elasticsearch'),
+    'file'              => 'elasticsearch.admin.inc',
     'weight'            => -10,
   );
 
@@ -89,82 +88,82 @@ function elasticsearch_connector_menu() {
     'title'              => 'Add cluster',
     'description'        => 'Add new elasticsearch cluster',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_connector_edit_cluster'),
-    'access arguments'   => array('adminiser elasticsearch connector'),
-    'file'               => 'elasticsearch_connector.admin.inc',
+    'page arguments'     => array('elasticsearch_edit_cluster'),
+    'access arguments'   => array('adminiser elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
     'type'               => MENU_LOCAL_ACTION,
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/edit'] = array(
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/edit'] = array(
     'title'              => 'Edit cluster',
     'description'        => 'Edit cluster settings',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_connector_edit_cluster', 4),
-    'access arguments'   => array('adminiser elasticsearch connector'),
-    'file'               => 'elasticsearch_connector.admin.inc',
+    'page arguments'     => array('elasticsearch_edit_cluster', 4),
+    'access arguments'   => array('adminiser elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
     'type'               => MENU_CALLBACK,
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/info'] = array(
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/info'] = array(
     'title'              => 'Elasticsearch cluster info',
     'description'        => 'Elasticsearch cluster info',
-    'page callback'      => 'elasticsearch_connector_info_cluster',
+    'page callback'      => 'elasticsearch_info_cluster',
     'page arguments'     => array(4),
-    'access arguments'   => array('adminiser elasticsearch connector'),
-    'file'               => 'elasticsearch_connector.admin.inc',
+    'access arguments'   => array('adminiser elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
     'type'               => MENU_CALLBACK,
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/indices'] = array(
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/indices'] = array(
     'title'              => 'Elasticsearch cluster indices',
     'description'        => 'Elasticsearch cluster indices',
-    'page callback'      => 'elasticsearch_connector_cluster_indices',
+    'page callback'      => 'elasticsearch_cluster_indices',
     'page arguments'     => array(4),
-    'access arguments'   => array('adminiser elasticsearch connector'),
-    'file'               => 'elasticsearch_connector.admin.inc',
+    'access arguments'   => array('adminiser elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/indices/add'] = array(
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/indices/add'] = array(
     'title'              => 'Add index',
     'description'        => 'Add index',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_connector_cluster_indices_add', 4),
-    'access arguments'   => array('adminiser elasticsearch connector'),
-    'file'               => 'elasticsearch_connector.admin.inc',
+    'page arguments'     => array('elasticsearch_cluster_indices_add', 4),
+    'access arguments'   => array('adminiser elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
     'type'               => MENU_LOCAL_ACTION,
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/indices/%elasticsearch_connector_index_valid/aliases'] = array(
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/indices/%elasticsearch_index_valid/aliases'] = array(
     'title'              => 'Elasticsearch cluster indices',
     'description'        => 'Elasticsearch cluster indices',
-    'page callback'      => 'elasticsearch_connector_cluster_indices_aliases',
+    'page callback'      => 'elasticsearch_cluster_indices_aliases',
     'page arguments'     => array(4, 6),
-    'access arguments'   => array('adminiser elasticsearch connector'),
-    'file'               => 'elasticsearch_connector.admin.inc',
+    'access arguments'   => array('adminiser elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/indices/%elasticsearch_connector_index_valid/delete'] = array(
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/indices/%elasticsearch_index_valid/delete'] = array(
     'title'              => 'Elasticsearch cluster indices',
     'description'        => 'Elasticsearch cluster indices',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_connector_cluster_indices_delete', 4, 6),
-    'access arguments'   => array('adminiser elasticsearch connector'),
-    'file'               => 'elasticsearch_connector.admin.inc',
+    'page arguments'     => array('elasticsearch_cluster_indices_delete', 4, 6),
+    'access arguments'   => array('adminiser elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/delete'] = array(
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/delete'] = array(
     'title'              => 'Delete cluster',
     'description'        => 'Delete cluster settings',
     'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_connector_delete_cluster', 4),
-    'access arguments'   => array('adminiser elasticsearch connector'),
-    'file'               => 'elasticsearch_connector.admin.inc',
+    'page arguments'     => array('elasticsearch_delete_cluster', 4),
+    'access arguments'   => array('adminiser elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
   );
 
-  $items['elasticsearch-connector-dialog/redirect/%elasticsearch_connector_cluster/%elasticsearch_connector_index_valid'] = array(
-    'page callback' => 'elasticsearch_connector_redirect_page',
+  $items['elasticsearch-connector-dialog/redirect/%elasticsearch_cluster/%elasticsearch_index_valid'] = array(
+    'page callback' => 'elasticsearch_redirect_page',
     'page arguments' => array(2, 3),
-    'access arguments' => array('adminiser elasticsearch connector'),
+    'access arguments' => array('adminiser elasticsearch'),
   );
 
   return $items;
@@ -173,22 +172,22 @@ function elasticsearch_connector_menu() {
 /**
  * Implements hook_element_info()
  */
-function elasticsearch_connector_element_info() {
+function elasticsearch_element_info() {
   return array(
     'ec_clusters' => array(
       '#input' => TRUE,
       '#multiple' => FALSE,
       '#theme' => 'select',
       '#theme_wrappers' => array('form_element'),
-      '#process' => array('_elasticsearch_connector_ec_clusters_process'),
+      '#process' => array('_elasticsearch_ec_clusters_process'),
     ),
     'ec_index' => array(
       '#input' => TRUE,
       '#tree' => TRUE,
       '#multiple' => FALSE,
       '#theme_wrappers' => array('form_element'),
-      '#process' => array('_elasticsearch_connector_ec_index_process'),
-      '#attached' => _elasticsearch_connector_ec_index_attached(),
+      '#process' => array('_elasticsearch_ec_index_process'),
+      '#attached' => _elasticsearch_ec_index_attached(),
     ),
   );
 }
@@ -648,8 +647,8 @@ function elasticsearch_connector_cluster_load_all($active = TRUE, $add_empty_opt
  *
  * @return string
  */
-function elasticsearch_connector_get_default_connector() {
-  return variable_get('elasticsearch_connector_get_default_connector', '');
+function elasticsearch_get_default_connector() {
+  return \Drupal::state()->get('elasticsearch_get_default_connector', '');
 }
 
 /**
@@ -657,8 +656,8 @@ function elasticsearch_connector_get_default_connector() {
  *
  * @return string
  */
-function elasticsearch_connector_set_default_connector($connection) {
-  return variable_set('elasticsearch_connector_get_default_connector', $connection);
+function elasticsearch_set_default_connector($connection) {
+  return \Drupal::state()->set('elasticsearch_get_default_connector', $connection); 
 }
 
 /**
