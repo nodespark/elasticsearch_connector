@@ -53,7 +53,7 @@ function elasticsearch_requirements($phase) {
 /**
  * Implements hook_schema().
  */
-function elasticsearch_connector_schema() {
+function elasticsearch_schema() {
   $schema['elasticsearch'] = array(
     'description' => 'The base table for elasticsearch clusters.',
     'export' => array(
@@ -115,6 +115,6 @@ function elasticsearch_connector_schema() {
  *
  * Delete Search Api elasticsearch servers.
  */
-function elasticsearch_connector_uninstall() {
-  variable_del('elasticsearch_connector_get_default_connector');
+function elasticsearch_uninstall() {
+  \Drupal::state()->delete('elasticsearch_get_default_connector');
 }
