@@ -14,7 +14,7 @@
  * @return array
  *   A Drupal render array.
  */
-function elasticsearch_connector_status_page() {
+function elasticsearch_status_page() {
   $headers = array(
     array('data' => t('Cluster name')),
     array('data' => t('Status')),
@@ -24,27 +24,28 @@ function elasticsearch_connector_status_page() {
 
   $rows = array();
 
-  $clusters = elasticsearch_connector_clusters();
+  $clusters = elasticsearch_clusters();
   foreach ($clusters as $cluster) {
-    $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
+    $cluster_info = elasticsearch_get_cluster_info($cluster);
     $edit_link_title = ($cluster->export_type & EXPORT_IN_CODE) ? t('Override') : t('Edit');
     if ($cluster->type == 'Overridden') {
       $edit_link_title = $cluster->type;
     }
 
+    // TODO: Remove theme() as per D8 API
     $operations = theme('links__ctools_dropbutton', array(
       'links' => array(
-        array('title' => $edit_link_title, 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/edit'),
-        array('title' => t('Info'), 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/info'),
-        array('title' => t('Indices'), 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices'),
-        array('title' => t('Delete'), 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/delete'),
+        array('title' => $edit_link_title, 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/edit'),
+        array('title' => t('Info'), 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/info'),
+        array('title' => t('Indices'), 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices'),
+        array('title' => t('Delete'), 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/delete'),
       ),
       'attributes' => array(
         'class' => array('links', 'inline'),
       ),
     ));
 
-    if (!empty($cluster_info['info']) && elasticsearch_connector_check_status($cluster_info['info'])) {
+    if (!empty($cluster_info['info']) && elasticsearch_check_status($cluster_info['info'])) {
       $info = $cluster_info['health']['status'];
     }
     else {
@@ -60,7 +61,7 @@ function elasticsearch_connector_status_page() {
     $rows[] = $row;
   }
 
-  $output['elasticsearch_connector']['table'] = array(
+  $output['elasticsearch']['table'] = array(
     '#theme' => 'table',
     '#header' => $headers,
     '#rows' => $rows,
@@ -76,7 +77,7 @@ function elasticsearch_connector_status_page() {
  * @param object
  * @return array
  */
-function elasticsearch_connector_cluster_indices($cluster) {
+function elasticsearch_cluster_indices($cluster) {
   $headers = array(
     array('data' => t('Index name')),
     array('data' => t('Docs')),
@@ -85,18 +86,19 @@ function elasticsearch_connector_cluster_indices($cluster) {
   );
 
   $rows = array();
-  $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
+  $cluster_info = elasticsearch_get_cluster_info($cluster);
   $client = $cluster_info['client'];
 
-  if ($client && !empty($cluster_info['info']) && elasticsearch_connector_check_status($cluster_info['info'])) {
+  if ($client && !empty($cluster_info['info']) && elasticsearch_check_status($cluster_info['info'])) {
     $indices = $client->indices()->stats();
     foreach ($indices['indices'] as $index_name => $index_info) {
       $row = array();
 
+      // TODO: Remove theme() as per D8 API
       $operations = theme('links__ctools_dropbutton', array(
         'links' => array(
-          array('title' => t('Aliases'), 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/aliases'),
-          array('title' => t('Delete'), 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/delete'),
+          array('title' => t('Aliases'), 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/aliases'),
+          array('title' => t('Delete'), 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/delete'),
         ),
         'attributes' => array(
           'class' => array('links', 'inline'),
@@ -115,7 +117,7 @@ function elasticsearch_connector_cluster_indices($cluster) {
     drupal_set_message(t('The cluster cannot be connected for some reason.'), 'error');
   }
 
-  $output['elasticsearch_connector']['table'] = array(
+  $output['elasticsearch']['table'] = array(
     '#theme' => 'table',
     '#header' => $headers,
     '#rows' => $rows,
@@ -132,17 +134,17 @@ function elasticsearch_connector_cluster_indices($cluster) {
  * @param string $index_name
  * @return array
  */
-function elasticsearch_connector_cluster_indices_aliases($cluster, $index_name) {
+function elasticsearch_cluster_indices_aliases($cluster, $index_name) {
   $headers = array(
     array('data' => t('Alias name')),
   );
 
   $rows = array();
 
-  $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
+  $cluster_info = elasticsearch_get_cluster_info($cluster);
   $client = $cluster_info['client'];
 
-  if ($client && !empty($cluster_info['info']) && elasticsearch_connector_check_status($cluster_info['info'])) {
+  if ($client && !empty($cluster_info['info']) && elasticsearch_check_status($cluster_info['info'])) {
     try {
       $aliases = $client->indices()->getAliases(array('index' => $index_name));
       foreach ($aliases[$index_name]['aliases'] as $alias_name => $alias_info) {
@@ -162,7 +164,7 @@ function elasticsearch_connector_cluster_indices_aliases($cluster, $index_name) 
     drupal_set_message(t('The cluster cannot be connected for some reason.'), 'error');
   }
 
-  $output['elasticsearch_connector']['table'] = array(
+  $output['elasticsearch']['table'] = array(
     '#theme' => 'table',
     '#header' => $headers,
     '#rows' => $rows,
@@ -177,17 +179,17 @@ function elasticsearch_connector_cluster_indices_aliases($cluster, $index_name) 
  * @param object $cluster
  * @return array
  */
-function elasticsearch_connector_info_cluster($cluster) {
-  elasticsearch_connector_set_breadcrumb(array(
-    l(t('Elasticsearch Clusters'), elasticsearch_connector_main_settings_path() . '/clusters'))
+function elasticsearch_info_cluster($cluster) {
+  elasticsearch_set_breadcrumb(array(
+    l(t('Elasticsearch Clusters'), elasticsearch_main_settings_path() . '/clusters'))
   );
 
-  $cluster_status = elasticsearch_connector_get_cluster_info($cluster);
+  $cluster_status = elasticsearch_get_cluster_info($cluster);
   $cluster_client = $cluster_status['client'];
 
   $node_rows = $cluster_statistics_rows = $cluster_health_rows = array();
 
-  if (isset($cluster_client) && !empty($cluster_status['info']) && elasticsearch_connector_check_status($cluster_status['info'])) {
+  if (isset($cluster_client) && !empty($cluster_status['info']) && elasticsearch_check_status($cluster_status['info'])) {
     $node_stats = $cluster_status['stats'];
     $total_docs = $total_size = 0;
     if (isset($node_stats)) {
@@ -280,13 +282,13 @@ function elasticsearch_connector_info_cluster($cluster) {
  * @param object $cluster
  * @return array $form
  */
-function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NULL) {
+function elasticsearch_edit_cluster($form, $form_state, $cluster = NULL) {
   $form = array();
 
   // TODO: Lock the edit of status if the cluster_id is lock by a module.
 
-  elasticsearch_connector_set_breadcrumb(array(
-    l(t('Elasticsearch Clusters'), elasticsearch_connector_main_settings_path() . '/clusters'))
+  elasticsearch_set_breadcrumb(array(
+    l(t('Elasticsearch Clusters'), elasticsearch_main_settings_path() . '/clusters'))
   );
 
   $form['cluster'] = array(
@@ -306,7 +308,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#type' => 'machine_name',
     '#title' => t('Cluster id'),
     '#machine_name' => array(
-      'exists' => 'elasticsearch_connector_cluster_load',
+      'exists' => 'elasticsearch_cluster_load',
     ),
     '#default_value' => !empty($cluster->cluster_id) ? $cluster->cluster_id : '',
     '#disabled' => !empty($cluster->cluster_id), // Cannot change it once set.
@@ -325,7 +327,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#required' => TRUE,
     '#ajax' => array(
       'method' => 'replace',
-      'callback' => 'elasticsearch_connector_edit_cluster_ajax',
+      'callback' => 'elasticsearch_edit_cluster_ajax',
       'effect' => 'fade',
       'event'  => 'blur'
     ),
@@ -336,18 +338,18 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
   if (isset($form_state['values'])) {
     $values = (object)$form_state['values'];
     if (!empty($values->url)) {
-      $cluster_info = elasticsearch_connector_get_cluster_info($values);
+      $cluster_info = elasticsearch_get_cluster_info($values);
       $form_state_active = TRUE;
     }
   }
   elseif (isset($cluster->url)) {
-    $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
+    $cluster_info = elasticsearch_get_cluster_info($cluster);
     $form_state_active = TRUE;
   }
 
-  $form['status_info'] = elasticsearch_connector_edit_cluster_form_info($cluster_info, $form_state_active);
+  $form['status_info'] = elasticsearch_edit_cluster_form_info($cluster_info, $form_state_active);
 
-  $default = elasticsearch_connector_get_default_connector();
+  $default = elasticsearch_get_default_connector();
   $form['default'] = array(
     '#type' => 'checkbox',
     '#title' => t('Make this cluster default connection'),
@@ -370,10 +372,10 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
   $form['status'] = array(
     '#type' => 'radios',
     '#title' => t('Status'),
-    '#default_value' => isset($cluster->status) ? $cluster->status : ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE,
+    '#default_value' => isset($cluster->status) ? $cluster->status : elasticsearch_STATUS_ACTIVE,
     '#options' => array(
-      ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE   => t('Active'),
-      ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE => t('Inactive'),
+      elasticsearch_STATUS_ACTIVE   => t('Active'),
+      elasticsearch_STATUS_INACTIVE => t('Inactive'),
     ),
     '#required' => TRUE,
   );
@@ -384,8 +386,8 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
 
   $form['actions']['save'] = array(
     '#type' => 'submit',
-    '#validate' => array('elasticsearch_connector_edit_cluster_validate'),
-    '#submit' => array('elasticsearch_connector_edit_cluster_submit'),
+    '#validate' => array('elasticsearch_edit_cluster_validate'),
+    '#submit' => array('elasticsearch_edit_cluster_submit'),
     '#value' => t('Save')
   );
 
@@ -398,7 +400,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
  * @param array $cluster
  * @return array
  */
-function elasticsearch_connector_cluster_indices_add($form, &$form_state, $cluster) {
+function elasticsearch_cluster_indices_add($form, &$form_state, $cluster) {
   $form = array();
 
   $form['#cluster'] = $cluster;
@@ -432,8 +434,8 @@ function elasticsearch_connector_cluster_indices_add($form, &$form_state, $clust
 
   $form['actions']['save'] = array(
     '#type' => 'submit',
-    '#validate' => array('elasticsearch_connector_cluster_indices_add_validate'),
-    '#submit' => array('elasticsearch_connector_cluster_indices_add_submit'),
+    '#validate' => array('elasticsearch_cluster_indices_add_validate'),
+    '#submit' => array('elasticsearch_cluster_indices_add_submit'),
     '#value' => t('Save'),
   );
 
@@ -445,7 +447,7 @@ function elasticsearch_connector_cluster_indices_add($form, &$form_state, $clust
  * @param array $form
  * @param array $form_state
  */
-function elasticsearch_connector_cluster_indices_add_validate($form, &$form_state) {
+function elasticsearch_cluster_indices_add_validate($form, &$form_state) {
   $values = $form_state['values'];
   if (!preg_match('/^[a-z][a-z0-9_]*$/i', $values['index_name'])) {
     form_set_error('index_name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
@@ -465,17 +467,17 @@ function elasticsearch_connector_cluster_indices_add_validate($form, &$form_stat
  * @param array $form
  * @param array $form_state
  */
-function elasticsearch_connector_cluster_indices_add_submit($form, &$form_state) {
+function elasticsearch_cluster_indices_add_submit($form, &$form_state) {
   $values = $form_state['values'];
   $cluster = $form['#cluster'];
-  $client = elasticsearch_connector_load_library($cluster);
+  $client = elasticsearch_load_library($cluster);
   if ($client) {
     try {
       $index_params['index'] = $values['index_name'];
       $index_params['body']['settings']['number_of_shards']   = $values['num_of_shards'];
       $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
       $response = $client->indices()->create($index_params);
-      if (elasticsearch_connector_check_response_ack($response)) {
+      if (elasticsearch_check_response_ack($response)) {
         drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['index_name'])));
       }
       else {
@@ -484,8 +486,8 @@ function elasticsearch_connector_cluster_indices_add_submit($form, &$form_state)
 
       // If the form has been opened in dialog, close the window if it was
       // setup to do so.
-      if (elasticsearch_connector_in_dialog() && elasticsearch_connector_close_on_submit()) {
-        elasticsearch_connector_close_on_redirect($cluster->cluster_id, $values['index_name']);
+      if (elasticsearch_in_dialog() && elasticsearch_close_on_submit()) {
+        elasticsearch_close_on_redirect($cluster->cluster_id, $values['index_name']);
       }
     }
     catch (Exception $e) {
@@ -494,7 +496,7 @@ function elasticsearch_connector_cluster_indices_add_submit($form, &$form_state)
   }
 }
 
-function elasticsearch_connector_edit_cluster_ajax($form, $form_state) {
+function elasticsearch_edit_cluster_ajax($form, $form_state) {
   return array(
     '#type' => 'ajax',
     '#commands' => array(
@@ -510,7 +512,7 @@ function elasticsearch_connector_edit_cluster_ajax($form, $form_state) {
  * @param bool $ajax
  * @return array
  */
-function elasticsearch_connector_edit_cluster_form_info($cluster_info = NULL, $ajax = NULL) {
+function elasticsearch_edit_cluster_form_info($cluster_info = NULL, $ajax = NULL) {
   $headers = array(
     array('data' => t('Cluster name')),
     array('data' => t('Status')),
@@ -564,15 +566,15 @@ function elasticsearch_connector_edit_cluster_form_info($cluster_info = NULL, $a
  * @param array $form
  * @param array $form_state
  */
-function elasticsearch_connector_edit_cluster_validate($form, &$form_state) {
+function elasticsearch_edit_cluster_validate($form, &$form_state) {
   $values = (object)$form_state['values'];
-  $cluster_info = elasticsearch_connector_get_cluster_info($values);
-  if (!isset($cluster_info['info']) || !elasticsearch_connector_check_status($cluster_info['info'])) {
+  $cluster_info = elasticsearch_get_cluster_info($values);
+  if (!isset($cluster_info['info']) || !elasticsearch_check_status($cluster_info['info'])) {
     form_set_error('url', t('Cannot connect to the cluster!'));
   }
 
   // Complain if we are removing the default.
-  $default = elasticsearch_connector_get_default_connector();
+  $default = elasticsearch_get_default_connector();
   if ($form_state['values']['default'] == 0 && !empty($default) && $default == $form_state['values']['cluster_id']) {
     drupal_set_message(
       t('There must be a default connection. %name is still the default connection.'
@@ -591,7 +593,7 @@ function elasticsearch_connector_edit_cluster_validate($form, &$form_state) {
  * @param array $form
  * @param array $form_state
  */
-function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
+function elasticsearch_edit_cluster_submit($form, &$form_state) {
   $cluster = $form_state['values']['cluster'];
 
   if (!$cluster) {
@@ -610,13 +612,13 @@ function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
   }
 
   // Set default connection if selected or there is no default yet.
-  $default = elasticsearch_connector_get_default_connector();
+  $default = elasticsearch_get_default_connector();
   if ($form_state['values']['default'] == 1 || empty($default)) {
-    elasticsearch_connector_set_default_connector($cluster->cluster_id);
+    elasticsearch_set_default_connector($cluster->cluster_id);
   }
 
   // Save the cluster.
-  elasticsearch_connector_cluster_save($cluster);
+  elasticsearch_cluster_save($cluster);
 
   // Set a message for the user.
   if (empty($form_state['values']['cluster'])) {
@@ -628,17 +630,17 @@ function elasticsearch_connector_edit_cluster_submit($form, &$form_state) {
   drupal_set_message(filter_xss($message));
 
   // Redirect to the cluster listing page.
-  $form_state['redirect'] = elasticsearch_connector_main_settings_path() . '/clusters';
+  $form_state['redirect'] = elasticsearch_main_settings_path() . '/clusters';
 }
 
 /**
  * Form constructor for the index deletion confirmation form.
  *
- * @see elasticsearch_connector_cluster_indices_delete_submit()
+ * @see elasticsearch_cluster_indices_delete_submit()
  */
-function elasticsearch_connector_cluster_indices_delete($form, &$form_state, $cluster, $index) {
+function elasticsearch_cluster_indices_delete($form, &$form_state, $cluster, $index) {
   $form = array();
-  $locked = _elasticsearch_connector_check_if_index_locked($cluster, $index);
+  $locked = _elasticsearch_check_if_index_locked($cluster, $index);
   if (empty($locked)) {
     $form['cluster'] = array('#type' => 'value', '#value' => $cluster);
     $form['index'] = array('#type' => 'value', '#value' => $index);
@@ -648,7 +650,7 @@ function elasticsearch_connector_cluster_indices_delete($form, &$form_state, $cl
             '%index' => $index,
             '%name' => $cluster->name)
           ),
-        elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices',
+        elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices',
         t('This action cannot be undone.'),
         t('Delete'),
         t('Cancel')
@@ -658,7 +660,9 @@ function elasticsearch_connector_cluster_indices_delete($form, &$form_state, $cl
     $form['item'] = array(
       '#type' => 'item',
       '#markup' => t('Unable the delete this index because it\'s locked by following modules:')
-      . theme('item_list', array('items' => $locked)),
+       . drupal_render(array(
+          '#type' => 'item_list',
+          '#items' => $locked)),
     );
 
     return $form;
@@ -671,13 +675,13 @@ function elasticsearch_connector_cluster_indices_delete($form, &$form_state, $cl
  * @param array $form
  * @param array $form_state
  */
-function elasticsearch_connector_cluster_indices_delete_submit($form, &$form_state) {
-  $client = elasticsearch_connector_load_library($form_state['values']['cluster']);
+function elasticsearch_cluster_indices_delete_submit($form, &$form_state) {
+  $client = elasticsearch_load_library($form_state['values']['cluster']);
   if ($client) {
     try {
       $client->indices()->delete(array('index' => $form_state['values']['index']));
       drupal_set_message(t('%name has been deleted.', array('%name' => $form_state['values']['index'])));
-      $form_state['redirect'] = elasticsearch_connector_main_settings_path() . '/clusters/' . $form_state['values']['cluster']->cluster_id . '/indices';
+      $form_state['redirect'] = elasticsearch_main_settings_path() . '/clusters/' . $form_state['values']['cluster']->cluster_id . '/indices';
     }
     catch (Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
@@ -688,16 +692,16 @@ function elasticsearch_connector_cluster_indices_delete_submit($form, &$form_sta
 /**
  * Form constructor for the clluster deletion confirmation form.
  *
- * @see elasticsearch_connector_delete_cluster_submit()
+ * @see elasticsearch_delete_cluster_submit()
  */
-function elasticsearch_connector_delete_cluster($form, &$form_state, $cluster) {
-  $locked = _elasticsearch_connector_check_if_cluster_locked($cluster);
+function elasticsearch_delete_cluster($form, &$form_state, $cluster) {
+  $locked = _elasticsearch_check_if_cluster_locked($cluster);
 
   if (empty($locked)) {
     $form['cluster'] = array('#type' => 'value', '#value' => $cluster);
     return confirm_form($form,
         t('Are you sure you want to delete %name?', array('%name' => $cluster->name)),
-        elasticsearch_connector_main_settings_path() . '/clusters',
+        elasticsearch_main_settings_path() . '/clusters',
         t('This action cannot be undone.'),
         t('Delete'),
         t('Cancel')
@@ -707,7 +711,9 @@ function elasticsearch_connector_delete_cluster($form, &$form_state, $cluster) {
     $form['item'] = array(
       '#type' => 'item',
       '#markup' => t('Unable the delete this cluster because it\'s locked by following modules:')
-       . theme('item_list', array('items' => $locked)),
+       . drupal_render(array(
+          '#type' => 'item_list',
+          '#items' => $locked)),
     );
 
     return $form;
@@ -715,17 +721,17 @@ function elasticsearch_connector_delete_cluster($form, &$form_state, $cluster) {
 }
 
 /**
- * Handle the submit from elasticsearch_connector_delete_cluster() form.
+ * Handle the submit from elasticsearch_delete_cluster() form.
  *
  * @param array $form
  * @param array $form_state
  */
-function elasticsearch_connector_delete_cluster_submit($form, &$form_state) {
+function elasticsearch_delete_cluster_submit($form, &$form_state) {
   $cluster = $form_state['values']['cluster'];
   if (isset($cluster)) {
-    elasticsearch_connector_cluster_delete($cluster);
+    elasticsearch_cluster_delete($cluster);
   }
 
   drupal_set_message(t('%name has been deleted.', array('%name' => $cluster->name)));
-  $form_state['redirect'] = elasticsearch_connector_main_settings_path() . '/clusters';
+  $form_state['redirect'] = elasticsearch_main_settings_path() . '/clusters';
 }
