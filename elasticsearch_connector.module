@@ -647,7 +647,9 @@ function elasticsearch_connector_cluster_load_all($active = TRUE, $add_empty_opt
  * @return string
  */
 function elasticsearch_connector_get_default_connector() {
-  return variable_get('elasticsearch_connector_get_default_connector', '');
+  //return variable_get('elasticsearch_connector_get_default_connector', '');
+  // TODO: Handle default connection!
+  return '';
 }
 
 /**
@@ -656,7 +658,7 @@ function elasticsearch_connector_get_default_connector() {
  * @return string
  */
 function elasticsearch_connector_set_default_connector($connection) {
-  return variable_set('elasticsearch_connector_get_default_connector', $connection);
+  return '';
 }
 
 /**
@@ -695,7 +697,7 @@ function elasticsearch_connector_load_library($cluster) {
 
     // TODO: Handle cluster connection. This should be accomplished if the setting is enabled.
     // If enabled, discover all the nodes in the cluster initialize the Pool connection.
-    if (valid_url($cluster->url)) {
+    if (1 || valid_url($cluster->url)) {
       $options = array(
         'hosts' => array($cluster->url),
       );

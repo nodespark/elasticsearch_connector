@@ -34,26 +34,33 @@ use Drupal\elasticsearch_connector\ClusterInterface;
  *   },
  *   admin_permission = "administer elasticsearch connector",
  *   entity_keys = {
- *     "id" = "id",
- *     "label" = "label",
+ *     "id" = "cluster_id",
+ *     "label" = "name",
  *     "status" = "status"
  *   }
  * )
  */
 class Cluster extends ConfigEntityBase implements ClusterInterface {
+
+  // Active status
+  const STATUS_ACTIVE = 1;
+
+  // Inactive status
+  const STATUS_INACTIVE = 0;
+
   /**
   * The cluster machine name.
   *
   * @var string
   */
-  public $id;
+  public $cluster_id;
 
   /**
    * The human-readable name of the cluster entity.
    *
    * @var string
    */
-  public $label;
+  public $name;
 
   /**
    * Status.
@@ -75,4 +82,11 @@ class Cluster extends ConfigEntityBase implements ClusterInterface {
    * @var bool
    */
   protected $locked = FALSE;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function id() {
+    return isset($this->cluster_id) ? $this->cluster_id : NULL;
+  }
 }
