@@ -65,55 +65,37 @@ function elasticsearch_menu() {
   $items = array();
   $settings_path = elasticsearch_main_settings_path();
 
-  $items[$settings_path] = array(
+  $items['elasticsearch.admin_config_elasticsearch'] = array(
     'title'              => 'Elasticsearch',
     'description'        => 'Administer Elasticsearch module',
-    'position'           => 'left',
-    'access arguments'   => array('administer elasticsearch'),
-    'page callback'      => 'system_admin_menu_block_page',
-    'file'               => 'system.admin.inc',
-    'file path'          => drupal_get_path('module', 'system'),
+    'route_name'         => 'elasticsearch.admin_config_elasticsearch',
   );
 
-  $items[$settings_path . '/clusters'] = array(
-    'title'             => 'Elasticsearch Clusters',
-    'description'       => 'Showing all available clusters',
-    'page callback'     => 'elasticsearch_status_page',
-    'access arguments'  => array('administer elasticsearch'),
-    'file'              => 'elasticsearch.admin.inc',
-    'weight'            => -10,
+  $items['elasticsearch.clusters'] = array(
+    'title'              => 'Elasticsearch Clusters',
+    'description'        => 'Showing all available clusters',
+    'route_name'         => 'elasticsearch.clusters',
   );
 
-  $items[$settings_path . '/clusters/add'] = array(
+  $items['elasticsearch.add'] = array(
     'title'              => 'Add cluster',
     'description'        => 'Add new elasticsearch cluster',
-    'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_edit_cluster'),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-    'type'               => MENU_LOCAL_ACTION,
+    'route_name'         => 'elasticsearch.add',
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/edit'] = array(
+  $items['elasticsearch.edit'] = array(
     'title'              => 'Edit cluster',
     'description'        => 'Edit cluster settings',
-    'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_edit_cluster', 4),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-    'type'               => MENU_CALLBACK,
+    'route_name'         => 'elasticsearch.edit',
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/info'] = array(
+  $items['elasticsearch.info'] = array(
     'title'              => 'Elasticsearch cluster info',
     'description'        => 'Elasticsearch cluster info',
-    'page callback'      => 'elasticsearch_info_cluster',
-    'page arguments'     => array(4),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-    'type'               => MENU_CALLBACK,
+    'route_name'         => 'elasticsearch.info',
   );
 
+// TODO
   $items[$settings_path . '/clusters/%elasticsearch_cluster/indices'] = array(
     'title'              => 'Elasticsearch cluster indices',
     'description'        => 'Elasticsearch cluster indices',
