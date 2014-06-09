@@ -1,0 +1,39 @@
+elasticsearch.admin_config_elasticsearch:
+  path: '/admin/config/elasticsearch'
+  defaults:
+    _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Elasticsearch'
+  requirements:
+    _permission: 'administer elasticsearch'
+
+elasticsearch.clusters:
+  path: '/admin/config/elasticsearch/clusters'
+  defaults:
+    _entity_list: 'elasticsearch_cluster'
+    _title: 'Elasticsearch Clusters'
+  requirements:
+    _permission: 'administer elasticsearch'
+
+elasticsearch.add:
+  path: '/admin/config/elasticsearch/clusters/add'
+  defaults:
+    _entity_form: 'elasticsearch_cluster.add'
+    _title: 'Cluster'
+  requirements:
+    _entity_create_access: 'elasticsearch_cluster'
+
+elasticsearch.edit:
+  path: '/admin/config/elasticsearch/clusters/{node}/edit'
+  defaults:
+    _entity_form: 'elasticsearch_cluster.edit'
+    _title: 'Edit Cluster'
+    requirements:
+    _entity_create_access: 'elasticsearch_cluster'      
+
+elasticsearch.info:
+  path: '/admin/config/elasticsearch/clusters/{node}/info'
+  defaults:
+    _entity_list: 'elasticsearch_cluster.info'
+    _title: 'Elasticsearch Cluster Info'
+    requirements:
+    _permission: 'administer elasticsearch'      
