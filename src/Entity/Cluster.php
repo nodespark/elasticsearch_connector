@@ -9,7 +9,7 @@ namespace Drupal\elasticsearch_connector\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\elasticsearch_connector\ClusterStorageInterface;
+use Drupal\elasticsearch_connector\ClusterInterface;
 use Drupal\views_ui\ViewListBuilder;
 use Drupal\node\NodeTypeListBuilder;
 
@@ -30,9 +30,8 @@ use Drupal\node\NodeTypeListBuilder;
  *   },
  *   links = {
  *     "add-form" = "elasticsearch_connector.add",
- *     "edit-form" = "node.page_edit",
- *     "version-history" = "node.revision_overview",
- *     "admin-form" = "node.type_edit"
+ *     "edit-form" = "elasticsearch_connector.edit",
+ *     "admin-form" = "elasticsearch_connector.add"
  *   },
  *   admin_permission = "administer elasticsearch connector",
  *   entity_keys = {
@@ -42,7 +41,7 @@ use Drupal\node\NodeTypeListBuilder;
  *   }
  * )
  */
-class Cluster extends ConfigEntityBase implements ClusterStorageInterface {
+class Cluster extends ConfigEntityBase implements ClusterInterface {
   /**
   * The cluster machine name.
   *

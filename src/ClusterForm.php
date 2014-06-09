@@ -73,8 +73,14 @@ class ClusterForm extends EntityForm {
     }
 
     $status = $cluster->save();
-
+    try {
+      var_dump(\Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo()));exit;
+    }
+    catch (\Exception $e) {
+      var_dump('Except!' . $e->getMessage());exit;
+    }
     $edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
+    var_dump($edit_link);exit;
     if ($status == SAVED_UPDATED) {
       drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
       watchdog('elasticsearch_connector', 'Cluster %label has been updated.', array('%label' => $cluster->label()), WATCHDOG_NOTICE, $edit_link);

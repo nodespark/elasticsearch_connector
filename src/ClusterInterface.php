@@ -12,6 +12,6 @@ use Drupal\Core\Config\Entity\ConfigEntityInterface;
 /**
  * Defines an interface for View storage classes.
  */
-interface ClusterStorageInterface extends ConfigEntityInterface {
+interface ClusterInterface extends ConfigEntityInterface {
 
 }

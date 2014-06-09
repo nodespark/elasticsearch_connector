@@ -20,5 +20,9 @@ class ElasticsearchConnectorController {
     );
   }
 
+  public function clusterTitle(ClusterInterface $cluster) {
+    return Xss::filter($cluster->label());
+  }
+
 }
 ?>

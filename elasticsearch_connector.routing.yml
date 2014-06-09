@@ -21,3 +21,11 @@ elasticsearch_connector.add:
     _title: 'Cluster'
   requirements:
     _entity_create_access: 'elasticsearch_connector_cluster'
+
+elasticsearch_connector.edit:
+  path: '/admin/config/elasticsearch-connector/clusters/{elasticsearch_connector_cluster}/edit'
+  defaults:
+    _entity_form: 'elasticsearch_connector_cluster.edit'
+    _title_callback: '\Drupal\elasticsearch_connector\Controller\ElasticsearchConnectorController::clusterTitle'
+  requirements:
+    _entity_access: 'menu.update'
