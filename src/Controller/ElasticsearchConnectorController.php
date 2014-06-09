@@ -7,6 +7,9 @@
 
 namespace Drupal\elasticsearch_connector\Controller;
 
+use Drupal\elasticsearch_connector\ClusterInterface;
+use Drupal\Component\Utility\Xss;
+
 /**
  * Example page controller.
  */
@@ -20,8 +23,9 @@ class ElasticsearchConnectorController {
     );
   }
 
-  public function clusterTitle(ClusterInterface $cluster) {
-    return Xss::filter($cluster->label());
+  public function clusterTitle($cluster = null) {
+    //$cluster->label()
+    return Xss::filter('Test');
   }
 
 }

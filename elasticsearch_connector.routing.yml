@@ -28,4 +28,12 @@ elasticsearch_connector.edit:
     _entity_form: 'elasticsearch_connector_cluster.edit'
     _title_callback: '\Drupal\elasticsearch_connector\Controller\ElasticsearchConnectorController::clusterTitle'
   requirements:
-    _entity_access: 'menu.update'
+    _entity_access: 'elasticsearch_connector_cluster.update'
+
+elasticsearch_connector.delete:
+  path: '/admin/config/elasticsearch-connector/clusters/{elasticsearch_connector_cluster}/delete'
+  defaults:
+    _entity_form: 'elasticsearch_connector_cluster.delete'
+    _title: 'Delete cluster'
+  requirements:
+    _entity_access: 'elasticsearch_connector_cluster.delete'

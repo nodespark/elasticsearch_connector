@@ -10,8 +10,6 @@ namespace Drupal\elasticsearch_connector\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\elasticsearch_connector\ClusterInterface;
-use Drupal\views_ui\ViewListBuilder;
-use Drupal\node\NodeTypeListBuilder;
 
 /**
  * Defines a View configuration entity class.
@@ -24,7 +22,7 @@ use Drupal\node\NodeTypeListBuilder;
  *     "form" = {
  *       "add" = "Drupal\elasticsearch_connector\ClusterForm",
  *       "edit" = "Drupal\elasticsearch_connector\ClusterForm",
- *       "delete" = "Drupal\node\Form\NodeTypeDeleteConfirm"
+ *       "delete" = "Drupal\elasticsearch_connector\Form\ClusterDeleteForm"
  *     },
  *     "list_builder" = "Drupal\elasticsearch_connector\ClusterListBuilder",
  *   },

@@ -10,6 +10,7 @@ namespace Drupal\elasticsearch_connector;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Url;
 
 /**
  * Form controller for node type forms.
@@ -58,7 +59,7 @@ class ClusterForm extends EntityForm {
   }
 
   public function clusterNameExists() {
-
+    // TODO: Implement cluster exists function!
   }
 
   /**
@@ -73,14 +74,8 @@ class ClusterForm extends EntityForm {
     }
 
     $status = $cluster->save();
-    try {
-      var_dump(\Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo()));exit;
-    }
-    catch (\Exception $e) {
-      var_dump('Except!' . $e->getMessage());exit;
-    }
+
     $edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
-    var_dump($edit_link);exit;
     if ($status == SAVED_UPDATED) {
       drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
       watchdog('elasticsearch_connector', 'Cluster %label has been updated.', array('%label' => $cluster->label()), WATCHDOG_NOTICE, $edit_link);
@@ -90,6 +85,6 @@ class ClusterForm extends EntityForm {
       watchdog('elasticsearch_connector', 'Cluster %label has been added.', array('%label' => $cluster->label()), WATCHDOG_NOTICE, $edit_link);
     }
 
-    $form_state['redirect_route'] = $this->entity->urlInfo('edit-form');
+    $form_state['redirect_route'] = new Url('elasticsearch_connector.clusters');
   }
 }
