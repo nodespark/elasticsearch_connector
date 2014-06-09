@@ -71,7 +71,13 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
       'class' => array(RESPONSIVE_PRIORITY_MEDIUM),
     );
 
-    return $header + parent::buildHeader();
+    $header['cluster_status'] = array(
+      'data' => t('Cluster Status')
+    );
+
+    $header['operations'] = $this->t('Operations');
+
+    return $header;
   }
 
   /**
@@ -80,9 +86,11 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   public function buildRow(EntityInterface $entity) {
     $row['title'] = array(
       'data' => $this->getLabel($entity),
-      'class' => array('menu-label'),
+      'class' => array('cluster-label'),
     );
-    $row['description'] = Xss::filterAdmin($entity->description);
+    $row['status'] = $entity->status;
+    // TODO: Fix the status to come from
+    $row['cluster_status'] = 'green';
     return $row + parent::buildRow($entity);
   }
 

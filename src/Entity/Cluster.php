@@ -29,6 +29,7 @@ use Drupal\elasticsearch_connector\ClusterInterface;
  *   links = {
  *     "add-form" = "elasticsearch_connector.add",
  *     "edit-form" = "elasticsearch_connector.edit",
+ *     "delete-form" = "elasticsearch_connector.delete",
  *     "admin-form" = "elasticsearch_connector.add"
  *   },
  *   admin_permission = "administer elasticsearch connector",
