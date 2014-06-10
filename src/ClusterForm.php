@@ -12,6 +12,7 @@ use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Url;
 use Drupal\elasticsearch_connector\Entity\Cluster;
+use Elasticsearch\Common\Exceptions\Curl\CouldNotResolveHostException;
 
 /**
  * Form controller for node type forms.
@@ -63,27 +64,17 @@ class ClusterForm extends EntityForm {
           'All nodes will be automatically discover. ' .
           'Example: http://localhost:9200'),
       '#required' => TRUE,
-      '#ajax' => array(
-        'method' => 'replace',
-        'callback' => 'elasticsearch_connector_edit_cluster_ajax',
-        'effect' => 'fade',
-        'event'  => 'blur'
-      ),
     );
 
-//     $cluster_info = NULL;
-//     $form_state_active = FALSE;
-//     if (isset($form_state['values'])) {
-//       $values = (object)$form_state['values'];
-//       if (!empty($values->url)) {
-//         $cluster_info = elasticsearch_connector_get_cluster_info($values);
-//         $form_state_active = TRUE;
-//       }
-//     }
-//     elseif (isset($cluster->url)) {
-//       $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
-//       $form_state_active = TRUE;
-//     }
+    if (isset($cluster->url)) {
+      try {
+        $cluster_info = $cluster->getClusterInfo();
+        $form_state_active = TRUE;
+      }
+      catch (\Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
+    }
 
     $form['status_info'] = $this->clusterFormInfo($cluster_info, $form_state_active);
 
@@ -121,6 +112,48 @@ class ClusterForm extends EntityForm {
     return parent::form($form, $form_state);
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function validate(array $form, array &$form_state) {
+    // TODO: Handle the validation of the elements.
+    parent::validate($form, $form_state);
+
+    $cluster = $this->entity;
+
+    $cluster_from_form = entity_create('elasticsearch_connector_cluster', $form_state['values']);
+
+    try {
+      $cluster_info = $cluster_from_form->getClusterInfo();
+      if (!isset($cluster_info['info']) || !Cluster::checkStatus($cluster_info['info'])) {
+        form_set_error('url', $form_state, t('Cannot connect to the cluster!'));
+      }
+    }
+    catch (\Exception $e) {
+      form_set_error('url', $form_state, t('Cannot connect to the cluster!'));
+    }
+
+    // Complain if we are removing the default.
+    $default = Cluster::getDefaultConnector();
+    if ($form_state['values']['default'] == 0 && !empty($default) && $default == $form_state['values']['cluster_id']) {
+      drupal_set_message(
+        t('There must be a default connection. %name is still the default connection.'
+            . 'Please change the default setting on the cluster you wish to set as default.',
+            array(
+            '%name' => $form_state['values']['name'])
+        ),
+        'warning'
+      );
+    }
+  }
+
+  /**
+   * Build the cluster info table for the edit page.
+   *
+   * @param string $cluster_info
+   * @param string $ajax
+   * @return Ambigous <multitype:, multitype:string multitype: multitype:string multitype:string   multitype:multitype:string The   , multitype:string multitype:string multitype:string   multitype:multitype:NULL   multitype:multitype:The  multitype:Ambigous <The, string, \Drupal\Component\Utility\mixed, unknown, \Drupal\Core\StringTranslation\FALSE, boolean>   >
+   */
   protected function clusterFormInfo($cluster_info = NULL, $ajax = NULL) {
     $headers = array(
       array('data' => t('Cluster name')),

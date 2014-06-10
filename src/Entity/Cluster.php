@@ -10,6 +10,8 @@ namespace Drupal\elasticsearch_connector\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\elasticsearch_connector\ClusterInterface;
+use Elasticsearch\Client;
+use Drupal\Component\Utility\UrlHelper;
 
 /**
  * Defines a View configuration entity class.
@@ -70,14 +72,26 @@ class Cluster extends ConfigEntityBase implements ClusterInterface {
   public $status;
 
   /**
-   * The cluster description.
+   * The cluster url.
    *
    * @var string
    */
-  public $description;
+  public $url;
 
   /**
-   * The locked status of this menu.
+   * Options of the cluster.
+   * @var array
+   */
+  public $options;
+
+  /**
+   * The flag indicating that the cluster is the default one.
+   * @var int
+   */
+  public $default;
+
+  /**
+   * The locked status of this cluster.
    *
    * @var bool
    */
@@ -89,4 +103,85 @@ class Cluster extends ConfigEntityBase implements ClusterInterface {
   public function id() {
     return isset($this->cluster_id) ? $this->cluster_id : NULL;
   }
+
+  /**
+   *
+   */
+  public static function getClusterInfoByParams() {
+
+  }
+  /**
+   * Get the default connector (cluster) used for elasticsearch.
+   *
+   * @return string
+   */
+  public static function getDefaultConnector() {
+  //return variable_get('elasticsearch_connector_get_default_connector', '');
+  // TODO: Handle default connection!
+  return '';
+}
+
+  /**
+   * Return cluster info.
+   * @return return array
+   */
+  public function getClusterInfo() {
+    $result = FALSE;
+    try {
+      $client = $this->getLibraryByUrls(array($this->url));
+      if (!empty($client)) {
+        $info = $client->info();
+        $result['client'] = $client;
+        $result['info'] = $result['state'] = $result['health'] = $result['stats'] = array();
+        if (self::checkStatus($info)) {
+          $result['info'] = $info;
+          $result['state'] = $client->cluster()->state();
+          $result['health'] = $client->cluster()->health();
+          $result['stats'] = $client->nodes()->stats();
+        }
+      }
+    }
+    catch (Exception $e) {
+      throw $e;
+    }
+
+    return $result;
+  }
+
+  protected function checkValidUrls($urls) {
+
+  }
+
+  /**
+   * We need to handle the case where url is and array of urls
+   * @param string $url
+   * @return
+   */
+  protected function getLibraryByUrls($urls) {
+    // TODO: Handle cluster connection. This should be accomplished if the setting is enabled.
+    // If enabled, discover all the nodes in the cluster initialize the Pool connection.
+    $this->checkValidUrls($urls);
+
+    $options = array(
+      'hosts' => $urls,
+    );
+
+    drupal_alter('elasticsearch_connector_load_library_options', $options);
+    return new Client($options);
+  }
+
+  /**
+   * Check if the status is OK.
+   * @param array $status
+   * @return bool
+   */
+  public static function checkStatus($status) {
+    if (is_array($status) && $status['status'] == ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+
 }
