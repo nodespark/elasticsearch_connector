@@ -41,7 +41,7 @@ class GuzzleConnectionDebug extends AbstractConnection implements ConnectionInte
    * @throws \Elasticsearch\Common\Exceptions\InvalidArgumentException
    * @return \Elasticsearch\Connections\GuzzleConnection
   */
-  public function __construct($host, $port, $connectionParams, LoggerInterface $log, LoggerInterface $trace) {
+  public function __construct($hostDetails, $connectionParams, LoggerInterface $log, LoggerInterface $trace) {
     if (isset($connectionParams['guzzleClient']) !== true) {
       $guzzleOptions = array();
       $guzzleOptions['curl.options']['body_as_string'] = true;
@@ -66,7 +66,7 @@ class GuzzleConnectionDebug extends AbstractConnection implements ConnectionInte
       $this->connectionOpts = $connectionParams['connectionParams'];
     }
 
-    return parent::__construct($host, $port, $connectionParams, $log, $trace);
+    return parent::__construct($hostDetails, $connectionParams, $log, $trace);
   }
 
   /**

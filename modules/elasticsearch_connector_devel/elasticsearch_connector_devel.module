@@ -24,7 +24,7 @@ function elasticsearch_connector_devel_block_info() {
  * Implements hook_elasticsearch_connector_load_library_options_alter().
  * @param array $options
  */
-function elasticsearch_connector_devel_elasticsearch_connector_load_library_options_alter(&$options) {
+function elasticsearch_connector_devel_elasticsearch_connector_load_library_options_alter(&$options, $cluster) {
   require_once DRUPAL_ROOT . '/' .
                drupal_get_path('module', 'elasticsearch_connector_devel') . '/includes/GuzzleConnectionDebugging.inc';
 

@@ -79,15 +79,18 @@ abstract class AbstractConnection implements ConnectionInterface
     /**
      * Constructor
      *
-     * @param string                   $host             Host string
-     * @param string                   $port             Host port
+     * @param array                    $hostDetails
      * @param array                    $connectionParams Array of connection-specific parameters
      * @param \Psr\Log\LoggerInterface $log              Logger object
      * @param \Psr\Log\LoggerInterface $trace
      */
-    public function __construct($host, $port, $connectionParams, LoggerInterface $log, LoggerInterface $trace)
+    public function __construct($hostDetails, $connectionParams, LoggerInterface $log, LoggerInterface $trace)
     {
-        $this->host             = $this->transportSchema . '://' . $host . ':' . $port;
+        $host = $this->transportSchema.'://'.$hostDetails['host'].':'.$hostDetails['port'];
+        if (isset($hostDetails['path']) === true) {
+            $host .= $hostDetails['path'];
+        }
+        $this->host             = $host;
         $this->log              = $log;
         $this->trace            = $trace;
         $this->connectionParams = $connectionParams;
@@ -200,7 +203,6 @@ abstract class AbstractConnection implements ConnectionInterface
      */
     public function ping()
     {
-        $this->lastPing = time();
         $options = array('timeout' => $this->pingTimeout);
         try {
             $response = $this->performRequest('HEAD', '', null, null, $options);
@@ -226,7 +228,7 @@ abstract class AbstractConnection implements ConnectionInterface
     public function sniff()
     {
         $options = array('timeout' => $this->pingTimeout);
-        return $this->performRequest('GET', '/_cluster/nodes', null, null, $options);
+        return $this->performRequest('GET', '/_nodes/_all/clear', null, null, $options);
 
     }
 
@@ -244,12 +246,14 @@ abstract class AbstractConnection implements ConnectionInterface
     {
         $this->failedPings = 0;
         $this->isAlive = true;
+        $this->lastPing = time();
     }
 
     public function markDead()
     {
         $this->isAlive = false;
         $this->failedPings += 1;
+        $this->lastPing = time();
     }
 
 
@@ -268,6 +272,15 @@ abstract class AbstractConnection implements ConnectionInterface
     public function getPingFailures()
     {
         return $this->failedPings;
+    }
+
+
+    /**
+     * @return string
+     */
+    public function getHost()
+    {
+        return $this->host;
     }
 
 

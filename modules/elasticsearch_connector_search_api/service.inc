@@ -500,10 +500,26 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
 
   /**
+   *
+   */
+  protected function checkClient($throwError = FALSE) {
+    if (empty($this->elasticsearchClient) || !($this->elasticsearchClient instanceof \Elasticsearch\Client)) {
+      if ($throwError) {
+        throw new SearchApiElasticsearchConnectorException(t('Elasticsearch library hasn\'t been initialized successfully.' ));
+      }
+      else {
+        return FALSE;
+      }
+    }
+    else {
+      return TRUE;
+    }
+  }
+
+  /**
    * Overrides search().
    */
   public function search(SearchApiQueryInterface $query, $suggestions = FALSE) {
-
     // Results.
     $search_result = array('result count' => 0);
 
@@ -513,7 +529,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $params = $this->getIndexParam($index, TRUE);
 
     // Check elasticsearch index.
-    if (!$this->elasticsearchClient->indices()->existsType($params)) {
+    if (!$this->checkClient() || !$this->elasticsearchClient->indices()->existsType($params)) {
       return $search_result;
     }
     $query->setOption('ElasticParams', $params);
