@@ -7,8 +7,6 @@
  * Created on Dec 21, 2013
  */
 
-define('ELASTICSEARCH_STATUS_INACTIVE', '0');
-define('ELASTICSEARCH_STATUS_ACTIVE', '1');
 define('ELASTICSEARCH_CLUSTER_STATUS_OK', '200');
 
 use Symfony\Component\HttpFoundation\Request;
@@ -61,41 +59,56 @@ function elasticsearch_theme() {
 /**
  * Implements hook_menu().
  */
+// TODO
 function elasticsearch_menu() {
   $items = array();
-  $settings_path = elasticsearch_main_settings_path();
 
-  $items['elasticsearch.admin_config_elasticsearch'] = array(
+  $items[$settings_path] = array(
     'title'              => 'Elasticsearch',
     'description'        => 'Administer Elasticsearch module',
-    'route_name'         => 'elasticsearch.admin_config_elasticsearch',
+    'position'           => 'left',
+    'access arguments'   => array('administer elasticsearch'),
+    'page callback'      => 'system_admin_menu_block_page',
+    'file'               => 'system.admin.inc',
+    'file path'          => drupal_get_path('module', 'system'),
   );
 
-  $items['elasticsearch.clusters'] = array(
-    'title'              => 'Elasticsearch Clusters',
-    'description'        => 'Showing all available clusters',
-    'route_name'         => 'elasticsearch.clusters',
+  $items['elasticsearch/clusters'] = array(
+    'title'             => 'Elasticsearch Clusters',
+    'description'       => 'Showing all available clusters',
+    'route_name'        => 'elasticsearch.clusters',
   );
 
-  $items['elasticsearch.add'] = array(
+  $items[$settings_path . '/clusters/add'] = array(
     'title'              => 'Add cluster',
     'description'        => 'Add new elasticsearch cluster',
-    'route_name'         => 'elasticsearch.add',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_edit_cluster'),
+    'access arguments'   => array('administer elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
+    'type'               => MENU_LOCAL_ACTION,
   );
 
-  $items['elasticsearch.edit'] = array(
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/edit'] = array(
     'title'              => 'Edit cluster',
     'description'        => 'Edit cluster settings',
-    'route_name'         => 'elasticsearch.edit',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_edit_cluster', 4),
+    'access arguments'   => array('administer elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
+    'type'               => MENU_CALLBACK,
   );
 
-  $items['elasticsearch.info'] = array(
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/info'] = array(
     'title'              => 'Elasticsearch cluster info',
     'description'        => 'Elasticsearch cluster info',
-    'route_name'         => 'elasticsearch.info',
+    'page callback'      => 'elasticsearch_info_cluster',
+    'page arguments'     => array(4),
+    'access arguments'   => array('administer elasticsearch'),
+    'file'               => 'elasticsearch.admin.inc',
+    'type'               => MENU_CALLBACK,
   );
 
-// TODO
   $items[$settings_path . '/clusters/%elasticsearch_cluster/indices'] = array(
     'title'              => 'Elasticsearch cluster indices',
     'description'        => 'Elasticsearch cluster indices',
@@ -253,7 +266,7 @@ function _elasticsearch_check_if_index_locked($cluster, $index) {
  * Implements hook_elasticsearch_edit_lock().
  */
 function elasticsearch_elasticsearch_edit_lock($type, $cluster, $index = NULL) {
-  if ($type == 'cluster' && $cluster->cluster_id == elasticsearch_get_default_connector()) {
+  if ($type == 'cluster' && $cluster->cluster_id == elasticsearch_get_default()) {
     return TRUE;
   }
 
@@ -445,7 +458,7 @@ function _elasticsearch_ec_index_ajax($form, $form_state) {
 }
 
 /**
- * Return the main path of the elasticsearch connector module.
+ * Return the main path of the elasticsearch module.
  * @return string
  */
 function elasticsearch_main_settings_path() {
@@ -454,7 +467,7 @@ function elasticsearch_main_settings_path() {
 }
 
 /**
- * Return the basic breadcrumb for the connector module.
+ * Return the basic breadcrumb for the module.
  * @param array $links
  */
 function elasticsearch_set_breadcrumb($links = array()) {
@@ -462,7 +475,7 @@ function elasticsearch_set_breadcrumb($links = array()) {
     l(t('Home'), '<front>'),
     l(t('Administration'), 'admin'),
     l(t('Configuration'), 'admin/config'),
-    l(t('Elasticsearch connector'), elasticsearch_main_settings_path()),
+    l(t('Elasticsearch'), elasticsearch_main_settings_path()),
   );
 
   if (!empty($links)) {
@@ -483,6 +496,7 @@ function elasticsearch_set_breadcrumb($links = array()) {
  *   elasticsearch_cluster_load_all()--otherwise, it is assumed to be
  *   a new configuration.
  */
+// TODO in src/
 function elasticsearch_cluster_save($cluster) {
   ctools_include('export');
 
@@ -505,6 +519,7 @@ function elasticsearch_cluster_save($cluster) {
  * @param stdclass $cluster
  *   A cluster configuration object.
  */
+// TODO in src/
 function elasticsearch_cluster_delete($cluster) {
   db_delete('elasticsearch_cluster')
     ->condition('cluster_id', $cluster->cluster_id)
@@ -516,6 +531,7 @@ function elasticsearch_cluster_delete($cluster) {
  * @param string $cluster_id
  * @return array Indices
  */
+// TODO in src
 function elasticsearch_get_indices_options($cluster_id, $empty_option = FALSE) {
   $result = array();
 
@@ -545,6 +561,7 @@ function elasticsearch_get_indices_options($cluster_id, $empty_option = FALSE) {
  * @param string $cluster_id
  * @return object $cluster
  */
+// Removed. Called from src/Entity/Cluster::loadCluser
 function elasticsearch_cluster_load($cluster_id) {
   ctools_include('export');
   $result = ctools_export_load_object('elasticsearch_cluster', 'names', array($cluster_id));
@@ -562,6 +579,7 @@ function elasticsearch_cluster_load($cluster_id) {
  * @param string $index_name
  * @return string boolean
  */
+// TODO in src/
 function elasticsearch_index_valid_load($index_name) {
   if (preg_match('/^[a-z][a-z0-9_]*$/i', $index_name)) {
     return $index_name;
@@ -579,7 +597,8 @@ function elasticsearch_index_valid_load($index_name) {
  * @return array
  *   An array of ElasticSearch connection cluster objects.
  */
-function elasticsearch_clusters($include_inactive = TRUE) {
+function loadAllClusters($include_inactive = TRUE) {
+  // TODO: Remove ctools
   ctools_include('export');
   $clusters = ctools_export_load_object('elasticsearch_cluster', 'all');
 
@@ -609,7 +628,7 @@ function elasticsearch_clusters($include_inactive = TRUE) {
  * @return array
  *   An array of ElasticSearch connection cluster names, indexed by id.
  */
-function elasticsearch_cluster_load_all($active = TRUE, $add_empty_option = FALSE) {
+function loadCluserByStatus($active = TRUE, $add_empty_option = FALSE) {
   $clusters = elasticsearch_clusters($active);
   $options = array();
 
@@ -625,51 +644,11 @@ function elasticsearch_cluster_load_all($active = TRUE, $add_empty_option = FALS
 }
 
 /**
- * Get the default connector (cluster) used for elasticsearch.
- *
- * @return string
- */
-function elasticsearch_get_default_connector() {
-  return \Drupal::state()->get('elasticsearch_get_default_connector', '');
-}
-
-/**
- * Set the default connector (cluster) used for elasticsearch.
- *
- * @return string
- */
-function elasticsearch_set_default_connector($connection) {
-  return \Drupal::state()->set('elasticsearch_get_default_connector', $connection); 
-}
-
-/**
- * Return the cluster object based on Cluster ID.
- *
- * @param string $cluster_id
- * @param boolean
- * @return \Elasticsearch\Client $client
- */
-function elasticsearch_get_client_by_id($cluster_id = NULL, $default_fallback = NULL) {
-  if (!isset($cluster_id) && !empty($default_fallback)) {
-    $cluster_id = elasticsearch_get_default_connector();
-  }
-
-  if (!empty($cluster_id)) {
-    $client = FALSE;
-    $cluster = elasticsearch_cluster_load($cluster_id);
-    if ($cluster) {
-      $client = elasticsearch_load_library($cluster);
-    }
-  }
-
-  return $client;
-}
-
-/**
  *
  * @param string $url
  * @return
  */
+// Removed. Called from src/Entitiy/Cluster::getClusterByUrls
 function elasticsearch_load_library($cluster) {
   static $clients;
 
@@ -702,20 +681,6 @@ function elasticsearch_load_library($cluster) {
 }
 
 /**
- * Check if the status is OK.
- * @param array $status
- * @return bool
- */
-function elasticsearch_check_status($status) {
-  if (is_array($status) && $status['status'] == elasticsearch_CLUSTER_STATUS_OK) {
-    return TRUE;
-  }
-  else {
-    return FALSE;
-  }
-}
-
-/**
  * Check if the REST response is successful and with status code 200.
  * @param array $response
  * @return boolean
@@ -727,35 +692,6 @@ function elasticsearch_check_response_ack($response) {
   else {
     return FALSE;
   }
-}
-
-/**
- * Return cluster info.
- * @param object
- *    $cluster - The cluster object.
- * @return return array
- */
-function elasticsearch_get_cluster_info($cluster) {
-  $result = FALSE;
-  $client = elasticsearch_load_library($cluster);
-  if (!empty($client)) {
-    try {
-      $info = $client->info();
-      $result['client'] = $client;
-      $result['info'] = $result['state'] = $result['health'] = $result['stats'] = array();
-      if (elasticsearch_check_status($info)) {
-        $result['info'] = $info;
-        $result['state'] = $client->cluster()->state();
-        $result['health'] = $client->cluster()->health();
-        $result['stats'] = $client->nodes()->stats();
-      }
-    }
-    catch (Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
-    }
-  }
-
-  return $result;
 }
 
 /**

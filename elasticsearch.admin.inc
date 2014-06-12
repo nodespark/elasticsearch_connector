@@ -14,6 +14,7 @@
  * @return array
  *   A Drupal render array.
  */
+//Removed. Called from src/Controller/ElasticsearchController::status
 function elasticsearch_status_page() {
   $headers = array(
     array('data' => t('Cluster name')),
@@ -33,17 +34,18 @@ function elasticsearch_status_page() {
     }
 
     // TODO: Remove theme() as per D8 API
-    $operations = theme('links__ctools_dropbutton', array(
-      'links' => array(
+    $operations = array(
+      '#type'  => 'table',
+      '#links' => array(
         array('title' => $edit_link_title, 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/edit'),
         array('title' => t('Info'), 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/info'),
         array('title' => t('Indices'), 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices'),
         array('title' => t('Delete'), 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/delete'),
       ),
-      'attributes' => array(
+      '#attributes' => array(
         'class' => array('links', 'inline'),
       ),
-    ));
+    );
 
     if (!empty($cluster_info['info']) && elasticsearch_check_status($cluster_info['info'])) {
       $info = $cluster_info['health']['status'];
@@ -56,7 +58,7 @@ function elasticsearch_status_page() {
     $row[] = $cluster->name;
     $row[] = (!empty($cluster->status) ? t('Active') : t('Inactive'));
     $row[] = $info;
-    $row[] = $operations;
+    $row[] = drupal_render($operations);
 
     $rows[] = $row;
   }
@@ -65,18 +67,19 @@ function elasticsearch_status_page() {
     '#theme' => 'table',
     '#header' => $headers,
     '#rows' => $rows,
-    '#attributes' => array('class' => array('admin-elasticsearch-connector')),
+    '#attributes' => array('class' => array('admin-elasticsearch')),
   );
 
   return $output;
 }
 
 /**
- * Elasticsearch Connector display all indices in cluster.
+ * Elasticsearch display all indices in cluster.
  *
  * @param object
  * @return array
  */
+// TODO in src/
 function elasticsearch_cluster_indices($cluster) {
   $headers = array(
     array('data' => t('Index name')),
@@ -121,7 +124,7 @@ function elasticsearch_cluster_indices($cluster) {
     '#theme' => 'table',
     '#header' => $headers,
     '#rows' => $rows,
-    '#attributes' => array('class' => array('admin-elasticsearch-connector-indices')),
+    '#attributes' => array('class' => array('admin-elasticsearch-indices')),
   );
 
   return $output;
@@ -134,6 +137,7 @@ function elasticsearch_cluster_indices($cluster) {
  * @param string $index_name
  * @return array
  */
+// TODO in src
 function elasticsearch_cluster_indices_aliases($cluster, $index_name) {
   $headers = array(
     array('data' => t('Alias name')),
@@ -168,7 +172,7 @@ function elasticsearch_cluster_indices_aliases($cluster, $index_name) {
     '#theme' => 'table',
     '#header' => $headers,
     '#rows' => $rows,
-    '#attributes' => array('class' => array('admin-elasticsearch-connector-alias')),
+    '#attributes' => array('class' => array('admin-elasticsearch-alias')),
   );
 
   return $output;
@@ -282,6 +286,7 @@ function elasticsearch_info_cluster($cluster) {
  * @param object $cluster
  * @return array $form
  */
+// Removed. Called from src/Form/ClusterForm::form
 function elasticsearch_edit_cluster($form, $form_state, $cluster = NULL) {
   $form = array();
 
@@ -400,6 +405,7 @@ function elasticsearch_edit_cluster($form, $form_state, $cluster = NULL) {
  * @param array $cluster
  * @return array
  */
+// TODO in src/Form/Index::form
 function elasticsearch_cluster_indices_add($form, &$form_state, $cluster) {
   $form = array();
 
@@ -447,6 +453,7 @@ function elasticsearch_cluster_indices_add($form, &$form_state, $cluster) {
  * @param array $form
  * @param array $form_state
  */
+// TODO in src/Form/Index::validate
 function elasticsearch_cluster_indices_add_validate($form, &$form_state) {
   $values = $form_state['values'];
   if (!preg_match('/^[a-z][a-z0-9_]*$/i', $values['index_name'])) {
@@ -467,6 +474,7 @@ function elasticsearch_cluster_indices_add_validate($form, &$form_state) {
  * @param array $form
  * @param array $form_state
  */
+// TODO in src/Form/Index::submit
 function elasticsearch_cluster_indices_add_submit($form, &$form_state) {
   $values = $form_state['values'];
   $cluster = $form['#cluster'];
@@ -496,6 +504,8 @@ function elasticsearch_cluster_indices_add_submit($form, &$form_state) {
   }
 }
 
+
+// TODO in src/
 function elasticsearch_edit_cluster_ajax($form, $form_state) {
   return array(
     '#type' => 'ajax',
@@ -512,6 +522,7 @@ function elasticsearch_edit_cluster_ajax($form, $form_state) {
  * @param bool $ajax
  * @return array
  */
+// Removed. Called from src/Form/ClusterForm::clusterFormInfo
 function elasticsearch_edit_cluster_form_info($cluster_info = NULL, $ajax = NULL) {
   $headers = array(
     array('data' => t('Cluster name')),
@@ -533,7 +544,7 @@ function elasticsearch_edit_cluster_form_info($cluster_info = NULL, $ajax = NULL
       '#header' => $headers,
       '#rows' => $rows,
       '#attributes' => array(
-        'class' => array('admin-elasticsearch-connector'),
+        'class' => array('admin-elasticsearch'),
         'id'  => 'cluster-info'),
     );
   }
@@ -549,7 +560,7 @@ function elasticsearch_edit_cluster_form_info($cluster_info = NULL, $ajax = NULL
       '#header' => $headers,
       '#rows' => $rows,
       '#attributes' => array(
-        'class' => array('admin-elasticsearch-connector'),
+        'class' => array('admin-elasticsearch'),
         'id'  => 'cluster-info'),
     );
   }
@@ -566,6 +577,7 @@ function elasticsearch_edit_cluster_form_info($cluster_info = NULL, $ajax = NULL
  * @param array $form
  * @param array $form_state
  */
+// Removed. Called from src/Form/ClusterForm::validate
 function elasticsearch_edit_cluster_validate($form, &$form_state) {
   $values = (object)$form_state['values'];
   $cluster_info = elasticsearch_get_cluster_info($values);
@@ -593,6 +605,7 @@ function elasticsearch_edit_cluster_validate($form, &$form_state) {
  * @param array $form
  * @param array $form_state
  */
+// Removed. Called from src/Form/ClusterForm::save
 function elasticsearch_edit_cluster_submit($form, &$form_state) {
   $cluster = $form_state['values']['cluster'];
 
@@ -638,6 +651,7 @@ function elasticsearch_edit_cluster_submit($form, &$form_state) {
  *
  * @see elasticsearch_cluster_indices_delete_submit()
  */
+// TODO in src/Form/DeleteIndex::delete
 function elasticsearch_cluster_indices_delete($form, &$form_state, $cluster, $index) {
   $form = array();
   $locked = _elasticsearch_check_if_index_locked($cluster, $index);
@@ -675,6 +689,7 @@ function elasticsearch_cluster_indices_delete($form, &$form_state, $cluster, $in
  * @param array $form
  * @param array $form_state
  */
+// TODO in src/Form/DeleteIndex::save
 function elasticsearch_cluster_indices_delete_submit($form, &$form_state) {
   $client = elasticsearch_load_library($form_state['values']['cluster']);
   if ($client) {
@@ -694,6 +709,7 @@ function elasticsearch_cluster_indices_delete_submit($form, &$form_state) {
  *
  * @see elasticsearch_delete_cluster_submit()
  */
+// TODO in src/Form/DeleteCluster::delete
 function elasticsearch_delete_cluster($form, &$form_state, $cluster) {
   $locked = _elasticsearch_check_if_cluster_locked($cluster);
 
@@ -726,6 +742,7 @@ function elasticsearch_delete_cluster($form, &$form_state, $cluster) {
  * @param array $form
  * @param array $form_state
  */
+// TODO in src/Form/DeleteCluster::submit
 function elasticsearch_delete_cluster_submit($form, &$form_state) {
   $cluster = $form_state['values']['cluster'];
   if (isset($cluster)) {

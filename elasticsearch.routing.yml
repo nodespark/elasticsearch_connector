@@ -9,7 +9,7 @@ elasticsearch.admin_config_elasticsearch:
 elasticsearch.clusters:
   path: '/admin/config/elasticsearch/clusters'
   defaults:
-    _entity_list: 'elasticsearch_cluster'
+    _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::status'
     _title: 'Elasticsearch Clusters'
   requirements:
     _permission: 'administer elasticsearch'
@@ -23,7 +23,7 @@ elasticsearch.add:
     _entity_create_access: 'elasticsearch_cluster'
 
 elasticsearch.edit:
-  path: '/admin/config/elasticsearch/clusters/{node}/edit'
+  path: '/admin/config/elasticsearch/clusters/{cluster}/edit'
   defaults:
     _entity_form: 'elasticsearch_cluster.edit'
     _title: 'Edit Cluster'
@@ -31,7 +31,7 @@ elasticsearch.edit:
     _entity_create_access: 'elasticsearch_cluster'      
 
 elasticsearch.info:
-  path: '/admin/config/elasticsearch/clusters/{node}/info'
+  path: '/admin/config/elasticsearch/clusters/{cluster}/info'
   defaults:
     _entity_list: 'elasticsearch_cluster.info'
     _title: 'Elasticsearch Cluster Info'
