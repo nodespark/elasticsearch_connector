@@ -998,6 +998,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $this->buildSpellcheckQuery($query, $params);
 
     // More Like This
+    // TODO: Check how we can handle this properly!
     if (!empty($query_options['mlt'])) {
       $mlt_query['more_like_this'] = array();
       $mlt_query['more_like_this']['like_text'] = $query_options['mlt']['id'];
@@ -1112,15 +1113,15 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
 
     // Build the query.
-    if (!empty($query_options['query_search_string']) && !empty($query_options['query_search_filter'])) {
-      $body['query']['filtered']['query'] = $query_options['query_search_string'];
+    if (!empty($query_options['query_search']) && !empty($query_options['query_search_filter'])) {
+      $body['query']['filtered']['query'] = $query_options['query_search'];
       $body['query']['filtered']['filter'] = $query_options['query_search_filter'];
     }
-    elseif (!empty($query_options['query_search_string'])) {
+    elseif (!empty($query_options['query_search'])) {
       if (empty($body['query'])) {
         $body['query'] = array();
       }
-      $body['query'] += $query_options['query_search_string'];
+      $body['query'] += $query_options['query_search'];
     }
     elseif (!empty($query_options['query_search_filter'])) {
       $body['filter'] = $query_options['query_search_filter'];
@@ -1145,10 +1146,147 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   }
 
   /**
+   * Helper function. Handle wildcard query.
+   * @param SearchApiQueryInterface $query
+   * @return array
+   *   Return the should cuase for the Elasticsearch query.
+   */
+  protected function handleWildcardQuery(SearchApiQueryInterface $query, $index_fields) {
+    $originalKeys = $query->getOriginalKeys();
+
+    $wildcard_query = array();
+    if (!empty($originalKeys) && preg_match('/\*|\?/', $originalKeys)) {
+      $query_full_text_fields = $query->getFields();
+      foreach ($query_full_text_fields as $fulltext_field) {
+        $boost = isset($index_fields[$fulltext_field]['boost']) ? '^' . $index_fields[$fulltext_field]['boost'] : '';
+        $field_values = array('value' => strtolower($originalKeys));
+        if (isset($index_fields[$fulltext_field]['boost'])) {
+          $field_values['boost'] = $index_fields[$fulltext_field]['boost'];
+        }
+
+        $wildcard_query[] = array(
+          'wildcard' => array(
+            $fulltext_field => $field_values
+          )
+        );
+      }
+    }
+
+    return $wildcard_query;
+  }
+
+  /**
+   *
+   * @param SearchApiQueryInterface $query
+   */
+  protected function handleMultyMatchQuery(SearchApiQueryInterface $query, $index_fields) {
+    $originalKeys = $query->getOriginalKeys();
+
+    $multymatch_query = array();
+    if (!empty($originalKeys)) {
+      $query_full_text_fields = $query->getFields();
+      $fields = array();
+      foreach ($query_full_text_fields as $fulltext_field) {
+        $boost = isset($index_fields[$fulltext_field]['boost']) ? '^' . $index_fields[$fulltext_field]['boost'] : '';
+        $fields[] = $fulltext_field . $boost;
+      }
+
+      $multymatch_query = array(
+        'multi_match' => array(
+          'query' => $originalKeys,
+          'fields' => $fields
+        )
+      );
+    }
+
+    return $multymatch_query;
+  }
+
+  /**
+   * Check if the query has a wildcard parameter or not.
+   *
+   * @param SearchApiQueryInterface $query
+   * @return boolean
+   */
+  protected function isWildcardQuery(SearchApiQueryInterface $query) {
+    $return = FALSE;
+    $originalKeys = $query->getOriginalKeys();
+
+    if (!empty($originalKeys) && preg_match('/\*|\?/', $originalKeys)) {
+      $return = TRUE;
+    }
+    return $return;
+  }
+
+  protected function handleStringQuery(SearchApiQueryInterface $query, $index_fields) {
+    $query_search_string = array();
+    if (!$this->isWildcardQuery($query)) {
+      // Get query options.
+      $query_options = $query->getOptions();
+
+      $keys = $query->getKeys();
+      if (!empty($keys)) {
+        if (is_string($keys)) {
+          $keys = array($keys);
+        }
+
+        // Full text fields in which to perform the search.
+        $query_full_text_fields = $query->getFields();
+
+        // Query string
+        $search_string = $this->flattenKeys($keys, $query_options['parse mode']);
+        if (!empty($search_string)) {
+          $query_search_string = array('query_string' => array());
+          // TODO: Think of using bool query where default will be OR operator and should cause will be the AND operator.
+          // This way we will have more results to the user and the one that match AND will be more relevant.
+          $query_search_string['query_string']['query'] = $search_string;
+
+          foreach ($query_full_text_fields as $fulltext_field) {
+            $boost = isset($index_fields[$fulltext_field]['boost']) ? '^' . $index_fields[$fulltext_field]['boost'] : '';
+            $query_search_string['query_string']['fields'][] = $fulltext_field . $boost;
+          }
+        }
+      }
+    }
+
+    return $query_search_string;
+  }
+
+  /**
+   * Helper function. Handle freetext search parameters.
+   *
+   * @param SearchApiQueryInterface $query
+   * @return array
+   *   Return the query parameters required for elasticsearch.
+   */
+  protected function handleFulltextSearch(SearchApiQueryInterface $query, $index_fields) {
+    $bool_query = array();
+
+    $wildcardQuery = $this->handleWildcardQuery($query, $index_fields);
+    if (!empty($wildcardQuery)) {
+      $bool_query['bool']['should'] = $wildcardQuery;
+    }
+
+    $multyMatch = $this->handleMultyMatchQuery($query, $index_fields);
+    if (!empty($multyMatch) && $this->isWildcardQuery($query)) {
+      $bool_query['bool']['should'][] = $multyMatch;
+    }
+    elseif (!empty($multyMatch) && !$this->isWildcardQuery($query)) {
+      $bool_query['bool']['must'] = $multyMatch;
+    }
+
+    $stringQuery = $this->handleStringQuery($query, $index_fields);
+    if (!empty($stringQuery)) {
+      $bool_query['bool']['should'][] = $stringQuery;
+    }
+
+    return $bool_query;
+  }
+
+  /**
    * Helper function return associative array with query options.
    */
   protected function getSearchQueryOptions(SearchApiQueryInterface $query) {
-
     // Query options.
     $query_options = $query->getOptions();
 
@@ -1160,39 +1298,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $query_limit = empty($query_options['limit']) ? 10 : $query_options['limit'];
 
     // Query string.
-    $query_search_string = NULL;
+    $query_search = $this->handleFulltextSearch($query, $index_fields);
 
     // Query filter.
     $query_search_filter = NULL;
-
-    // Full text search.
-    $keys = $query->getKeys();
-    if (!empty($keys)) {
-      if (is_string($keys)) {
-        $keys = array($keys);
-      }
-
-      // Full text fields in which to perform the search.
-      $query_full_text_fields = $query->getFields();
-
-      // Query string
-      $search_string = $this->flattenKeys($keys, $query_options['parse mode']);
-
-      if (!empty($search_string)) {
-        $query_search_string = array('query_string' => array());
-        // TODO: Think of using bool query where default will be OR operator and should cause will be the AND operator.
-        // This way we will have more results to the user and the one that match AND will be more relevant.
-        $query_search_string['query_string']['query'] = $search_string;
-
-        foreach ($query_full_text_fields as $fulltext_field) {
-          $boost = isset($index_fields[$fulltext_field]['boost']) ? '^' . $index_fields[$fulltext_field]['boost'] : '';
-          $query_search_string['query_string']['fields'][] = $fulltext_field . $boost;
-        }
-
-        // TODO: To use snowball here we need to index the string as snowball, otherwise no result will match.
-        $query_search_string['query_string']['analyzer'] = 'snowball';
-      }
-    }
 
     // Sort.
     try {
@@ -1224,7 +1333,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     return array(
       'query_offset' => $query_offset,
       'query_limit' => $query_limit,
-      'query_search_string' => $query_search_string,
+      'query_search' => $query_search,
       'query_search_filter' => $query_search_filter,
       'sort' => $sort,
       'mlt' => $mlt,
