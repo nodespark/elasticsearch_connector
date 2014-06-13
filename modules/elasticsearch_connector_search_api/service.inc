@@ -4,9 +4,6 @@
  * @file
  * Provides a Elasticsearch-based service class for the Search API using
  * Elasticsearch Connector module.
- *
- * TODO: Describe the hooks in elasticsearch_connector_search_api.api.php
- *
  */
 
 class SearchApiElasticsearchConnectorException extends SearchApiException {}
@@ -356,12 +353,21 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    * Overrides removeIndex().
    */
   public function removeIndex($index) {
-    $params = $this->getIndexParam($index);
+    $params = $this->getIndexParam($index, TRUE);
 
     try {
-      // TODO: Delete the mapping.
-      // TODO: Check if there are other mappings.
-      // TODO: If not other mappings delete the index then.
+      $this->elasticsearchClient->indices()->deleteMapping($params);
+
+      $result = $this->elasticsearchClient->indices()->getMapping(array(
+        'index' => $params['index'],
+      ));
+
+      if (empty($result)) {
+        $this->elasticsearchClient->indices()->delete(array(
+          'index' => $params['index'],
+        ));
+      }
+
       $response = $this->elasticsearchClient->indices()->delete($params);
     }
     catch (Exception $e) {
