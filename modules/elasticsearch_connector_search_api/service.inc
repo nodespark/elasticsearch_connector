@@ -1235,6 +1235,12 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     return $return;
   }
 
+  /**
+   * Build the string_query for the Elasticsearch request.
+   * @param SearchApiQueryInterface $query
+   * @param array $index_fields
+   * @return array
+   */
   protected function handleStringQuery(SearchApiQueryInterface $query, $index_fields) {
     $query_search_string = array();
     if (!$this->isWildcardQuery($query)) {
@@ -1254,8 +1260,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         $search_string = $this->flattenKeys($keys, $query_options['parse mode']);
         if (!empty($search_string)) {
           $query_search_string = array('query_string' => array());
-          // TODO: Think of using bool query where default will be OR operator and should cause will be the AND operator.
-          // This way we will have more results to the user and the one that match AND will be more relevant.
           $query_search_string['query_string']['query'] = $search_string;
 
           foreach ($query_full_text_fields as $fulltext_field) {
