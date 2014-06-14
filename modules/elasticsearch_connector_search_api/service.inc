@@ -485,9 +485,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    *
    * @param array $ids
    * @param SearchApiIndex $index
-   *
-   * TODO: Test function if working.
-   *
+   * @return void
    */
   private function deleteItemsIds($ids, SearchApiIndex $index) {
     $params = $this->getIndexParam($index, TRUE);
@@ -502,7 +500,15 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
 
     try {
-      $this->elasticsearchClient->bulk($params);
+      $response = $this->elasticsearchClient->bulk($params);
+      // If error throw the error we have.
+      if (!empty($response['errors'])) {
+        foreach($response['items'] as $item) {
+          if (!empty($item['delete']['status']) && $item['delete']['status'] == '400') {
+            throw new SearchApiElasticsearchConnectorException($item['index']['error']);
+          }
+        }
+      }
     }
     catch (Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
