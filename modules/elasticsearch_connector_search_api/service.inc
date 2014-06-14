@@ -467,12 +467,17 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   }
 
   /**
-   * TODO: Get all created indexeds and delete them.
+   * Get all the indexes for this specific server.
    */
   protected function getIndexes() {
-    $indices = array();
-
-    return $indices;
+    $server_indices = array();
+    $indices = search_api_index_load_multiple(FALSE);
+    foreach ($indices as $index) {
+      if ($index->server == $this->server->machine_name) {
+        $server_indices[] = $index;
+      }
+    }
+    return $server_indices;
   }
 
   /**
@@ -484,14 +489,14 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    * TODO: Test function if working.
    *
    */
-  private function deleteItemsIds($ids, SearchApiIndex $index = NULL) {
+  private function deleteItemsIds($ids, SearchApiIndex $index) {
     $params = $this->getIndexParam($index, TRUE);
     foreach ($ids as $id) {
       $params['body'][] = array(
         'delete' => array(
-          '_index' => $params['index'],
-          '_type' => $params['type'],
-          '_id' => $id,
+          '_index'  => $params['index'],
+          '_type'   => $params['type'],
+          '_id'     => $id,
         )
       );
     }
