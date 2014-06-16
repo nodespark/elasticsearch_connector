@@ -1,0 +1,11 @@
+name: 
+  'Elasticsearch Search API'
+description: 
+  'This module integrates Elasticsearch module with Search API.'
+type: module
+package: Elasticsearch
+version: VERSION
+core: 8.x
+dependencies:
+  - elasticsearch
+  - search_api

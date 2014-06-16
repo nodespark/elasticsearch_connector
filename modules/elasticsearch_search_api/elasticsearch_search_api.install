@@ -1,0 +1,32 @@
+<?php
+/**
+ * @file
+ * Install/unstall tasks for the Elasticsearch Search API module.
+ */
+
+/**
+ * Implements hook_disable().
+ *
+ * Disable Search API elasticsearch servers and associated indexes.
+ */
+function elasticsearch_search_api_disable() {
+  if (module_exists('search_api')) {
+    module_load_include('module', 'search_api');
+    foreach (search_api_server_load_multiple(FALSE, array('class' => 'search_api_elasticsearch'), TRUE) as $server) {
+      $server->update(array('enabled' => 0));
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Delete Search API elasticsearch servers.
+ */
+function elasticsearch_search_api_uninstall() {
+  if (module_exists('search_api')) {
+    db_delete('search_api_server')
+      ->condition('class', 'search_api_elasticsearch')
+      ->execute();
+  }
+}
