@@ -7,7 +7,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Elasticsearch\Client;
 use Drupal\Component\Utility\UrlHelper;
 
-class Cluster extends ConfigEntityBase implements ClusterInterface {
+class Cluster extends ConfigEntityBase {
 
   // Active status
   const ELASTICSEARCH_STATUS_ACTIVE = 1;
