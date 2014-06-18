@@ -45,6 +45,9 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   protected $elasticsearchClient = NULL;
   private   $cluster_id = NULL;
 
+  const FILTER_TYPE   = 'filter';
+  const QUERY_TYPE    = 'query';
+
   /**
    * Overrides __construct().
    */
@@ -604,7 +607,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   /**
    * Recursively parse Search API filters.
    */
-  protected function parseFilter(SearchApiQueryFilter $query_filter, $index_fields, $ignored_field_id = '') {
+  protected function parseFilter(SearchApiQueryFilterInterface $query_filter, $index_fields, $ignored_field_id = '') {
 
     if (empty($query_filter)) {
       return NULL;
@@ -613,10 +616,12 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $conjunction = $query_filter->getConjunction();
 
       $filters = array();
+      $queries = array();
 
       try {
         foreach ($query_filter->getFilters() as $filter_info) {
           $filter = NULL;
+          $filter_type = NULL;
 
           // Simple filter [field_id, value, operator].
           if (is_array($filter_info)) {
@@ -624,37 +629,70 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
             $this->correctFilter($filter_assoc, $index_fields, $ignored_field_id);
             // Check if we need to ignore the filter!
             if ($filter_assoc['field_id'] != $ignored_field_id) {
-              $filter = $this->getFilter($filter_assoc);
+              list($filter_type, $filter) = $this->getFilter($filter_assoc, $index_fields);
             }
 
             if (!empty($filter)) {
-              $filters[] = $filter;
+              if ($filter_type == self::FILTER_TYPE) {
+                $filters[] = $filter;
+              }
+              elseif ($filter_type == self::QUERY_TYPE) {
+                $queries[] = $filter;
+              }
             }
           }
           // Nested filters.
-          elseif ($filter_info instanceof SearchApiQueryFilter) {
-            $nested_filters = $this->parseFilter($filter_info, $index_fields, $ignored_field_id);
+          elseif ($filter_info instanceof SearchApiQueryFilterInterface) {
+            list($nested_queries, $nested_filters) = $this->parseFilter($filter_info, $index_fields, $ignored_field_id);
             // TODO: handle error. - here is unnecessary cause in if we thow exceptions and this is still in try{}  .
             if (!empty($nested_filters)) {
               $filters = array_merge($filters, $nested_filters);
             }
+            if (!empty($nested_queries)) {
+              $queries = array_merge($queries, $nested_queries);
+            }
           }
         }
-        $filters = $this->setFiltersConjunction($filters, $conjunction);
+
+        if (!empty($queries)) {
+          $queries = $this->normalizeFulltextQuery($queries, $conjunction);
+        }
+
+        if (!empty($filters)) {
+          $filters = $this->setFiltersConjunction($filters, $conjunction);
+        }
       }
       catch (Exception $e) {
         watchdog('Elasticsearch Search API', check_plain($e->getMessage()), array(), WATCHDOG_ERROR);
         drupal_set_message(check_plain($e->getMessage()), 'error');
       }
 
-      return $filters;
+      return array($queries, $filters);
     }
+  }
+
+  /**
+   *
+   * @param array $queries
+   * @param string $conjunction
+   */
+  protected function normalizeFulltextQuery($queries, $conjunction) {
+    if ($conjunction === 'OR') {
+      $queries = array(array('bool' => array('should' => $queries, 'minimum_should_match' => '1')));
+    }
+    elseif ($conjunction === 'AND') {
+      $queries = array(array('bool' => array('must' => $queries)));
+    }
+
+    return $queries;
   }
 
   /**
    * Get filter by associative array.
    */
-  protected function getFilter(array $filter_assoc) {
+  protected function getFilter(array $filter_assoc, $index_fields) {
+    $field_type = $index_fields[$filter_assoc['field_id']]['type'];
+    $type = self::FILTER_TYPE;
     // Handles "empty", "not empty" operators.
     if (!isset($filter_assoc['filter_value'])) {
       switch ($filter_assoc['filter_operator']) {
@@ -679,7 +717,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       }
     }
     // Normal filters.
-    else {
+    elseif (!search_api_is_text_type($field_type)) {
       switch ($filter_assoc['filter_operator']) {
         case '=':
           $filter = array(
@@ -752,10 +790,33 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         default:
           throw new Exception(t('Undefined operator :field_operator for :field_id field! Incorrect filter criteria is using for searching!',
           array(':field_operator' => $filter_assoc['filter_operator'], ':field_id' => $filter_assoc['field_id'])));
+          break;
+      }
+    }
+    else {
+      // Handle the freetext search filters when the $query->condition(...) has been used with a fulltext field.
+      $type = self::QUERY_TYPE;
+      switch ($filter_assoc['filter_operator']) {
+        case '=':
+          $filter = array(
+            'match' => array($filter_assoc['field_id'] => $filter_assoc['filter_value'])
+          );
+          break;
+
+          case '*':
+            $filter = array(
+              'wildcard' => array($filter_assoc['field_id'] => $filter_assoc['filter_value'])
+            );
+            break;
+
+        default:
+          throw new Exception(t('Undefined operator :field_operator for :field_id field! Incorrect filter criteria is using for searching!',
+          array(':field_operator' => $filter_assoc['filter_operator'], ':field_id' => $filter_assoc['field_id'])));
+          break;
       }
     }
 
-    return $filter;
+    return array($type, $filter);
   }
 
   /**
@@ -772,7 +833,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   }
 
   /**
-   * Helper function thaht set filters conjunction
+   * Helper function that set filters conjunction
    */
   protected function setFiltersConjunction(&$filters, $conjunction) {
     if (count($filters) > 1) {
@@ -1285,7 +1346,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     $wildcardQuery = $this->handleWildcardQuery($query, $index_fields);
     if (!empty($wildcardQuery)) {
-      $bool_query['bool']['should'] = $wildcardQuery;
+      $bool_query['bool']['should'][] = $wildcardQuery;
     }
 
     $multyMatch = $this->handleMultyMatchQuery($query, $index_fields);
@@ -1293,7 +1354,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $bool_query['bool']['should'][] = $multyMatch;
     }
     elseif (!empty($multyMatch) && !$this->isWildcardQuery($query)) {
-      $bool_query['bool']['must'] = $multyMatch;
+      $bool_query['bool']['must'][] = $multyMatch;
     }
 
     $stringQuery = $this->handleStringQuery($query, $index_fields);
@@ -1334,9 +1395,19 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
 
     // Filters.
-    $parsed_query_filters = $this->parseFilter($query->getFilter(), $index_fields);
+    list($parsed_queries, $parsed_query_filters) = $this->parseFilter($query->getFilter(), $index_fields);
     if (!empty($parsed_query_filters)) {
       $query_search_filter = $parsed_query_filters[0];
+    }
+
+    if (!empty($parsed_queries)) {
+      $parsed_queries = reset($parsed_queries);
+      if (empty($query_search)) {
+        $query_search = $parsed_queries;
+      }
+      else {
+        $query_search = array('bool' => array('must' => array($query_search, $parsed_queries)));
+      }
     }
 
     // More Like This
@@ -1462,14 +1533,14 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $facet_search_filter = '';
 
     if (isset($facet_info['operator']) && drupal_strtolower($facet_info['operator']) == 'or') {
-      $facet_search_filter = $this->parseFilter($query->getFilter(), $index_fields, $facet_info['field']);
+      list($queries, $facet_search_filter) = $this->parseFilter($query->getFilter(), $index_fields, $facet_info['field']);
       if (!empty($facet_search_filter)) {
         $facet_search_filter = $facet_search_filter[0];
       }
     }
     // Normal facet, we just use the main query filters.
     else {
-      $facet_search_filter = $this->parseFilter($query->getFilter(), $index_fields);
+      list($queries, $facet_search_filter) = $this->parseFilter($query->getFilter(), $index_fields);
       if (!empty($facet_search_filter)) {
         $facet_search_filter = $facet_search_filter[0];
       }

@@ -174,7 +174,7 @@ class SearchApiElasticsearchConnectorStats {
         'filters'           => $this->getFilters(),
         'sort'              => $this->getSort(),
         'uid'               => $user->uid,
-        'results'           => $response['hits']['total'],
+        'results'           => isset($response['hits']['total']) ? $response['hits']['total'] : 0,
         'username'          => ($user->uid > 0 ? $user->name : ''),
         'timestamp'         => time(),
         '_ttl'              => $this->ttl,
