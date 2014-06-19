@@ -1,0 +1,5 @@
+elasticsearch.cluster_add:
+  route_name: elasticsearch.cluster_add
+  title: 'Add Cluster'
+  appears_on:
+    - elasticsearch.clusters

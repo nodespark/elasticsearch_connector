@@ -5,28 +5,60 @@
  * Provides a Elasticsearch-based service class for the Search API using
  * Elasticsearch module.
  */
+use Drupal\Core\Config\Config;
+use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Form\FormBuilderInterface;
+use Drupal\search_api\Backend\BackendPluginBase;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Search service class.
  */
-class SearchApiElasticsearchBackend extends SearchApiAbstractService {
+class ElasticsearchBackend extends BackendPluginBase {
 
   /**
    * Elasticsearch Connection.
    */
-  protected $elasticsearchClient = NULL;
-  private   $cluster_id = NULL;
+  protected $elasticSearchSettings = NULL;
+  protected $clusterId = NULL;
 
   /**
-   * Overrides __construct().
+   * {@inheritdoc}
    */
-  public function __construct(SearchApiServer $server) {
-    parent::__construct($server);
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, FormBuilderInterface $form_builder, ModuleHandlerInterface $module_handler, Config $elastic_search_settings) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
 
-    $this->cluster_id = $this->getOption('cluster', '');
+    $this->formBuilder = $form_builder;
+    $this->moduleHandler = $module_handler;
+    $this->elasticSearchSettings = $elastic_search_settings;
+
+    /*$this->cluster_id = $this->getOption('cluster', '');
     if ($this->cluster_id) {
       $this->elasticsearchClient = elasticsearch_connector_get_client_by_id($this->cluster_id);
-    }
+    }*/
+
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('form_builder'),
+      $container->get('module_handler'),
+      $container->get('config.factory')->get('elastic_search.settings')
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function defaultConfiguration() {
+    return array(
+    );
   }
 
   /**
@@ -40,7 +72,7 @@ class SearchApiElasticsearchBackend extends SearchApiAbstractService {
       '#tree' => FALSE,
     );
 
-    $clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
+    /*$clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
     $form['connector_settings']['cluster'] = array(
       '#type' => 'select',
       '#title' => t('Cluster'),
@@ -49,28 +81,7 @@ class SearchApiElasticsearchBackend extends SearchApiAbstractService {
       '#options' => $clusters,
       '#description' => t('Select the cluster you want to handle the connections.'),
       '#parents' => array('options', 'form', 'cluster'),
-    );
-
-    // Facet settings.
-    $form['facet_settings'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Elasticsearch facet settings'),
-      '#tree' => FALSE,
-      '#access' => module_exists('search_api_facetapi'),
-    );
-
-    // Elasticsearch facet limit.
-    $default = 10;
-    $form['facet_settings']['facet_limit'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Facet limit'),
-      '#description' => t("Maximum number of facet elements to be returned by the server if 'no limit' is selected as hard limit is the facet option. Default is %default.", array(
-        '%default' => $default,
-      )),
-      '#required' => TRUE,
-      '#default_value' => $this->getOption('facet_limit', $default),
-      '#parents' => array('options', 'form', 'facet_limit'),
-    );
+    );*/
 
     return $form;
   }
@@ -79,7 +90,7 @@ class SearchApiElasticsearchBackend extends SearchApiAbstractService {
    * Overrides configurationFormValidate().
    */
   public function configurationFormValidate(array $form, array &$values, array &$form_state) {
-    $clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
+    /*$clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
     // Check cluster!
     if (empty($clusters[$values['cluster']])) {
       form_set_error('options][form][cluster', t('You must select a valid Cluster from the elasticsearch clusters dropdown.'));
@@ -88,28 +99,30 @@ class SearchApiElasticsearchBackend extends SearchApiAbstractService {
     // Facet limit.
     if (filter_var($values['facet_limit'], FILTER_VALIDATE_INT, array('options' => array('min_range' => 0))) === FALSE) {
       form_set_error('options][form][facet_limit', t('You must enter a positive integer for the elasticsearch facet limit.'));
-    }
+    }*/
   }
 
   /**
-   * Overrides supportsFeature().
+   * {@inheritdoc}
    */
   public function supportsFeature($feature) {
     // First, check the features we always support.
-    $supported = drupal_map_assoc(array(
+    $supported = array(
       'search_api_autocomplete',
       'search_api_facets',
       'search_api_facets_operator_or',
+      'search_api_grouping',
       'search_api_mlt',
-      // TODO: Implement the rest of the features available!
-//       'search_api_grouping',
-//       'search_api_multi',
-//       'search_api_service_extra',
-//       'search_api_spellcheck',
-//       'search_api_data_type_location',
-//       'search_api_data_type_geohash',
-    ));
-    return isset($supported[$feature]);
+      //'search_api_multi',
+      //'search_api_service_extra',
+      //'search_api_spellcheck',
+      //'search_api_data_type_location',
+      //'search_api_data_type_geohash',
+    );
+    $supported = array_combine($supported, $supported);
+    if (isset($supported[$feature])) {
+      return TRUE;
+    }
   }
 
   /**
@@ -138,7 +151,8 @@ class SearchApiElasticsearchBackend extends SearchApiAbstractService {
     $output = array();
 
     $status = !empty($this->elasticsearchClient) ? $this->elasticsearchClient->info() : NULL;
-    $elasticsearch_connector_path = elasticsearch_connector_main_settings_path();
+    //$elasticsearch_connector_path = elasticsearch_connector_main_settings_path();
+    $elasticsearch_connector_path = "";
     $output['status'] = array(
       '#type' => 'item',
       '#title' => t('Elasticsearch cluster status'),
@@ -225,10 +239,11 @@ class SearchApiElasticsearchBackend extends SearchApiAbstractService {
     return "<dl>\n{$output}</dl>";
   }
 
+
   /**
    * Overrides addIndex().
    */
-  public function addIndex(SearchApiIndex $index) {
+  /*public function addIndex(SearchApiIndex $index) {
     $index_name = $this->getIndexName($index);
     if (!empty($index_name)) {
       try {
@@ -251,7 +266,7 @@ class SearchApiElasticsearchBackend extends SearchApiAbstractService {
         drupal_set_message($e->getMessage(), 'error');
       }
     }
-  }
+  }*/
 
   /**
    * Overrides fieldsUpdated().

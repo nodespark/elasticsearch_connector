@@ -3,10 +3,41 @@
 namespace Drupal\elasticsearch\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Elasticsearch\Client;
-use Drupal\Component\Utility\UrlHelper;
 
+/**
+ * Defines the search server configuration entity.
+ *
+ * @ConfigEntityType(
+ *   id = "elasticsearch_cluster",
+ *   label = @Translation("Elasticsearch Cluster"),
+ *   controllers = {
+ *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
+ *     "list_builder" = "Drupal\Core\Config\Entity\ConfigEntityListBuilder",
+ *     "form" = {
+ *       "default" = "Drupal\elasticsearch\Form\ClusterForm",
+ *       "edit" = "Drupal\elasticsearch\Form\ClusterForm",
+ *       "delete" = "Drupal\elasticsearch\Form\ClusterDeleteConfirmForm",
+ *       "disable" = "Drupal\elasticsearch\Form\ClusterDisableConfirmForm",
+ *       "clear" = "Drupal\elasticsearch\Form\ClusterClearConfirmForm"
+ *     },
+ *   },
+ *   admin_permission = "administer search_api",
+ *   config_prefix = "cluster",
+ *   entity_keys = {
+ *     "id" = "machine_name",
+ *     "label" = "name",
+ *     "uuid" = "uuid",
+ *     "status" = "status"
+ *   },
+ *   links = {
+ *     "canonical" = "elasticsearch.cluster_info",
+ *     "add-form" = "elasticsearch.cluster_add",
+ *     "edit-form" = "elasticsearch.cluster_edit",
+ *     "delete-form" = "elasticsearch.cluster_delete",
+ *   }
+ * )
+ */
 class Cluster extends ConfigEntityBase {
 
   // Active status
@@ -221,7 +252,8 @@ class Cluster extends ConfigEntityBase {
    * @return \Elasticsearch\Client $client
    */
   protected function getClusterById($cluster_id = NULL) {
-    if (!isset($cluster_id) && !empty(getDefaultCluster())) {
+    $default_cluster = getDefaultCluster();
+    if (!isset($cluster_id) && !empty($default_cluster)) {
       $cluster_id = getDefaultCluster();
     }
 

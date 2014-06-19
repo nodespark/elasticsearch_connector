@@ -1,39 +1,39 @@
-elasticsearch.admin_config_elasticsearch:
-  path: '/admin/config/elasticsearch'
-  defaults:
-    _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
-    _title: 'Elasticsearch'
-  requirements:
-    _permission: 'administer elasticsearch'
-
 elasticsearch.clusters:
-  path: '/admin/config/elasticsearch/clusters'
+  path: '/admin/config/search/elasticsearch/clusters'
   defaults:
-    _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::status'
     _title: 'Elasticsearch Clusters'
+    _entity_list: 'elasticsearch_cluster'
   requirements:
     _permission: 'administer elasticsearch'
 
-elasticsearch.add:
-  path: '/admin/config/elasticsearch/clusters/add'
+elasticsearch.cluster_view:
+  path: '/admin/config/search/elasticsearch/clusters/{cluster}'
   defaults:
-    _entity_form: 'elasticsearch_cluster.add'
+    _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::page'
+    _title_callback: '\Drupal\elasticsearch\Controller\ElasticsearchController::pageTitle'
+    _title: "View"
+  requirements:
+    _entity_create_access: 'elasticsearch_cluster'
+
+elasticsearch.cluster_add:
+  path: '/admin/config/search/elasticsearch/clusters/add'
+  defaults:
+    _entity_form: 'elasticsearch_cluster.default'
     _title: 'Cluster'
   requirements:
     _entity_create_access: 'elasticsearch_cluster'
 
-elasticsearch.edit:
-  path: '/admin/config/elasticsearch/clusters/{cluster}/edit'
+elasticsearch.cluster_edit:
+  path: '/admin/config/search/elasticsearch/clusters/{cluster}/edit'
   defaults:
     _entity_form: 'elasticsearch_cluster.edit'
     _title: 'Edit Cluster'
     requirements:
     _entity_create_access: 'elasticsearch_cluster'      
 
-elasticsearch.info:
-  path: '/admin/config/elasticsearch/clusters/{cluster}/info'
+elasticsearch.cluster_delete:
+  path: '/admin/config/search/elasticsearch/clusters/{cluster}/delete'
   defaults:
-    _entity_list: 'elasticsearch_cluster.info'
-    _title: 'Elasticsearch Cluster Info'
-    requirements:
-    _permission: 'administer elasticsearch'      
+    _entity_form: 'elasticsearch_cluster.delete'
+  requirements:
+    _entity_access: 'elasticsearch_cluster.delete'

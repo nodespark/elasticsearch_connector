@@ -2,12 +2,52 @@
 
 namespace Drupal\elasticsearch\Controller;
 
+use Drupal\Component\Utility\String;
+use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\elasticsearch\Entity\Cluster;
 
 /**
  * Example page controller.
  */
 class ElasticSearchController {
+
+  /**
+   * Displays information about a Search API index.
+   *
+   * @param \Drupal\search_api\Index\IndexInterface $search_api_index
+   *   An instance of IndexInterface.
+   *
+   * @return array
+   *   An array suitable for drupal_render().
+   */
+  public function page(ConfigEntityBase $elasticsearch_cluster) {
+    // Build the Search API index information.
+    $render = array(
+      'view' => array(
+        '#theme' => 'elasticsearch_cluster',
+        '#cluster' => $elasticsearch_cluster,
+      ),
+    );
+    // Check if the index is enabled and can be written to.
+    //if ($search_api_index->status() && !$search_api_index->isReadOnly()) {
+      // Attach the index status form.
+    //  $render['form'] = $this->formBuilder()->getForm('Drupal\search_api\Form\IndexStatusForm', $search_api_index);
+    //}
+    return $render;
+  }
+
+  /**
+   * The _title_callback for the search_api.index_view route.
+   *
+   * @param \Drupal\search_api\Index\IndexInterface $search_api_index
+   *   An instance of IndexInterface.
+   *
+   * @return string
+   *   The page title.
+   */
+  public function pageTitle(ConfigEntityBase $elasticsearch_cluster) {
+    return String::checkPlain($elasticsearch_cluster->label());
+  }
 
   /**
   * Cluster status page callback.

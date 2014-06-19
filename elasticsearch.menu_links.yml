@@ -1,11 +1,5 @@
-elasticsearch.admin_config_elasticsearch:
-  title: 'Elasticsearch'
-  parent: system.admin_config
-  description: 'Administer Elasticsearch clusters and settings.'
-  route_name: elasticsearch.admin_config_elasticsearch
-  weight: 0
 elasticsearch.clusters:
+  title: 'Elastic Search Clusters'
+  description: 'Administer Elasticsearch clusters and settings.'
   route_name: elasticsearch.clusters
-  parent: elasticsearch.admin_config_elasticsearch
-  title: 'Elasticsearch Clusters'
-  weight: -10
+  parent: system.admin_config_search

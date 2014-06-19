@@ -1,16 +1,14 @@
 <?php
 
-namespace Drupal\elasticsearch;
+namespace Drupal\elasticsearch\Form;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Component\Utility\String;
-use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Url;
 use Drupal\elasticsearch\Entity\Cluster;
 use Elasticsearch\Common\Exceptions\Curl\CouldNotResolveHostException;
 
 /**
- * Form controller for node type forms.
+ * Provides a form for the Cluster entity.
  */
 class ClusterForm extends EntityForm {
   /**
@@ -57,9 +55,14 @@ class ClusterForm extends EntityForm {
       '#required' => TRUE,
     );
 
+    // Added by Nick to avoid errors
+    // @todo: Cleanup these things
+    $cluster_info = "";
+    $form_state_active = FALSE;
+
     if (isset($cluster->url)) {
       try {
-        $cluster_info = $cluster->getClusterInfo();
+        //$cluster_info = $cluster->getClusterInfo();
         $form_state_active = TRUE;
       }
       catch (\Exception $e) {
@@ -69,7 +72,9 @@ class ClusterForm extends EntityForm {
 
     $form['status_info'] = $this->clusterFormInfo($cluster_info, $form_state_active);
 
-    $default = Cluster::getDefaultCluster();
+    // @todo : Find a better way to get the default Cluster. Most likely a variable
+    //$default = Cluster::getDefaultCluster();
+    $default = "";
     $form['default'] = array(
       '#type' => 'checkbox',
       '#title' => t('Make this cluster default connection'),

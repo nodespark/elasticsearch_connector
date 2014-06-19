@@ -776,3 +776,10 @@ function _elasticsearch_validate_ttl_field($element, &$form_state, $form) {
     form_error($element, t('Invalid elasticsearch TTL value. Please use the proper syntax e.g. 1d (d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks)).'));
   }
 }
+
+function elasticsearch_clusters() {
+  $cluster_ids = \Drupal::entityQuery('search_api_index')
+    ->execute();
+  dpm($cluster_ids);
+  return array();
+}
