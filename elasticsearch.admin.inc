@@ -79,7 +79,7 @@ function elasticsearch_status_page() {
  * @param object
  * @return array
  */
-// TODO in src/
+//Removed. Called from src/Entity/Index::getClusterIndices
 function elasticsearch_cluster_indices($cluster) {
   $headers = array(
     array('data' => t('Index name')),
@@ -137,7 +137,7 @@ function elasticsearch_cluster_indices($cluster) {
  * @param string $index_name
  * @return array
  */
-// TODO in src
+//Removed. Called from src/Entity/Index::getClusterIndicesAliases
 function elasticsearch_cluster_indices_aliases($cluster, $index_name) {
   $headers = array(
     array('data' => t('Alias name')),
