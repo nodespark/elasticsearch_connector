@@ -498,7 +498,7 @@ function elasticsearch_set_breadcrumb($links = array()) {
  */
 // TODO in src/
 function elasticsearch_cluster_save($cluster) {
-  ctools_include('export');
+  //ctools_include('export');
 
   $cluster = (object) $cluster;
   $cluster->options = serialize($cluster->options);
@@ -563,8 +563,8 @@ function elasticsearch_get_indices_options($cluster_id, $empty_option = FALSE) {
  */
 // Removed. Called from src/Entity/Cluster::loadCluser
 function elasticsearch_cluster_load($cluster_id) {
-  ctools_include('export');
-  $result = ctools_export_load_object('elasticsearch_cluster', 'names', array($cluster_id));
+  //ctools_include('export');
+  //$result = ctools_export_load_object('elasticsearch_cluster', 'names', array($cluster_id));
   if (isset($result[$cluster_id])) {
     if (isset($result[$cluster_id]->options) && !is_array($result[$cluster_id]->options)) {
       $result[$cluster_id]->options = unserialize($result[$cluster_id]->options);
@@ -599,8 +599,8 @@ function elasticsearch_index_valid_load($index_name) {
  */
 function loadAllClusters($include_inactive = TRUE) {
   // TODO: Remove ctools
-  ctools_include('export');
-  $clusters = ctools_export_load_object('elasticsearch_cluster', 'all');
+  //ctools_include('export');
+  //$clusters = ctools_export_load_object('elasticsearch_cluster', 'all');
 
   // Filter out inactive clusters.
   foreach ($clusters as $cluster_id => $cluster) {

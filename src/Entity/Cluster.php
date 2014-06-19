@@ -278,8 +278,8 @@ class Cluster extends ConfigEntityBase {
   */
   public function loadCluster($cluster_id) {
     // TODO: Remove ctools
-    ctools_include('export');
-    $result = ctools_export_load_object('elasticsearch_cluster', 'names', array($cluster_id));
+    //ctools_include('export');
+    //$result = ctools_export_load_object('elasticsearch_cluster', 'names', array($cluster_id));
     if (isset($result[$cluster_id])) {
       if (isset($result[$cluster_id]->options) && !is_array($result[$cluster_id]->options)) {
         $result[$cluster_id]->options = unserialize($result[$cluster_id]->options);

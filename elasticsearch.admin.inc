@@ -98,7 +98,7 @@ function elasticsearch_cluster_indices($cluster) {
       $row = array();
 
       // TODO: Remove theme() as per D8 API
-      $operations = theme('links__ctools_dropbutton', array(
+      $operations = theme('links', array(
         'links' => array(
           array('title' => t('Aliases'), 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/aliases'),
           array('title' => t('Delete'), 'href' => elasticsearch_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/delete'),

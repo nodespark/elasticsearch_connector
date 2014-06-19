@@ -60,7 +60,7 @@ class Index extends ConfigEntityBase{
         $row = array();
 
         // TODO: Remove theme() as per D8 API
-        $operations = theme('links__ctools_dropbutton', array(
+        $operations = theme('links', array(
           'links' => array(
             array('title' => t('Aliases'), 'href' => 'admin/config/elasticsearch/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/aliases'),
             array('title' => t('Delete'), 'href' => 'admin/config/elasticsearch/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/delete'),
