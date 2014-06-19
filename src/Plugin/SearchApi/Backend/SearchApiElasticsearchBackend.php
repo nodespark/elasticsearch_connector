@@ -9,7 +9,7 @@
 /**
  * Search service class.
  */
-class SearchApiElasticsearchConnector extends SearchApiAbstractService {
+class SearchApiElasticsearchBackend extends SearchApiAbstractService {
 
   /**
    * Elasticsearch Connection.

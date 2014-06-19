@@ -120,4 +120,20 @@ class ElasticsearchTest extends SearchApiDbTest {
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 0, 'Clearing the server worked correctly.');
   }
+
+  // search_api_db tests to be overridden
+  protected function checkServerTables() {
+  }
+
+  protected function updateIndex() {
+  }
+
+  protected function editServer() {
+  }
+
+  protected function searchSuccess2() {
+  }
+
+  protected function assertIgnored(ResultSetInterface $results, array $ignored = array(), $message = 'No keys were ignored.') {
+  }
 }
