@@ -787,6 +787,13 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           );
           break;
 
+        case '*':
+          $type = self::QUERY_TYPE;
+          $filter = array(
+            'wildcard' => array($filter_assoc['field_id'] => $filter_assoc['filter_value'])
+          );
+          break;
+
         default:
           throw new Exception(t('Undefined operator :field_operator for :field_id field! Incorrect filter criteria is using for searching!',
           array(':field_operator' => $filter_assoc['filter_operator'], ':field_id' => $filter_assoc['field_id'])));
