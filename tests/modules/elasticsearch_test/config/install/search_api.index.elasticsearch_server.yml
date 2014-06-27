@@ -3,8 +3,6 @@ name: 'Elasticsearch server'
 description: 'Testing Elastcserver backend.'
 backend: elasticsearch
 backend_config:
-  clean_ids: true
-  site_hash: true
   scheme: http
   host: localhost
   port: '9200'

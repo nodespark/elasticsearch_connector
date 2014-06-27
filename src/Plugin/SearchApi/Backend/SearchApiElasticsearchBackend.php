@@ -58,6 +58,19 @@ class ElasticsearchBackend extends BackendPluginBase {
    */
   public function defaultConfiguration() {
     return array(
+      'scheme' => 'http',
+      'host' => 'localhost',
+      'port' => '9200',
+      'path' => '/elasticsearch',
+      'http_user' => '',
+      'http_pass' => '',
+      'excerpt' => FALSE,
+      'retrieve_data' => FALSE,
+      'highlight_data' => FALSE,
+      'skip_schema_check' => FALSE,
+      'http_method' => 'AUTO',
+      'autocorrect_spell' => TRUE,
+      'autocorrect_suggest_words' => TRUE,
     );
   }
 
@@ -751,44 +764,44 @@ class ElasticsearchBackend extends BackendPluginBase {
     $type = search_api_extract_inner_type($field['type']);
 
     switch ($type) {
-    	case 'text':
-    	  return array(
-    	  'type' => 'string',
-    	  'boost' => $field['boost'],
-    	  );
+      case 'text':
+        return array(
+        'type' => 'string',
+        'boost' => $field['boost'],
+        );
 
-    	case 'uri':
-    	case 'string':
-    	case 'token':
-    	  return array(
-    	  'type' => 'string',
-    	  'index' => 'not_analyzed',
-    	  );
+      case 'uri':
+      case 'string':
+      case 'token':
+        return array(
+        'type' => 'string',
+        'index' => 'not_analyzed',
+        );
 
-    	case 'integer':
-    	case 'duration':
-    	  return array(
-    	  'type' => 'integer',
-    	  );
+      case 'integer':
+      case 'duration':
+        return array(
+        'type' => 'integer',
+        );
 
-    	case 'boolean':
-    	  return array(
-    	  'type' => 'boolean',
-    	  );
+      case 'boolean':
+        return array(
+        'type' => 'boolean',
+        );
 
-    	case 'decimal':
-    	  return array(
-    	  'type' => 'float',
-    	  );
+      case 'decimal':
+        return array(
+        'type' => 'float',
+        );
 
-    	case 'date':
-    	  return array(
-    	  'type' => 'date',
-    	  'format' => 'date_time',
-    	  );
+      case 'date':
+        return array(
+        'type' => 'date',
+        'format' => 'date_time',
+        );
 
-    	default:
-    	  return NULL;
+      default:
+        return NULL;
     }
   }
 
@@ -810,17 +823,17 @@ class ElasticsearchBackend extends BackendPluginBase {
     $diff = $max - $min;
 
     switch (TRUE) {
-    	case ($diff > 86400 * 365):
-    	  return 'NONE';
+      case ($diff > 86400 * 365):
+        return 'NONE';
 
-    	case ($diff > 86400 * gmdate('t', $min)):
-    	  return 'YEAR';
+      case ($diff > 86400 * gmdate('t', $min)):
+        return 'YEAR';
 
-    	case ($diff > 86400):
-    	  return 'MONTH';
+      case ($diff > 86400):
+        return 'MONTH';
 
-    	default:
-    	  return 'DAY';
+      default:
+        return 'DAY';
     }
   }
 
@@ -1151,23 +1164,23 @@ class ElasticsearchBackend extends BackendPluginBase {
 
     switch ($date_gap) {
       // Already a selected YEAR, we want the months.
-    	case 'YEAR':
-    	  $date_interval = 'month';
-    	  break;
+      case 'YEAR':
+        $date_interval = 'month';
+        break;
 
-    	  // Already a selected MONTH, we want the days.
-    	case 'MONTH':
-    	  $date_interval = 'day';
-    	  break;
+        // Already a selected MONTH, we want the days.
+      case 'MONTH':
+        $date_interval = 'day';
+        break;
 
-    	  // Already a selected DAY, we want the hours and so on.
-    	case 'DAY':
-    	  $date_interval = 'hour';
-    	  break;
+        // Already a selected DAY, we want the hours and so on.
+      case 'DAY':
+        $date_interval = 'hour';
+        break;
 
-    	  // By default we return result counts by year.
-    	default:
-    	  $date_interval = 'year';
+        // By default we return result counts by year.
+      default:
+        $date_interval = 'year';
     }
 
     return $date_interval;
