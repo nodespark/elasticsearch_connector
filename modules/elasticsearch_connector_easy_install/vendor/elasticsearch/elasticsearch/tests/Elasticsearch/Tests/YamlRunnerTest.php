@@ -133,10 +133,12 @@ class YamlRunnerTest extends \PHPUnit_Framework_TestCase
     private function assertRegex($pattern, $actual) {
         $pattern = trim($pattern);
 
-        // PHP doesn't like unescaped forward slashes, switch to a new delimeter
-        // to make life easier
+        // PHP doesn't like unescaped forward slashes
         $pattern = substr($pattern, 1, strlen($pattern)-2);
-        $pattern = "%$pattern%mx";
+        $pattern = str_replace('/', '\/', $pattern);
+        $pattern = "/$pattern/mx";
+        echo "\n         |> actual: $actual\n";
+        echo "\n         |> pattern: $pattern\n";
         ob_flush();
         $result = preg_match($pattern, $actual, $matches);
         $this->assertEquals(1, $result);
@@ -249,7 +251,12 @@ class YamlRunnerTest extends \PHPUnit_Framework_TestCase
                 $this->clearCluster();
 
                 if ($setup !== null) {
-                    $this->executeTestCase($setup, $testFile);
+                    try {
+                        $this->executeTestCase($setup, $testFile);
+                    } catch (SetupSkipException $e) {
+                        break;  //exit this test since we skipped in the setup
+                    }
+
                 }
                $this->executeTestCase($doc['values'], $testFile);
 
@@ -359,6 +366,16 @@ class YamlRunnerTest extends \PHPUnit_Framework_TestCase
                         $response = array();
 
                     } catch (BadRequest400Exception $exception){
+                        if ($expectedError === 'request') {
+                            $this->assertTrue(true);
+                        } elseif (isset($expectedError) === true && preg_match("/$expectedError/", $exception->getMessage()) === 1) {
+                            $this->assertTrue(true);
+                        } else {
+                            $this->fail($exception->getMessage());
+                        }
+                        $response = array();
+
+                    } catch (ServerErrorResponseException $exception){
                         if ($expectedError === 'request') {
                             $this->assertTrue(true);
                         } elseif (isset($expectedError) === true && preg_match("/$expectedError/", $exception->getMessage()) === 1) {
@@ -486,9 +503,11 @@ class YamlRunnerTest extends \PHPUnit_Framework_TestCase
                         }
                     } else if (isset($settings['features']) === true) {
                         $feature = $settings['features'];
+                        $whitelist = array();
 
-                        if ($feature === 'regex') {
-
+                        if (array_search($feature, $whitelist) === false) {
+                            echo "Unsupported optional feature: $feature\n";
+                            return;
                         }
                     }
 

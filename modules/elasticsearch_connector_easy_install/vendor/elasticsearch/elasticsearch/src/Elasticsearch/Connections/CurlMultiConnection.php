@@ -44,6 +44,8 @@ class CurlMultiConnection extends AbstractConnection implements ConnectionInterf
 
     private $curlOpts;
 
+    private $lastRequest = array();
+
 
     /**
      * Constructor
@@ -71,6 +73,10 @@ class CurlMultiConnection extends AbstractConnection implements ConnectionInterf
 
         if (isset($hostDetails['port']) !== true) {
             $hostDetails['port'] = 9200;
+        }
+
+        if (isset($hostDetails['scheme']) !== true) {
+            $hostDetails['scheme'] = 'http';
         }
 
         $connectionParams = $this->transformAuth($connectionParams);
@@ -137,6 +143,15 @@ class CurlMultiConnection extends AbstractConnection implements ConnectionInterf
 
         $this->log->debug("Curl Options:", $opts);
 
+        $this->lastRequest = array('request' =>
+                                   array(
+                                        'uri'     => $uri,
+                                        'body'    => $body,
+                                        'options' => $options,
+                                        'method'  => $method
+                                    )
+                                );
+
         curl_setopt_array($curlHandle, $opts);
         curl_multi_add_handle($this->multiHandle, $curlHandle);
 
@@ -192,10 +207,14 @@ class CurlMultiConnection extends AbstractConnection implements ConnectionInterf
         }
 
         if ($response['requestInfo']['http_code'] >= 400 && $response['requestInfo']['http_code'] < 500) {
-            $this->process4xxError($method, $uri, $response);
+            $this->process4xxError($method, $uri, $body, $response);
         } else if ($response['requestInfo']['http_code'] >= 500) {
-            $this->process5xxError($method, $uri, $response);
+            $this->process5xxError($method, $uri, $body, $response);
         }
+
+        $this->lastRequest['response']['body']    = $response['responseText'];
+        $this->lastRequest['response']['info']    = $response['requestInfo'];
+        $this->lastRequest['response']['status']  = $response['requestInfo']['http_code'];
 
         $this->logRequestSuccess(
             $method,
@@ -219,6 +238,15 @@ class CurlMultiConnection extends AbstractConnection implements ConnectionInterf
 
 
     /**
+     * @return array
+     */
+    public function getLastRequestInfo()
+    {
+        return $this->lastRequest;
+    }
+
+
+    /**
      * @param $method
      * @param $uri
      * @param $response
@@ -229,9 +257,9 @@ class CurlMultiConnection extends AbstractConnection implements ConnectionInterf
      * @throws \Elasticsearch\Common\Exceptions\Missing404Exception
      * @throws \Elasticsearch\Common\Exceptions\AlreadyExpiredException
      */
-    private function process4xxError($method, $uri, $response)
+    private function process4xxError($method, $uri, $request, $response)
     {
-        $this->logErrorDueToFailure($method, $uri, $response);
+        $this->logErrorDueToFailure($method, $uri, $request, $response);
 
         $statusCode    = $response['requestInfo']['http_code'];
         $exceptionText = $response['error'];
@@ -265,9 +293,9 @@ class CurlMultiConnection extends AbstractConnection implements ConnectionInterf
      * @throws \Elasticsearch\Common\Exceptions\NoDocumentsToGetException
      * @throws \Elasticsearch\Common\Exceptions\ServerErrorResponseException
      */
-    private function process5xxError($method, $uri, $response)
+    private function process5xxError($method, $uri, $request, $response)
     {
-        $this->logErrorDueToFailure($method, $uri, $response);
+        $this->logErrorDueToFailure($method, $uri, $request, $response);
 
         $statusCode    = $response['requestInfo']['http_code'];
         $exceptionText = $response['error'];
@@ -306,17 +334,19 @@ class CurlMultiConnection extends AbstractConnection implements ConnectionInterf
     /**
      * @param $method
      * @param $uri
+     * @param $request
      * @param $response
      */
-    private function logErrorDueToFailure($method, $uri, $response)
+    private function logErrorDueToFailure($method, $uri, $request, $response)
     {
         $this->logRequestFail(
             $method,
             $uri,
-            $response['requestInfo']['total_time'],
+            $request,
             $response['requestInfo']['http_code'],
             $response['responseText'],
-            $response['error']
+            $response['error'],
+            $response
         );
     }
 
