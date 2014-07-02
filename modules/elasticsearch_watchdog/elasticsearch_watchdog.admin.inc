@@ -814,6 +814,8 @@ function elasticsearch_watchdog_filter_delete_confirm_submit($form, &$form_state
               $deleteParams['body']['query']['filtered'] = $filter;
             }
             $retDelete = $client->deleteByQuery($deleteParams);
+            // Reset the filters cause when deleting a document the filters are not there anymore.
+            $_SESSION['elasticsearch_watchdog_overview_filter'] = array();
             drupal_set_message(t('Selected Elasticsearch logs has been deleted.'));
           }
           catch (Exception $e) {
