@@ -79,6 +79,13 @@ class GuzzleConnectionDebug extends AbstractConnection implements ConnectionInte
     return $this->transportSchema;
   }
 
+  /**
+   * @return array
+   */
+  public function getLastRequestInfo()
+  {
+    return $this->lastRequest;
+  }
 
   /**
    * Perform an HTTP request on the cluster
