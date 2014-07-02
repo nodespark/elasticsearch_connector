@@ -75,6 +75,14 @@ function elasticsearch_watchdog_menu() {
     'file' => 'elasticsearch_watchdog.admin.inc',
   );
 
+  $items['admin/reports/elasticlog/delete-filter'] = array(
+    'title' => 'Delete log by filter',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('elasticsearch_watchdog_filter_delete_confirm'),
+    'access arguments' => array('access site reports'),
+    'file' => 'elasticsearch_watchdog.admin.inc',
+  );
+
   return $items;
 }
 
