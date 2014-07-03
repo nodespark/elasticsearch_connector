@@ -10,6 +10,7 @@
 define('ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE', '0');
 define('ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE', '1');
 define('ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK', '200');
+define('ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT',   '150');
 
 /**
  * Implements hook_help().
@@ -698,8 +699,17 @@ function elasticsearch_connector_load_library($cluster) {
     if (valid_url($cluster->url)) {
       $options = array(
         'hosts' => array($cluster->url),
+        'guzzleOptions' => array(
+          'curl.options' => array(
+            CURLOPT_DNS_USE_GLOBAL_CACHE    => TRUE,
+            CURLOPT_IPRESOLVE               => CURL_IPRESOLVE_V4,
+            CURLOPT_CONNECTTIMEOUT          => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT)
+          )
+        )
       );
+
       drupal_alter('elasticsearch_connector_load_library_options', $options, $cluster);
+
       try {
         if (!class_exists('\Elasticsearch\Client') && module_exists('composer_manager')) {
           // If the class doesn't exists try to explicity load the classes!

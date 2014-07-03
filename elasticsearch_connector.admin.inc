@@ -367,6 +367,16 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#default_value' => (!empty($cluster->options['multiple_nodes_connection']) ? 1 : 0),
   );
 
+  $form['options']['timeout'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Connection timeout'),
+    '#size'  => 20,
+    '#required' => TRUE,
+    '#element_validate' => array('element_validate_number'),
+    '#description' => t('Set the connection timeout in seconds.'),
+    '#default_value' => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT),
+  );
+
   $form['status'] = array(
     '#type' => 'radios',
     '#title' => t('Status'),
