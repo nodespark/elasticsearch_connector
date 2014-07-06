@@ -3,6 +3,8 @@
 namespace Drupal\elasticsearch\Form;
 
 use Drupal\Core\Entity\EntityForm;
+use Drupal\Component\Utility\String;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Url;
 use Drupal\elasticsearch\Entity\Cluster;
 use Elasticsearch\Common\Exceptions\Curl\CouldNotResolveHostException;
@@ -15,7 +17,10 @@ class ClusterForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, array &$form_state) {
-    $cluster = $this->entity;
+    $form = parent::form($form, $form_state);
+    // Get the entity and attach to the form state.
+    $cluster = $form_state['entity'] = $this->getEntity();
+    //$cluster = $this->entity;
 
     $form['cluster'] = array(
       '#type'  => 'value',
@@ -37,7 +42,7 @@ class ClusterForm extends EntityForm {
       '#maxlength' => 125,
       '#description' => t('Unique, machine-readable identifier for this Elasticsearch environment.'),
       '#machine_name' => array(
-        'exists' => array($this, 'loadCluster'),
+        //'exists' => array($this, 'loadCluster'),
         'source' => array('name'),
         'replace_pattern' => '[^a-z0-9-]+',
         'replace' => '_',
@@ -105,7 +110,7 @@ class ClusterForm extends EntityForm {
       '#required' => TRUE,
     );
 
-    return parent::form($form, $form_state);
+    return $form;
   }
 
   /**
@@ -115,12 +120,11 @@ class ClusterForm extends EntityForm {
     // TODO: Handle the validation of the elements.
     parent::validate($form, $form_state);
 
-    $cluster = $this->entity;
-
+    $cluster = $this->getEntity();
     $cluster_from_form = entity_create('elasticsearch_cluster', $form_state['values']);
 
     try {
-      $cluster_info = $cluster_from_form->getClusterInfo();
+      $cluster_info = $cluster_from_form->getClusterInfo($cluster);
       if (!isset($cluster_info['info']) || !Cluster::checkClusterStatus($cluster_info['info'])) {
         form_set_error('url', $form_state, t('Cannot connect to the cluster!'));
       }
@@ -130,7 +134,7 @@ class ClusterForm extends EntityForm {
     }
 
     // Complain if we are removing the default.
-    $default = Cluster::getDefaultConnector();
+    $default = Cluster::getDefaultCluster();
     if ($form_state['values']['default'] == 0 && !empty($default) && $default == $form_state['values']['cluster_id']) {
       drupal_set_message(
         t('There must be a default connection. %name is still the default connection.'
@@ -197,6 +201,7 @@ class ClusterForm extends EntityForm {
 
   public function save(array $form, array &$form_state) {
     $cluster = $this->entity;
+    //print_r($cluster);
 
     if (!$cluster->isNew()) {
       // TODO:
@@ -204,7 +209,7 @@ class ClusterForm extends EntityForm {
     }
 
     $status = $cluster->save();
-
+    
     $edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
     if ($status == SAVED_UPDATED) {
       drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
