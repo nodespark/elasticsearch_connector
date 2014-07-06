@@ -15,13 +15,11 @@ use Drupal\Component\Utility\UrlHelper;
  *   label = @Translation("Elasticsearch Cluster"),
  *   controllers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
- *     "list_builder" = "Drupal\Core\Config\Entity\ConfigEntityListBuilder",
+ *     "list_builder" = "Drupal\elasticsearch\Controller\ClusterListBuilder",
  *     "form" = {
  *       "default" = "Drupal\elasticsearch\Form\ClusterForm",
  *       "edit" = "Drupal\elasticsearch\Form\ClusterForm",
- *       "delete" = "Drupal\elasticsearch\Form\ClusterDeleteConfirmForm",
- *       "disable" = "Drupal\elasticsearch\Form\ClusterDisableConfirmForm",
- *       "clear" = "Drupal\elasticsearch\Form\ClusterClearConfirmForm"
+ *       "delete" = "Drupal\elasticsearch\Form\ClusterDelete",
  *     },
  *   },
  *   admin_permission = "administer search_api",
@@ -35,8 +33,6 @@ use Drupal\Component\Utility\UrlHelper;
  *   links = {
  *     "canonical" = "elasticsearch.cluster_info",
  *     "add-form" = "elasticsearch.cluster_add",
- *     "edit-form" = "elasticsearch.cluster_edit",
- *     "delete-form" = "elasticsearch.cluster_delete",
  *   }
  * )
  */
@@ -199,23 +195,4 @@ class Cluster extends ConfigEntityBase {
     }
   }
 
-  /**
-  * Load a cluster object from the database.
-  *
-  * @see ctools_export_load_object().
-  *
-  * @param string $cluster_id
-  * @return object $cluster
-  */
-  public function loadCluster($cluster_id) {
-    // TODO: Remove ctools
-    //ctools_include('export');
-    //$result = ctools_export_load_object('elasticsearch_cluster', 'names', array($cluster_id));
-    if (isset($result[$cluster_id])) {
-      if (isset($result[$cluster_id]->options) && !is_array($result[$cluster_id]->options)) {
-        $result[$cluster_id]->options = unserialize($result[$cluster_id]->options);
-      }
-      return $result[$cluster_id];
-    }
-  }
 }

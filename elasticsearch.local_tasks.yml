@@ -2,7 +2,3 @@ elasticsearch.cluster_view:
   route_name: elasticsearch.cluster_view
   base_route: elasticsearch.cluster_view
   title: 'View'
-elasticsearch.cluster_edit:
-  route_name: elasticsearch.cluster_edit
-  base_route: elasticsearch.cluster_view
-  title: 'Edit'

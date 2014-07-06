@@ -6,6 +6,7 @@ use Drupal\Core\Entity\EntityForm;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Url;
+use Drupal\Core\Entity\Entity;
 use Drupal\elasticsearch\Entity\Cluster;
 use Elasticsearch\Common\Exceptions\Curl\CouldNotResolveHostException;
 
@@ -42,7 +43,7 @@ class ClusterForm extends EntityForm {
       '#maxlength' => 125,
       '#description' => t('Unique, machine-readable identifier for this Elasticsearch environment.'),
       '#machine_name' => array(
-        //'exists' => array($this, 'loadCluster'),
+        'exists' => '\Drupal\elasticsearch\Entity\Cluster::load',
         'source' => array('name'),
         'replace_pattern' => '[^a-z0-9-]+',
         'replace' => '_',
@@ -201,16 +202,15 @@ class ClusterForm extends EntityForm {
 
   public function save(array $form, array &$form_state) {
     $cluster = $this->entity;
-    //print_r($cluster);
-
+    
     if (!$cluster->isNew()) {
       // TODO:
       // $this->submitOverviewForm($form, $form_state);
     }
 
     $status = $cluster->save();
-    
-    $edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
+
+    //$edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
     if ($status == SAVED_UPDATED) {
       drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
     }

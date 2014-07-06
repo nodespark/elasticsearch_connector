@@ -89,16 +89,6 @@ function elasticsearch_menu() {
     'type'               => MENU_LOCAL_ACTION,
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/edit'] = array(
-    'title'              => 'Edit cluster',
-    'description'        => 'Edit cluster settings',
-    'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_edit_cluster', 4),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-    'type'               => MENU_CALLBACK,
-  );
-
   $items[$settings_path . '/clusters/%elasticsearch_cluster/info'] = array(
     'title'              => 'Elasticsearch cluster info',
     'description'        => 'Elasticsearch cluster info',

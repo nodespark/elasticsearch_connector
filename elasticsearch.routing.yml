@@ -23,14 +23,6 @@ elasticsearch.cluster_add:
   requirements:
     _entity_create_access: 'elasticsearch_cluster'
 
-elasticsearch.cluster_edit:
-  path: '/admin/config/search/elasticsearch/clusters/{cluster}/edit'
-  defaults:
-    _entity_form: 'elasticsearch_cluster.edit'
-    _title: 'Edit Cluster'
-    requirements:
-    _entity_create_access: 'elasticsearch_cluster'      
-
 elasticsearch.cluster_delete:
   path: '/admin/config/search/elasticsearch/clusters/{cluster}/delete'
   defaults:
