@@ -806,7 +806,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       switch ($filter_assoc['filter_operator']) {
         case '=':
           $filter = array(
-            'match' => array($filter_assoc['field_id'] => $filter_assoc['filter_value'])
+            'match' => array($filter_assoc['field_id'] => array('query' => $filter_assoc['filter_value'], 'operator' => 'and'))
           );
           break;
 
