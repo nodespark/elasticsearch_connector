@@ -568,9 +568,8 @@ function elasticsearch_watchdog_filters($load_options = TRUE) {
 
   $types = array();
   foreach (_elasticsearch_watchdog_get_facets('type', 'terms') as $key => $value) {
-    $types[$key] = t($value['term'] . ' (' . $value['count'] . ')');
+    $types[$key] = t($value['key'] . ' (' . $value['doc_count'] . ')');
   }
-
   if (!empty($types) || $load_options == FALSE) {
     $filters['type'] = array(
       'title' => t('Type'),
@@ -582,7 +581,7 @@ function elasticsearch_watchdog_filters($load_options = TRUE) {
   $severities = array();
   $basic_severity = watchdog_severity_levels();
   foreach (_elasticsearch_watchdog_get_facets('severity', 'terms') as $key => $value) {
-    $severities[$key] = $basic_severity[$key] . ' (' . $value['count'] . ')';
+    $severities[$key] = $basic_severity[$key] . ' (' . $value['doc_count'] . ')';
   }
 
   if (!empty($severities) || $load_options == FALSE) {
@@ -595,7 +594,7 @@ function elasticsearch_watchdog_filters($load_options = TRUE) {
 
   $options = array();
   foreach (_elasticsearch_watchdog_get_facets('domain', 'terms') as $key => $value) {
-    $options[$key] = t($value['term'] . ' (' . $value['count'] . ')');
+    $options[$key] = t($value['key'] . ' (' . $value['doc_count'] . ')');
   }
   if (!empty($options) || $load_options == FALSE) {
     $filters['domain'] = array(
@@ -607,7 +606,7 @@ function elasticsearch_watchdog_filters($load_options = TRUE) {
 
   $options = array();
   foreach (_elasticsearch_watchdog_get_facets('username', 'terms') as $key => $value) {
-    $options[$key] = t($value['term'] . ' (' . $value['count'] . ')');
+    $options[$key] = t($value['key'] . ' (' . $value['doc_count'] . ')');
   }
   if (!empty($options) || $load_options == FALSE) {
     $filters['username'] = array(
@@ -616,7 +615,6 @@ function elasticsearch_watchdog_filters($load_options = TRUE) {
       'options' => $options,
     );
   }
-
   return $filters;
 }
 
@@ -816,7 +814,7 @@ function elasticsearch_watchdog_filter_delete_confirm_submit($form, &$form_state
             $retDelete = $client->deleteByQuery($deleteParams);
             // Reset the filters cause when deleting a document the filters are not there anymore.
             $_SESSION['elasticsearch_watchdog_overview_filter'] = array();
-            drupal_set_message(t('Selected Elasticsearch logs has been deleted.'));
+            drupal_set_message(t('Selected Elasticsearch logs have been deleted.'));
           }
           catch (Exception $e) {
             drupal_set_message($e->getMessage(), 'error');
