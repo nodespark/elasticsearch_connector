@@ -25,9 +25,9 @@ use Drupal\Component\Utility\UrlHelper;
  *   admin_permission = "administer search_api",
  *   config_prefix = "cluster",
  *   entity_keys = {
- *     "id" = "machine_name",
+ *     "id" = "cluster_id",
  *     "label" = "name",
- *     "uuid" = "uuid",
+ *     "url" = "url",
  *     "status" = "status"
  *   },
  *   links = {
@@ -117,7 +117,7 @@ class Cluster extends ConfigEntityBase {
    * Return cluster info.
    * @return return array
    */
-  public function getClusterInfo() {
+  public function getClusterInfo($cluster) {
     $result = FALSE;
     try {
       $client = $this->getClusterByUrls(array($this->url));
