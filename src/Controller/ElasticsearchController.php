@@ -29,10 +29,9 @@ class ElasticSearchController {
       ),
     );
     // Check if the index is enabled and can be written to.
-    //if ($search_api_index->status() && !$search_api_index->isReadOnly()) {
-      // Attach the index status form.
-    //  $render['form'] = $this->formBuilder()->getForm('Drupal\search_api\Form\IndexStatusForm', $search_api_index);
-    //}
+    if ($elasticsearch_cluster->cluster_id) {
+      $render['form'] = $this->formBuilder()->getForm('Drupal\elasticsearch\Form\ClusterForm', $elasticsearch_cluster);
+    }
     return $render;
   }
 
@@ -46,7 +45,12 @@ class ElasticSearchController {
    *   The page title.
    */
   public function pageTitle(ConfigEntityBase $elasticsearch_cluster) {
-    return String::checkPlain($elasticsearch_cluster->label());
+    if ($elasticsearch_cluster->cluster_id) {
+      return String::checkPlain($elasticsearch_cluster->label());
+    }
+    else {
+      return String::checkPlain('Elasticsearch Cluster');      
+    }
   }
 
   /**
@@ -107,7 +111,7 @@ class ElasticSearchController {
       '#theme' => 'table',
       '#header' => $headers,
       '#rows' => $rows,
-      '#attributes' => array('class' => array('admin-elasticsearch-connector')),
+      '#attributes' => array('class' => array('admin-elasticsearch')),
     );
 
     return $output;

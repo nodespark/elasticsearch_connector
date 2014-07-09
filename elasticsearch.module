@@ -82,22 +82,20 @@ function elasticsearch_menu() {
   $items[$settings_path . '/clusters/add'] = array(
     'title'              => 'Add cluster',
     'description'        => 'Add new elasticsearch cluster',
-    'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_edit_cluster'),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-    'type'               => MENU_LOCAL_ACTION,
+    'route_name'         => 'elasticsearch.cluster_add'
   );
 
   $items[$settings_path . '/clusters/%elasticsearch_cluster/info'] = array(
     'title'              => 'Elasticsearch cluster info',
     'description'        => 'Elasticsearch cluster info',
-    'page callback'      => 'elasticsearch_info_cluster',
-    'page arguments'     => array(4),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-    'type'               => MENU_CALLBACK,
-  );
+    'route_name'         => 'elasticsearch.cluster_info'
+   );
+
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/edit'] = array(
+    'title'              => 'Elasticsearch cluster edit',
+    'description'        => 'Elasticsearch cluster edit',
+    'route_name'         => 'elasticsearch.cluster_edit'
+   );
 
   $items[$settings_path . '/clusters/%elasticsearch_cluster/indices'] = array(
     'title'              => 'Elasticsearch cluster indices',

@@ -5,7 +5,13 @@
  */
 namespace Drupal\elasticsearch\Controller;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Component\Utility\Xss;
+use Drupal\Component\Utility\String;
 /**
  * Provides a listing of Example.
  */
@@ -13,6 +19,22 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   /**
    * {@inheritdoc}
    */
+  public function __construct(EntityTypeInterface $entity_type, EntityStorageInterface $storage, UrlGeneratorInterface $url_generator) {
+    parent::__construct($entity_type, $storage);
+    $this->urlGenerator = $url_generator;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
+    return new static(
+      $entity_type,
+      $container->get('entity.manager')->getStorage($entity_type->id()),
+      $container->get('url_generator')
+    );
+  }
+
   public function buildHeader() {
     $header['name'] = t('Cluster name');
     $header['status'] = array(
@@ -44,7 +66,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     // TODO: Fix the status to come from
     $row['cluster_status'] = 'green';
     $row['operations'] = t('<a href="@link">Edit</a>', array(
-      '@link' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/edit'),
+      '@link' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $this->getLabel($entity) . '/edit'),
     ));
     return $row + parent::buildRow($entity);
   }

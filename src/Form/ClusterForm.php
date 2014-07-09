@@ -5,6 +5,7 @@ namespace Drupal\elasticsearch\Form;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Entity\Entity;
 use Drupal\elasticsearch\Entity\Cluster;
@@ -18,11 +19,27 @@ class ClusterForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, array &$form_state) {
+    if (!empty($form_state['rebuild'])) {
+      // Rebuild the entity with the form state values.
+      $this->entity = $this->buildEntity($form, $form_state);
+    }
     $form = parent::form($form, $form_state);
     // Get the entity and attach to the form state.
     $cluster = $form_state['entity'] = $this->getEntity();
     //$cluster = $this->entity;
 
+    if ($this->operation == 'edit') {
+      $form['#title'] = $this->t('Edit Elasticsearch Cluster @label', array('@label' => $cluster->label()));
+    }
+    else {
+      $form['#title'] = $this->t('Add Elasticsearch Cluster');
+    } 
+    
+    $this->buildEntityForm($form, $form_state, $cluster);
+    return $form;
+  }
+
+  public function buildEntityForm(array &$form, array &$form_state, ConfigEntityInterface $cluster) {
     $form['cluster'] = array(
       '#type'  => 'value',
       '#value' => $cluster,
@@ -60,7 +77,6 @@ class ClusterForm extends EntityForm {
           'Example: http://localhost:9200'),
       '#required' => TRUE,
     );
-
     // Added by Nick to avoid errors
     // @todo: Cleanup these things
     $cluster_info = "";
@@ -111,9 +127,7 @@ class ClusterForm extends EntityForm {
       '#required' => TRUE,
     );
 
-    return $form;
   }
-
   /**
    * {@inheritdoc}
    */

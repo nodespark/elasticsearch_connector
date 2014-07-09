@@ -19,10 +19,10 @@ use Drupal\Component\Utility\UrlHelper;
  *     "form" = {
  *       "default" = "Drupal\elasticsearch\Form\ClusterForm",
  *       "edit" = "Drupal\elasticsearch\Form\ClusterForm",
- *       "delete" = "Drupal\elasticsearch\Form\ClusterDelete",
+ *       "delete" = "Drupal\elasticsearch\Form\ClusterDeleteForm",
  *     },
  *   },
- *   admin_permission = "administer search_api",
+ *   admin_permission = "administer elasticsearch",
  *   config_prefix = "cluster",
  *   entity_keys = {
  *     "id" = "cluster_id",
@@ -33,6 +33,8 @@ use Drupal\Component\Utility\UrlHelper;
  *   links = {
  *     "canonical" = "elasticsearch.cluster_info",
  *     "add-form" = "elasticsearch.cluster_add",
+ *     "edit-form" = "elasticsearch.cluster_edit",
+ *     "delete-form" = "elasticsearch.cluster_delete",
  *   }
  * )
  */

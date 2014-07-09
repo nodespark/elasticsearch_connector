@@ -4,7 +4,11 @@
  * @file
  * Provides a Elasticsearch-based service class for the Search API using
  * Elasticsearch module.
+ * Contains \Drupal\elasticsearch\Plugin\SearchApi\Backend\SearchApiElasticsearch.
  */
+
+namespace Drupal\elasticsearch\Plugin\SearchApi\Backend;
+
 use Drupal\Core\Config\Config;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
@@ -49,7 +53,7 @@ class ElasticsearchBackend extends BackendPluginBase {
       $plugin_definition,
       $container->get('form_builder'),
       $container->get('module_handler'),
-      $container->get('config.factory')->get('elastic_search.settings')
+      $container->get('config.factory')->get('elasticsearch.settings')
     );
   }
 
