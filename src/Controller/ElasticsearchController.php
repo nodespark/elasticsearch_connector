@@ -3,13 +3,16 @@
 namespace Drupal\elasticsearch\Controller;
 
 use Drupal\Component\Utility\String;
+use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\elasticsearch\Entity\Cluster;
+use Drupal\Core\Entity\EntityInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Example page controller.
  */
-class ElasticSearchController {
+class ElasticSearchController extends ControllerBase {
 
   /**
    * Displays information about a Search API index.
@@ -22,6 +25,7 @@ class ElasticSearchController {
    */
   public function page(ConfigEntityBase $elasticsearch_cluster) {
     // Build the Search API index information.
+    //print_r($elasticsearch_cluster);
     $render = array(
       'view' => array(
         '#theme' => 'elasticsearch_cluster',
@@ -30,20 +34,13 @@ class ElasticSearchController {
     );
     // Check if the index is enabled and can be written to.
     if ($elasticsearch_cluster->cluster_id) {
+      //debug
+      print_r($elasticsearch_cluster);
       $render['form'] = $this->formBuilder()->getForm('Drupal\elasticsearch\Form\ClusterForm', $elasticsearch_cluster);
     }
     return $render;
   }
 
-  /**
-   * The _title_callback for the search_api.index_view route.
-   *
-   * @param \Drupal\search_api\Index\IndexInterface $search_api_index
-   *   An instance of IndexInterface.
-   *
-   * @return string
-   *   The page title.
-   */
   public function pageTitle(ConfigEntityBase $elasticsearch_cluster) {
     if ($elasticsearch_cluster->cluster_id) {
       return String::checkPlain($elasticsearch_cluster->label());
@@ -53,67 +50,99 @@ class ElasticSearchController {
     }
   }
 
-  /**
-  * Cluster status page callback.
-  *
-  * @return array
-  *   A Drupal render array.
-  */
-  public function status() {
-    $headers = array(
-      array('data' => t('Cluster name')),
-      array('data' => t('Status')),
-      array('data' => t('Cluster Status')),
-      array('data' => t('Operations')),
-    );
+  public function info(EntityInterface $cluster) {
+    print_r($cluster);
+    $cluster_status = Cluster::getClusterInfo($cluster);
+    $cluster_client = $cluster_status['client'];
 
-    $rows = array();
+    $node_rows = $cluster_statistics_rows = $cluster_health_rows = array();
 
-    $clusters = elasticsearch_clusters();
-    foreach ($clusters as $cluster) {
-      $cluster_info = getClusterInfo();
-      $edit_link_title = ($cluster->export_type & EXPORT_IN_CODE) ? t('Override') : t('Edit');
-      if ($cluster->type == 'Overridden') {
-        $edit_link_title = $cluster->type;
+    if (isset($cluster_client) && !empty($cluster_status['info']) && elasticsearch_connector_check_status($cluster_status['info'])) {
+      $node_stats = $cluster_status['stats'];
+      $total_docs = $total_size = 0;
+      if (isset($node_stats)) {
+        foreach ($node_stats['nodes'] as $node_key => $node_values) {
+          $row = array();
+          $row[] = array('data' => $node_values['name']);
+          $row[] = array('data' => $node_values['indices']['docs']['count']);
+          $row[] = array('data' => format_size($node_values['indices']['store']['size_in_bytes']));
+          $total_docs += $node_values['indices']['docs']['count'];
+          $total_size += $node_values['indices']['store']['size_in_bytes'];
+          $node_rows[] = $row;
+        }
       }
 
-      // TODO: Remove theme() as per D8 API
-      $operations = array(
-        '#type'  => 'table',
-        '#links' => array(
-          array('title' => $edit_link_title, 'href' => 'admin/config/elasticsearch/clusters/' . $cluster->cluster_id . '/edit'),
-          array('title' => t('Info'), 'href' => 'admin/config/elasticsearch/clusters/' . $cluster->cluster_id . '/info'),
-          array('title' => t('Indices'), 'href' => 'admin/config/elasticsearch/clusters/' . $cluster->cluster_id . '/indices'),
-          array('title' => t('Delete'), 'href' => 'admin/config/elasticsearch/clusters/' . $cluster->cluster_id . '/delete'),
-        ),
-        '#attributes' => array(
-          'class' => array('links', 'inline'),
-        ),
+      $cluster_statistics_rows = array(
+        array(
+          array('data' => $cluster_status['health']['number_of_nodes'] . '<br/>' . t('Nodes')),
+          array('data' => $cluster_status['health']['active_shards'] + $cluster_status['health']['unassigned_shards']
+                . '<br/>' . t('Total Shards')),
+          array('data' => $cluster_status['health']['active_shards'] . '<br/>' . t('Successful Shards')),
+          array('data' => count($cluster_status['state']['metadata']['indices']) . '<br/>' . t('Indices')),
+          array('data' => $total_docs . '<br/>' . t('Total Documents')),
+          array('data' => format_size($total_size) . '<br/>' . t('Total Size')),
+        )
       );
 
-      if (!empty($cluster_info['info']) && checkClusterStatus($cluster_info['info'])) {
-        $info = $cluster_info['health']['status'];
-      }
-      else {
-        $info = t('Not available');
-      }
+      $cluster_health_rows = array();
+      $cluster_health_mapping = array(
+        'cluster_name'  => t('Cluster name'),
+        'status'        => t('Status'),
+        'timed_out'     => t('Time out'),
+        'number_of_nodes' => t('Number of nodes'),
+        'number_of_data_nodes'  => t('Number of data nodes'),
+        'active_primary_shards' => t('Active primary shards'),
+        'active_shards'         => t('Active shards'),
+        'relocating_shards'     => t('Relocating shards'),
+        'initializing_shards'   => t('Initializing shards'),
+        'unassigned_shards'     => t('Unassigned shards')
+      );
 
-      $row = array();
-      $row[] = $cluster->name;
-      $row[] = (!empty($cluster->status) ? t('Active') : t('Inactive'));
-      $row[] = $info;
-      $row[] = drupal_render($operations);
-
-      $rows[] = $row;
+      foreach ($cluster_status['health'] as $health_key => $health_value) {
+        $row = array();
+        $row[] = array('data' => $cluster_health_mapping[$health_key]);
+        $row[] = array('data' => ($health_value === FALSE ? 'False' : $health_value));
+        $cluster_health_rows[] = $row;
+      }
     }
 
-    $output['elasticsearch']['table'] = array(
+    $output['cluster_statistics_wrapper'] = array(
+      '#type' => 'fieldset',
+      '#title'  => t('Cluster statistics'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE
+    );
+
+    $output['cluster_statistics_wrapper']['nodes'] = array(
       '#theme' => 'table',
-      '#header' => $headers,
-      '#rows' => $rows,
-      '#attributes' => array('class' => array('admin-elasticsearch')),
+      '#header' => array(
+        array('data' => t('Node name')),
+        array('data' => t('Documents')),
+        array('data' => t('Size')),
+      ),
+      '#rows' => $node_rows,
+    );
+
+    $output['cluster_statistics_wrapper']['cluster_statistics'] = array(
+      '#theme' => 'table',
+      '#header' => array(
+        array('data' => t('Total'), 'colspan' => 6),
+      ),
+      '#rows' => $cluster_statistics_rows,
+      '#attributes' => array('class' => array('admin-elasticsearch-statistics')),
+    );
+
+    $output['cluster_health'] = array(
+      '#theme' => 'table',
+      '#header' => array(
+        array('data' => t('Cluster Health'), 'colspan' => 2),
+      ),
+      '#rows' => $cluster_health_rows,
+      '#attributes' => array('class' => array('admin-elasticsearch-health')),
     );
 
     return $output;
   }
+
+
 }
