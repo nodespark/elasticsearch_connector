@@ -66,6 +66,7 @@ class ClusterForm extends EntityForm {
         'replace' => '_',
       ),
       '#required' => TRUE,
+      '#disabled' => !empty($cluster->cluster_id),
     );
 
     $form['url'] = array(
@@ -84,7 +85,7 @@ class ClusterForm extends EntityForm {
 
     if (isset($cluster->url)) {
       try {
-        //$cluster_info = $cluster->getClusterInfo();
+        $cluster_info = $cluster->getClusterInfo($cluster);
         $form_state_active = TRUE;
       }
       catch (\Exception $e) {
@@ -217,11 +218,6 @@ class ClusterForm extends EntityForm {
   public function save(array $form, array &$form_state) {
     $cluster = $this->entity;
     
-    if (!$cluster->isNew()) {
-      // TODO:
-      // $this->submitOverviewForm($form, $form_state);
-    }
-
     $status = $cluster->save();
 
     //$edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
