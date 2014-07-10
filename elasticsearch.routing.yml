@@ -36,7 +36,7 @@ elasticsearch.cluster_info:
     _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::info'
     _title: 'Cluster Info'
   requirements:
-    _entity_access: 'elasticsearch_cluster.info'
+    _permission: 'administer elasticsearch'
 
 elasticsearch.cluster_delete:
   path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/delete'
