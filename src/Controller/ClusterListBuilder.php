@@ -65,8 +65,12 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     $row['status'] = $entity->status;
     // TODO: Fix the status to come from
     $row['cluster_status'] = 'green';
-    $row['operations'] = t('<a href="@link">Edit</a>', array(
-      '@link' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $this->getLabel($entity) . '/edit'),
+    $row['operations'] = t('<a href="@link0">Info</a> | <a href="@link1">Edit</a> | <a href="@link2">Indicies</a> | <a href="@link3">Delete</a>', array(
+      '@link0' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $this->getLabel($entity) . '/info'),
+      '@link1' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $this->getLabel($entity) . '/edit'),
+      '@link2' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $this->getLabel($entity) . '/indicies'),
+      '@link3' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $this->getLabel($entity) . '/delete'),
+
     ));
     return $row + parent::buildRow($entity);
   }

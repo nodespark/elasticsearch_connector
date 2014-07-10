@@ -7,16 +7,12 @@ elasticsearch.clusters:
     _permission: 'administer elasticsearch'
 
 elasticsearch.cluster_view:
-  path: '/admin/config/search/elasticsearch/clusters/{cluster}'
+  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}'
   defaults:
     _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::page'
     _title: "View"
   requirements:
     _permission: 'administer elasticsearch'
-  options:
-    parameters:
-      cluster:
-      type: entity:cluster
 
 elasticsearch.cluster_add:
   path: '/admin/config/search/elasticsearch/clusters/add'
@@ -27,28 +23,24 @@ elasticsearch.cluster_add:
     _entity_create_access: 'elasticsearch_cluster'
 
 elasticsearch.cluster_edit:
-  path: '/admin/config/search/elasticsearch/clusters/{cluster}/edit'
+  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/edit'
   defaults:
     _entity_form: 'elasticsearch_cluster.edit'
     _title: 'Cluster Edit'
-  requirements:
-    _entity_create_access: 'elasticsearch_cluster'
-  options:
-    parameters:
-      cluster:
-      type: entity:cluster
+    requirements:
+    _entity_access: 'elasticsearch_cluster.update'
 
 elasticsearch.cluster_info:
-  path: '/admin/config/search/elasticsearch/clusters/{cluster}/info'
+  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/info'
   defaults:
-    _entity_form: 'elasticsearch_cluster.info'
+    _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::info'
     _title: 'Cluster Info'
   requirements:
-    _entity_create_access: 'elasticsearch_cluster'
+    _entity_access: 'elasticsearch_cluster.info'
 
 elasticsearch.cluster_delete:
-  path: '/admin/config/search/elasticsearch/clusters/{cluster}/delete'
+  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/delete'
   defaults:
     _entity_form: 'elasticsearch_cluster.delete'
   requirements:
-    _entity_access: 'administer elasticsearch_cluster.delete'
+    _entity_access: 'elasticsearch_cluster.delete'

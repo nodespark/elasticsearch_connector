@@ -31,7 +31,7 @@ use Drupal\Component\Utility\UrlHelper;
  *     "status" = "status"
  *   },
  *   links = {
- *     "canonical" = "elasticsearch.cluster_info",
+ *     "canonical" = "elasticsearch.clusters",
  *     "add-form" = "elasticsearch.cluster_add",
  *     "edit-form" = "elasticsearch.cluster_edit",
  *     "delete-form" = "elasticsearch.cluster_delete",
