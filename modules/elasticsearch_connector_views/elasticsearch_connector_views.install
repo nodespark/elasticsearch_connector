@@ -16,7 +16,7 @@ function elasticsearch_connector_views_install() {
 /**
  * Implements hook_uninstall().
  */
-function elasticsearch_connector_views_unstall() {
+function elasticsearch_connector_views_uninstall() {
   //TODO: Delete all views created with elasticsearch connector views.
   //TODO: Revert to default views table field.
   return elasticsearch_connector_views_update_views_table(TRUE);
