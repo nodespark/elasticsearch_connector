@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * Implements hook_help().
  */
-function elasticsearch_help($route_name, Request $request) {
+function elasticsearch_help($route_name) {
   switch ($route_name) {
     case 'admin/help#elasticsearch':
       return '<p>' . t('Abstraction of making connection to the elasticsearch
