@@ -10,7 +10,7 @@ elasticsearch.cluster_view:
   path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}'
   defaults:
     _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::page'
-    _title: "View"
+    _title: 'View'
   requirements:
     _permission: 'administer elasticsearch'
 
@@ -33,7 +33,7 @@ elasticsearch.cluster_edit:
 elasticsearch.cluster_info:
   path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/info'
   defaults:
-    _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::info'
+    _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::getInfo'
     _title: 'Cluster Info'
   requirements:
     _permission: 'administer elasticsearch'
