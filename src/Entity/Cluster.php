@@ -119,10 +119,10 @@ class Cluster extends ConfigEntityBase {
    * Return cluster info.
    * @return return array
    */
-  public function getClusterInfo($cluster) {
+  public static function getClusterInfo($cluster) {
     $result = FALSE;
     try {
-      $client = $this->getClusterByUrls(array($this->url));
+      $client = self::getClusterByUrls(array($cluster->url));
       if (!empty($client)) {
         $info = $client->info();
         $result['client'] = $client;
@@ -170,7 +170,7 @@ class Cluster extends ConfigEntityBase {
    * @param string $url
    * @return
    */
-  protected function getClusterByUrls($urls) {
+  protected static function getClusterByUrls($urls) {
     // TODO: Handle cluster connection. This should be accomplished if the setting is enabled.
     // If enabled, discover all the nodes in the cluster initialize the Pool connection.
     //$this->isValid($urls);

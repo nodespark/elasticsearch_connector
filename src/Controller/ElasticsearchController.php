@@ -51,13 +51,14 @@ class ElasticSearchController extends ControllerBase {
   }
 
   public function getInfo(ConfigEntityBase $elasticsearch_cluster) {
-    print_r($elasticsearch_cluster);
+    //print_r($elasticsearch_cluster);
     $cluster_status = Cluster::getClusterInfo($elasticsearch_cluster);
+    //print_r($cluster_status);
     $cluster_client = $cluster_status['client'];
 
     $node_rows = $cluster_statistics_rows = $cluster_health_rows = array();
 
-    if (isset($cluster_client) && !empty($cluster_status['info']) && elasticsearch_connector_check_status($cluster_status['info'])) {
+    if (isset($cluster_client) && !empty($cluster_status['info']) && Cluster::checkClusterStatus($cluster_status['info'])) {
       $node_stats = $cluster_status['stats'];
       $total_docs = $total_size = 0;
       if (isset($node_stats)) {
