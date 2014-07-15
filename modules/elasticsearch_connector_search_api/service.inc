@@ -549,7 +549,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $params = $this->getIndexParam($index, TRUE);
 
     // Check elasticsearch index.
-    if (!$this->checkClient() || !$this->elasticsearchClient->indices()->existsType($params)) {
+    if (!$this->checkClient()) {
       return $search_result;
     }
     $query->setOption('ElasticParams', $params);
@@ -562,19 +562,26 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     // Alter the query and params.
     drupal_alter('elasticsearch_connector_search_api_query', $query, $params);
-    // Do search.
-    $response = $this->elasticsearchClient->search($params);
 
-    // TODO: Fix the logging to be accurate!
-    if (!empty($index->options['collect_index_statistics']) && !$suggestions
-        && class_exists('SearchApiElasticsearchConnectorStats')) {
-      $stats = new SearchApiElasticsearchConnectorStats($query, $this);
-      $stats->logStat($response);
+    try {
+      // Do search.
+      $response = $this->elasticsearchClient->search($params);
+
+      // TODO: Fix the logging to be accurate!
+      if (!empty($index->options['collect_index_statistics']) && !$suggestions
+          && class_exists('SearchApiElasticsearchConnectorStats')) {
+        $stats = new SearchApiElasticsearchConnectorStats($query, $this);
+        $stats->logStat($response);
+      }
+
+      // Parse response.
+      $results = $this->parseSearchResponse($response, $query);
+      drupal_alter('elasticsearch_connector_search_api_results', $results, $query, $response);
     }
-
-    // Parse response.
-    $results = $this->parseSearchResponse($response, $query);
-    drupal_alter('elasticsearch_connector_search_api_results', $results, $query, $response);
+    catch (Exception $e) {
+      watchdog('Elasticsearch Search API', check_plain($e->getMessage()), array(), WATCHDOG_ERROR);
+      return array('result count' => 0);
+    }
 
     return $results;
   }
