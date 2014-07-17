@@ -366,12 +366,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       ));
 
       if (empty($result)) {
-        $this->elasticsearchClient->indices()->delete(array(
+        $response = $this->elasticsearchClient->indices()->delete(array(
           'index' => $params['index'],
         ));
       }
-
-      $response = $this->elasticsearchClient->indices()->delete($params);
     }
     catch (Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
