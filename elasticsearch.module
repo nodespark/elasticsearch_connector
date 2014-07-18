@@ -37,7 +37,7 @@ function elasticsearch_cron() {
  */
 function elasticsearch_permission() {
   return array(
-    'adminiser elasticsearch' => array(
+    'administer elasticsearch' => array(
       'title' => t('Administer elasticsearch'),
       'description' => t('Giving you access to administer elasticsearch clusters.'),
     ),
@@ -768,6 +768,5 @@ function _elasticsearch_validate_ttl_field($element, &$form_state, $form) {
 function elasticsearch_clusters() {
   $cluster_ids = \Drupal::entityQuery('search_api_index')
     ->execute();
-  dpm($cluster_ids);
   return array();
 }

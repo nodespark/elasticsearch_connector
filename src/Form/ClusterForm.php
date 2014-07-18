@@ -136,11 +136,11 @@ class ClusterForm extends EntityForm {
     // TODO: Handle the validation of the elements.
     parent::validate($form, $form_state);
 
-    $cluster = $this->getEntity();
+    /** @var \Drupal\elasticsearch\Entity\Cluster $cluster_from_form */
     $cluster_from_form = entity_create('elasticsearch_cluster', $form_state['values']);
 
     try {
-      $cluster_info = $cluster_from_form->getClusterInfo($cluster);
+      $cluster_info = $cluster_from_form->getClusterInfo($cluster_from_form);
       if (!isset($cluster_info['info']) || !Cluster::checkClusterStatus($cluster_info['info'])) {
         form_set_error('url', $form_state, t('Cannot connect to the cluster!'));
       }
