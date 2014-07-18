@@ -37,7 +37,7 @@ function elasticsearch_cron() {
  */
 function elasticsearch_permission() {
   return array(
-    'adminiser elasticsearch' => array(
+    'administer elasticsearch' => array(
       'title' => t('Administer elasticsearch'),
       'description' => t('Giving you access to administer elasticsearch clusters.'),
     ),
