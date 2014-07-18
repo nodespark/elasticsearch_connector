@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\elasticsearch_connector\ClusterForm.
+ * Contains \Drupal\elasticsearch\IndexForm.
  */
 
 namespace Drupal\elasticsearch;
@@ -18,9 +18,7 @@ use Elasticsearch\Common\Exceptions\Curl\CouldNotResolveHostException;
  * Form controller for node type forms.
  */
 class IndexForm extends EntityForm {
-  /**
-   * {@inheritdoc}
-   */
+
   public function form(array $form, array &$form_state) {
     $cluster = $this->entity;
 
@@ -52,7 +50,6 @@ class IndexForm extends EntityForm {
       '#default_value' => '',
       '#description' => t('Enter the number of shards replicas.')
     );
-
     return parent::form($form, $form_state);
   }
 
@@ -80,11 +77,49 @@ class IndexForm extends EntityForm {
     }
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  //TODO
+function submit($form, &$form_state) {
+  $values = $form_state['values'];
+  $cluster = $form['#cluster'];
+  $client = elasticsearch_load_library($cluster);
+  if ($client) {
+    try {
+      $index_params['index'] = $values['index_name'];
+      $index_params['body']['settings']['number_of_shards']   = $values['num_of_shards'];
+      $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
+      $response = $client->indices()->create($index_params);
+      if (elasticsearch_check_response_ack($response)) {
+        drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['index_name'])));
+      }
+      else {
+        drupal_set_message(t('Fail to create the index %index', array('%index' => $values['index_name'])), 'error');
+      }
+
+      // If the form has been opened in dialog, close the window if it was
+      // setup to do so.
+      if (elasticsearch_in_dialog() && elasticsearch_close_on_submit()) {
+        elasticsearch_close_on_redirect($cluster->cluster_id, $values['index_name']);
+      }
+    }
+    catch (Exception $e) {
+      drupal_set_message($e->getMessage(), 'error');
+    }
+  }
+  return parent::submit($form, $form_state);
+}
+
   public function save(array $form, array &$form_state) {
+    $indices = $this->entity;
     
+    $status = $indices->save();
+
+    //$edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
+    if ($status == SAVED_UPDATED) {
+      drupal_set_message(t('Cluster %label has been updated.', array('%label' => $indices->label())));
+    }
+    else {
+      drupal_set_message(t('Cluster %label has been added.', array('%label' => $indices->label())));
+    }
+
+    $form_state['redirect_route'] = new Url('elasticsearch.clusters');
   }
 }

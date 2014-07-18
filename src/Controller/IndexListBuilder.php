@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\elasticsearch\Controller\ClusterListBuilder.
+ * Contains \Drupal\elasticsearch\Controller\IndexListBuilder.
  */
 namespace Drupal\elasticsearch\Controller;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
@@ -15,7 +15,7 @@ use Drupal\Component\Utility\String;
 /**
  * Provides a listing of Example.
  */
-class ClusterListBuilder extends ConfigEntityListBuilder {
+class IndexListBuilder extends ConfigEntityListBuilder {
   /**
    * {@inheritdoc}
    */
@@ -36,19 +36,15 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   }
 
   public function buildHeader() {
-    $header['name'] = t('Cluster name');
-    $header['status'] = array(
+    $header['name'] = t('Index name');
+    $header['docs'] = array(
       'data' => t('Status'),
       'class' => array(RESPONSIVE_PRIORITY_MEDIUM),
     );
 
-    $header['status'] = array(
+    $header['size'] = array(
       'data' => t('Status'),
       'class' => array(RESPONSIVE_PRIORITY_MEDIUM),
-    );
-
-    $header['cluster_status'] = array(
-      'data' => t('Cluster Status')
     );
 
     $header['operations'] = $this->t('Operations');
@@ -65,10 +61,10 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     $row['status'] = $entity->status;
     // TODO: Fix the status to come from
     $row['cluster_status'] = 'green';
-    $row['operations'] = t('<a href="@link0">Info</a> | <a href="@link1">Edit</a> | <a href="@link2">Indices</a> | <a href="@link3">Delete</a>', array(
+    $row['operations'] = t('<a href="@link0">Info</a> | <a href="@link1">Edit</a> | <a href="@link2">Indicies</a> | <a href="@link3">Delete</a>', array(
       '@link0' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $entity->cluster_id . '/info'),
       '@link1' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $entity->cluster_id . '/edit'),
-      '@link2' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $entity->cluster_id . '/indices'),
+      '@link2' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $entity->cluster_id . '/indicies'),
       '@link3' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $entity->cluster_id . '/delete'),
 
     ));

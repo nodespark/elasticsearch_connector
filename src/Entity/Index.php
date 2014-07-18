@@ -1,48 +1,60 @@
 <?php
 
-namespace Drupal\elasticsearch\Index;
+namespace Drupal\elasticsearch\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Elasticsearch\Cluster;
+use Elasticsearch\Client;
 use Drupal\Component\Utility\UrlHelper;
 
-class Index extends ConfigEntityBase{
+/**
+ * Defines the search server configuration entity.
+ *
+ * @ConfigEntityType(
+ *   id = "elasticsearch_cluster_index",
+ *   label = @Translation("Elasticsearch Cluster Indices"),
+ *   controllers = {
+ *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
+ *     "list_builder" = "Drupal\elasticsearch\Controller\IndexListBuilder",
+ *     "form" = {
+ *       "default" = "Drupal\elasticsearch\Form\IndexForm",
+ *       "edit" = "Drupal\elasticsearch\Form\IndexForm",
+ *       "delete" = "Drupal\elasticsearch\Form\IndexDeleteForm",
+ *     },
+ *   },
+ *   admin_permission = "administer elasticsearch",
+ *   config_prefix = "index",
+ *   entity_keys = {
+ *     "label" = "index_name",
+ *     "shards" = "num_of_shards",
+ *     "replica" = "num_of_replica"
+ *   },
+ *   links = {
+ *     "canonical" = "elasticsearch.clusterindex_view",
+ *     "add-form" = "elasticsearch.clusterindex_add",
+ *     "delete-form" = "elasticsearch.clusterindex_delete",
+ *   }
+ * )
+ */
+class Index extends ConfigEntityBase {
 
   /**
-  * The index name.
-  *
-  * @var string
-  */
+   * {@inheritdoc}
+   */
   public $index_name;
 
-  /**
-   * Number of shards.
-   *
-   * @var string
-   */
   public $num_of_shards;
 
-  /**
-   * Number of replica
-   *
-   * @var string
-   */
   public $num_of_replica;
 
   /**
-   * Actions of the cluster indices.
-   * @var array
-   */
-  public $actions;
-
-  /**
-   * Elasticsearch display all indices in cluster.
+   * Display all indices in cluster.
    *
    * @param object
    * @return array
    */
-  public function getClusterIndices($cluster) {
+  function elasticsearchClusterIndices($cluster) {
+    echo 'hi';
     $headers = array(
       array('data' => t('Index name')),
       array('data' => t('Docs')),
@@ -51,7 +63,7 @@ class Index extends ConfigEntityBase{
     );
 
     $rows = array();
-    $cluster_info = getClustersInfo($cluster);
+    $cluster_info = getClusterInfo($cluster);
     $client = $cluster_info['client'];
 
     if ($client && !empty($cluster_info['info']) && checkClusterStatus($cluster_info['info'])) {
@@ -59,11 +71,10 @@ class Index extends ConfigEntityBase{
       foreach ($indices['indices'] as $index_name => $index_info) {
         $row = array();
 
-        // TODO: Remove theme() as per D8 API
         $operations = theme('links', array(
           'links' => array(
-            array('title' => t('Aliases'), 'href' => 'admin/config/elasticsearch/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/aliases'),
-            array('title' => t('Delete'), 'href' => 'admin/config/elasticsearch/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/delete'),
+            array('title' => t('Aliases'), 'href' => 'admin/config/search/elasticsearch/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/aliases'),
+            array('title' => t('Delete'), 'href' => 'admin/config/search/elasticsearch/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/delete'),
           ),
           'attributes' => array(
             'class' => array('links', 'inline'),
@@ -91,54 +102,5 @@ class Index extends ConfigEntityBase{
 
     return $output;
   }
-
-  /**
-   * List all aliases for an index.
-   *
-   * @param object $cluster
-   * @param string $index_name
-   * @return array
-   */
-  function getClusterIndicesAliases($cluster, $index_name) {
-    $headers = array(
-      array('data' => t('Alias name')),
-    );
-
-    $rows = array();
-
-    $cluster_info = getClustersInfot($cluster);
-    $client = $cluster_info['client'];
-
-    if ($client && !empty($cluster_info['info']) && checkClusterStatus($cluster_info['info'])) {
-      try {
-        // getAliases() from elasticsearch php-lib
-        $aliases = $client->indices()->getAliases(array('index' => $index_name));
-        foreach ($aliases[$index_name]['aliases'] as $alias_name => $alias_info) {
-          $row = array();
-
-          // TODO: Handle alias actions.
-          $row[] = $alias_name;
-
-          $rows[] = $row;
-        }
-      }
-      catch (Exception $e) {
-        drupal_set_message($e->getMessage(), 'error');
-      }
-    }
-    else {
-      drupal_set_message(t('The cluster cannot be connected for some reason.'), 'error');
-    }
-
-    $output['elasticsearch']['table'] = array(
-      '#theme' => 'table',
-      '#header' => $headers,
-      '#rows' => $rows,
-      '#attributes' => array('class' => array('admin-elasticsearch-alias')),
-    );
-
-    return $output;
-  }
-
 
 }

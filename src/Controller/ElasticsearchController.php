@@ -35,8 +35,9 @@ class ElasticSearchController extends ControllerBase {
     // Check if the index is enabled and can be written to.
     if ($elasticsearch_cluster->cluster_id) {
       //debug
-      print_r($elasticsearch_cluster);
+      //print_r($elasticsearch_cluster);
       $render['form'] = $this->formBuilder()->getForm('Drupal\elasticsearch\Form\ClusterForm', $elasticsearch_cluster);
+      echo 'hi';
     }
     return $render;
   }
