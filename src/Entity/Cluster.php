@@ -117,7 +117,7 @@ class Cluster extends ConfigEntityBase {
 
   /**
    * Return cluster info.
-   * @return return array
+   * @return array
    */
   public static function getClusterInfo($cluster) {
     $result = FALSE;
