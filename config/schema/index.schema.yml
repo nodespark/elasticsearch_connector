@@ -1,4 +1,4 @@
-elasticsearch.cluster.*:
+elasticsearch.clusterindex.*:
   type: config_entity
   label: 'Elasticsearch Cluster Indices'
   mapping:

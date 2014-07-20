@@ -138,9 +138,8 @@ class ClusterForm extends EntityForm {
 
     /** @var \Drupal\elasticsearch\Entity\Cluster $cluster_from_form */
     $cluster_from_form = entity_create('elasticsearch_cluster', $form_state['values']);
-
     try {
-      $cluster_info = $cluster_from_form->getClusterInfo($cluster_from_form);
+      $cluster_info = Cluster::getClusterInfo($cluster_from_form);
       if (!isset($cluster_info['info']) || !Cluster::checkClusterStatus($cluster_info['info'])) {
         form_set_error('url', $form_state, t('Cannot connect to the cluster!'));
       }
@@ -219,8 +218,7 @@ class ClusterForm extends EntityForm {
     $cluster = $this->entity;
     
     $status = $cluster->save();
-
-    //$edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
+    
     if ($status == SAVED_UPDATED) {
       drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
     }
