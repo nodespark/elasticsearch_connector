@@ -10,6 +10,7 @@
 define('ELASTICSEARCH_CLUSTER_STATUS_OK', '200');
 
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\Component\Utility\Url;
 
 /**
  * Implements hook_help().
@@ -106,11 +107,7 @@ function elasticsearch_menu() {
   $items[$settings_path . '/clusters/%elasticsearch_cluster/indices/add'] = array(
     'title'              => 'Add index',
     'description'        => 'Add index',
-    'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_cluster_indices_add', 4),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-    'type'               => MENU_LOCAL_ACTION,
+    'route_name'         => 'elasticsearch.clusterindex_add'
   );
 
   $items[$settings_path . '/clusters/%elasticsearch_cluster/indices/%elasticsearch_index_valid/aliases'] = array(
@@ -642,7 +639,7 @@ function elasticsearch_load_library($cluster) {
 
     // TODO: Handle cluster connection. This should be accomplished if the setting is enabled.
     // If enabled, discover all the nodes in the cluster initialize the Pool connection.
-    if (valid_url($cluster->url)) {
+    if (Url::isValid($cluster->url)) {
       $options = array(
         'hosts' => array($cluster->url),
       );

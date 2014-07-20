@@ -52,3 +52,11 @@ elasticsearch.clusterindex_view:
     _title: 'Cluster Indices'
   requirements:
     _permission: 'administer elasticsearch'
+
+elasticsearch.clusterindex_add:
+  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/indices/add'
+  defaults:
+    _entity_form: 'elasticsearch_cluster_index.default'
+    _title: 'Index'
+  requirements:
+    _entity_create_access: 'elasticsearch_cluster'

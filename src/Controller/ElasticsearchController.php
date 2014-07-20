@@ -169,7 +169,7 @@ class ElasticSearchController extends ControllerBase {
       foreach ($indices['indices'] as $index_name => $index_info) {
         $row = array();
 
-        $operations = theme('links', array(
+        /*$operations = theme('links', array(
           'links' => array(
             array('title' => t('Aliases'), 'href' => 'admin/config/search/elasticsearch/clusters/' . $elasticsearch_cluster->cluster_id . '/indices/' . $index_name . '/aliases'),
             array('title' => t('Delete'), 'href' => 'admin/config/search/elasticsearch/clusters/' . $elasticsearch_cluster->cluster_id . '/indices/' . $index_name . '/delete'),
@@ -178,11 +178,12 @@ class ElasticSearchController extends ControllerBase {
             'class' => array('links', 'inline'),
           ),
         ));
+        */
 
         $row[] = $index_name;
         $row[] = $index_info['total']['docs']['count'];
         $row[] = format_size($index_info['total']['store']['size_in_bytes']);
-        $row[] = $operations;
+        //$row[] = $operations;
 
         $rows[] = $row;
       }
@@ -195,7 +196,7 @@ class ElasticSearchController extends ControllerBase {
       '#theme' => 'table',
       '#header' => $headers,
       '#rows' => $rows,
-      '#attributes' => array('class' => array('admin-elasticsearch-indices')),
+      //'#attributes' => array('class' => array('admin-elasticsearch-indices')),
     );
 
     return $output;
