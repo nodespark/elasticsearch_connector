@@ -48,7 +48,7 @@ elasticsearch.cluster_delete:
 elasticsearch.clusterindex_view:
   path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/indices'
   defaults:
-    _content: \Drupal\elasticsearch\Entity\Index::elasticsearchClusterIndices'
+    _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::elasticsearchClusterIndices'
     _title: 'Cluster Indices'
   requirements:
     _permission: 'administer elasticsearch'

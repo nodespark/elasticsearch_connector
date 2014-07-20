@@ -100,11 +100,8 @@ function elasticsearch_menu() {
   $items[$settings_path . '/clusters/%elasticsearch_cluster/indices'] = array(
     'title'              => 'Elasticsearch cluster indices',
     'description'        => 'Elasticsearch cluster indices',
-    'page callback'      => 'elasticsearch_cluster_indices',
-    'page arguments'     => array(4),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-  );
+    'route_name'         => 'elasticsearch.clusterindex_view'
+   );
 
   $items[$settings_path . '/clusters/%elasticsearch_cluster/indices/add'] = array(
     'title'              => 'Add index',
