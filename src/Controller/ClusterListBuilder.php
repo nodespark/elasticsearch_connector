@@ -4,6 +4,8 @@
  * Contains \Drupal\elasticsearch\Controller\ClusterListBuilder.
  */
 namespace Drupal\elasticsearch\Controller;
+
+use Drupal\elasticsearch\Entity\Cluster;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -57,26 +59,33 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   /**
    * {@inheritdoc}
    */
-  public function buildRow(EntityInterface $entity) {
+  public function buildRow(EntityInterface $cluster) {
     $row['title'] = array(
-      'data' => $this->getLabel($entity),
+      'data' => $this->getLabel($cluster),
       'class' => array('cluster-label'),
     );
-    $row['status'] = $entity->status;
-    // TODO: Fix the status to come from
-    $row['cluster_status'] = 'green';
+    $row['status'] = $cluster->status;
+
+    $cluster_info = Cluster::getClusterInfo($cluster);
+    if (!empty($cluster_info['info']) && Cluster::checkClusterStatus($cluster_info['info'])) {
+      $row['cluster_status'] = $cluster_info['health']['status'];
+    }
+    else {
+      $row['cluster_status'] = t('Not available');
+    }
+
     $row['operations'] = t('<a href="@link0">Info</a> | <a href="@link1">Edit</a> | <a href="@link2">Indices</a> | <a href="@link3">Delete</a>', array(
-      '@link0' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $entity->cluster_id . '/info'),
-      '@link1' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $entity->cluster_id . '/edit'),
-      '@link2' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $entity->cluster_id . '/indices'),
-      '@link3' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $entity->cluster_id . '/delete'),
+      '@link0' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $cluster->cluster_id . '/info'),
+      '@link1' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $cluster->cluster_id . '/edit'),
+      '@link2' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $cluster->cluster_id . '/indices'),
+      '@link3' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $cluster->cluster_id . '/delete'),
 
     ));
-    return $row + parent::buildRow($entity);
+    return $row + parent::buildRow($cluster);
   }
 
-  public function getDefaultOperations(EntityInterface $entity) {
-    $operations = parent::getDefaultOperations($entity);
+  public function getDefaultOperations(EntityInterface $cluster) {
+    $operations = parent::getDefaultOperations($cluster);
     return $operations;
   }
 
