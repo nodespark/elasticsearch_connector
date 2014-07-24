@@ -60,3 +60,7 @@ elasticsearch.clusterindex_add:
     _title: 'Index'
   requirements:
     _entity_create_access: 'elasticsearch_cluster'
+  options:
+    parameters:
+      elasticsearch_cluster:
+        type: entity:elasticsearch_cluster
