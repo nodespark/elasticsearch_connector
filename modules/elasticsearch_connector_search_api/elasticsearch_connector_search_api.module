@@ -295,6 +295,7 @@ function elasticsearch_connector_search_api_form_views_exposed_form_alter(array 
   // We need the _entity_views_field_identifier() function to translate Search
   // API field names into Views identifiers.
   module_load_include('views.inc', 'entity', 'views/entity');
+  $include_js = FALSE;
   foreach ($fields as $field) {
     $field = _entity_views_field_identifier($field, array());
     if (!empty($view->filter[$field]->options['expose']['identifier'])) {
@@ -305,13 +306,15 @@ function elasticsearch_connector_search_api_form_views_exposed_form_alter(array 
           $form[$key]['#attributes'] = array(
             'class' => array('elasticsearch-autocomplete')
           );
-
-          $form['#attached']['js'] = array(
-            drupal_get_path('module', 'elasticsearch_connector_search_api') . '/js/elasticsearch_connector_search_api_autocomplete.js',
-          );
+          $include_js = TRUE;
         }
       }
     }
+  }
+
+  if ($include_js) {
+    $form['#attached']['js'][] =
+      drupal_get_path('module', 'elasticsearch_connector_search_api') . '/js/elasticsearch_connector_search_api_autocomplete.js';
   }
 }
 
