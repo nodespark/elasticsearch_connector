@@ -1780,7 +1780,12 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $items = $index->loadItems(array_keys($response['results']));
       foreach ($items as $id => $item) {
         $node_title = $index->datasource()->getItemLabel($item);
-        $matches[$node_title] = $node_title;
+        if (!empty($search->options['custom']['link_suggestions'])) {
+          $matches[$node_title] = l($node_title, 'node/' . $item->nid);
+        }
+        else {
+          $matches[$node_title] = $node_title;
+        }
       }
 
       if ($matches) {

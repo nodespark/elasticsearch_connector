@@ -260,6 +260,76 @@ function elasticsearch_connector_search_api_search_api_index_update(SearchApiInd
 }
 
 /**
+ * Implements hook_module_implements_alter().
+ */
+function elasticsearch_connector_search_api_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'form_views_exposed_form_alter') {
+    unset($implementations['search_api_autocomplete']);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Adds autocompletion to input fields for fulltext keywords on views with
+ * exposed filters.
+ */
+function elasticsearch_connector_search_api_form_views_exposed_form_alter(array &$form, array &$form_state) {
+  $view = $form_state['view'];
+  if (substr($view->base_table, 0, 17) != 'search_api_index_') {
+    return;
+  }
+  $search_id = 'search_api_views_' . $view->name;
+  $search = search_api_autocomplete_search_load($search_id);
+  if (empty($search->enabled)) {
+    return;
+  }
+  $index_id = substr($view->base_table, 17);
+  $index = search_api_index_load($index_id);
+  if (empty($index->options['fields'])) {
+    return;
+  }
+  $fields = $index->getFulltextFields(FALSE);
+  // Add the "Search: Fulltext search" filter as another text field.
+  $fields[] = 'search_api_views_fulltext';
+  // We need the _entity_views_field_identifier() function to translate Search
+  // API field names into Views identifiers.
+  module_load_include('views.inc', 'entity', 'views/entity');
+  foreach ($fields as $field) {
+    $field = _entity_views_field_identifier($field, array());
+    if (!empty($view->filter[$field]->options['expose']['identifier'])) {
+      $key = $view->filter[$field]->options['expose']['identifier'];
+      if (isset($form[$key]) && $form[$key]['#type'] == 'textfield') {
+        $search->alterElement($form[$key]);
+        if (!empty($search->options['custom']['link_suggestions'])) {
+          $form[$key]['#attributes'] = array(
+            'class' => array('elasticsearch-autocomplete')
+          );
+
+          $form['#attached']['js'] = array(
+            drupal_get_path('module', 'elasticsearch_connector_search_api') . '/js/elasticsearch_connector_search_api_autocomplete.js',
+          );
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function elasticsearch_connector_search_api_form_search_api_autocomplete_admin_search_edit_alter(&$form, &$form_state, $form_id) {
+  $search = $form_state['search'];
+
+  $form['options']['custom']['link_suggestions'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Elasticsearch direct link'),
+    '#default_value' => isset($search->options['custom']['link_suggestions']) ? $search->options['custom']['link_suggestions'] : 0,
+    '#description' => t('Link the result directly to the result because the suggestion is a single result.'),
+  );
+}
+
+/**
  * Ajax callback.
  *
  * @param array $form
