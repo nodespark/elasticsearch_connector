@@ -1779,18 +1779,19 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     if (isset($response['results'])) {
       $items = $index->loadItems(array_keys($response['results']));
       foreach ($items as $id => $item) {
-        $node_title = $index->datasource()->getItemLabel($item);
+        $item_title = $index->datasource()->getItemLabel($item);
+        $url_item = $index->datasource()->getItemUrl($item);
         if (!empty($search->options['custom']['link_suggestions'])) {
-          $matches[$node_title] = l($node_title, 'node/' . $item->nid);
+          $matches[$item_title] = l($item_title, $url_item['path'], array('html' => TRUE));
         }
         else {
-          $matches[$node_title] = $node_title;
+          $matches[$item_title] = $item_title;
         }
       }
 
       if ($matches) {
         // Eliminate suggestions that are too short or already in the query.
-        foreach ($matches as $name => $node_title) {
+        foreach ($matches as $name => $item_title) {
           if (drupal_strlen($name) < 3 || isset($keys_array[$name])) {
             unset($matches[$name]);
           }

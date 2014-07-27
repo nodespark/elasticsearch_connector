@@ -1,22 +1,50 @@
 (function ($) {
-/**
+
+  /**
+   * Hides the autocomplete suggestions, original function.
+   */
+  Drupal.jsAC.prototype.hidePopupOrig = function (keycode) {
+    // Select item if the right key or mousebutton was pressed.
+    if (this.selected && ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || !keycode)) {
+      this.input.value = $(this.selected).data('autocompleteValue');
+    }
+    // Hide popup.
+    var popup = this.popup;
+    if (popup) {
+      this.popup = null;
+      $(popup).fadeOut('fast', function () { $(popup).remove(); });
+    }
+    this.selected = false;
+    $(this.ariaLive).empty();
+  };
+
+  /**
  * Hides the autocomplete suggestions.
  */
-Drupal.jsAC.prototype.hidePopup = function (keycode) {
-  // Select item if the right key or mousebutton was pressed.
-  if (this.selected && ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || !keycode)) {
-    this.input.value = $('a', this.selected).attr("href");
-    return $('a', this.selected).attr("href");
-  }
+Drupal.jsAC.prototype.hidePopup = function (keycode, event) {
+  if ($(this.input).attr('elasticsearch-autocomplete')) {
+    // Select item if the right key or mousebutton was pressed.
+    if (this.selected && ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || !keycode)) {
+      this.input.value = $('a', this.selected).text();
+      if (typeof event != 'undefined') {
+        event.preventDefault();
+      }
 
-  // Hide popup.
-  var popup = this.popup;
-  if (popup) {
-    this.popup = null;
-    $(popup).fadeOut('fast', function () { $(popup).remove(); });
+      window.location = $('a', this.selected).attr("href");
+    }
+
+    // Hide popup.
+    var popup = this.popup;
+    if (popup) {
+      this.popup = null;
+      $(popup).fadeOut('fast', function () { $(popup).remove(); });
+    }
+    this.selected = false;
+    $(this.ariaLive).empty();
   }
-  this.selected = false;
-  $(this.ariaLive).empty();
+  else {
+    this.hidePopupOrig(keycode);
+  }
 };
         
 /**
@@ -33,6 +61,7 @@ Drupal.behaviors.elasticsearch_autocomplete = {
       }
       var $input = $(this)
         .attr('autocomplete', 'OFF')
+        .attr('elasticsearch-autocomplete', true)
         .attr('aria-autocomplete', 'list');
       $($input[0].form).unbind();
       $($input[0].form).submit(Drupal.ELAutocompleteSubmit);
@@ -52,20 +81,13 @@ Drupal.behaviors.elasticsearch_autocomplete = {
  * Prevents the form from submitting if the suggestions popup is open
  * and closes the suggestions popup when doing so.
  */
-Drupal.ELAutocompleteSubmit = function () {
+Drupal.ELAutocompleteSubmit = function (e) {
   var href = '';
   $('#autocomplete').each(function () {
-    href = this.owner.hidePopup();
+    this.owner.hidePopup(null, e);
   });
 
-  if (href == '' || typeof href == 'undefined') {
-    return false;;
-  }
-  else {
-    window.location = href;
-  }
-
-  return false;
+  return true;
 };
 })(jQuery);
 
