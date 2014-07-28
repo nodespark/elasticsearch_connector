@@ -5,9 +5,11 @@
  */
 namespace Drupal\elasticsearch\Controller;
 
-use Drupal\elasticsearch\Entity\Cluster;
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Url;
+use Drupal\elasticsearch\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
@@ -21,10 +23,8 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   /**
    * {@inheritdoc}
    */
-  public function __construct(EntityTypeInterface $entity_type, EntityStorageInterface $storage, UrlGeneratorInterface $url_generator) {
-    parent::__construct($entity_type, $storage);
-    $this->urlGenerator = $url_generator;
-  }
+
+  protected $indexStorage;
 
   /**
    * {@inheritdoc}
@@ -33,29 +33,51 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     return new static(
       $entity_type,
       $container->get('entity.manager')->getStorage($entity_type->id()),
-      $container->get('url_generator')
+      $container->get('entity.manager')->getStorage('elasticsearch_cluster_index')
     );
+  }
+
+  public function __construct(EntityTypeInterface $entity_type, EntityStorageInterface $storage, EntityStorageInterface $index_storage) {
+    parent::__construct($entity_type, $storage);
+    //$this->urlGenerator = $url_generator;
+    $this->indexStorage = $index_storage;
+  }
+
+
+  public function load() {
+    $clusters = $this->storage->loadMultiple();
+    $indices = $this->indexStorage->loadMultiple();
+
+    //$this->sortByStatusThenAlphabetically($indexes);
+    //$this->sortByStatusThenAlphabetically($clusers);
+
+    $cluster_groups = array();
+    foreach ($clusters as $cluster) {
+      $cluster_group = array(
+        "cluster." . $cluster->cluster_id => $cluster,
+      );
+
+      foreach ($indices as $index) {
+        if ($index->server == $cluster->cluster_id)
+          $cluster_group["index." . $index->index_id] = $index;
+      }
+      $cluster_groups["cluster." . $cluster->cluster_id] = $cluster_group;
+    }
+
+    return $cluster_groups;
   }
 
   public function buildHeader() {
-    $header['name'] = t('Cluster name');
-    $header['status'] = array(
-      'data' => t('Status'),
-      'class' => array(RESPONSIVE_PRIORITY_MEDIUM),
-    );
-
-    $header['status'] = array(
-      'data' => t('Status'),
-      'class' => array(RESPONSIVE_PRIORITY_MEDIUM),
-    );
-
-    $header['cluster_status'] = array(
-      'data' => t('Cluster Status')
-    );
-
-    $header['operations'] = $this->t('Operations');
-    return $header;
+      return array(
+        'type' => $this->t('Type'),
+        'title' => $this->t('Name'),
+        'status' => array(
+          'data' => $this->t('Status'),
+          'class' => array('checkbox'),
+        ),
+      ) + parent::buildHeader();
   }
+
   /**
    * {@inheritdoc}
    */
@@ -89,20 +111,29 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     return $operations;
   }
 
-  public function load() {
-    return parent::load();
-  } 
-
   /**
    * {@inheritdoc}
    */
   public function render() {
-    $build = parent::render();
-    $build['#empty'] = t('No clusters available. <a href="@link">Add new cluster</a>.', array(
+    $entity_groups = $this->load();
+    $list['#type'] = 'container';
+    $list['clusters'] = array(
+      '#type' => 'table',
+      '#header' => $this->buildHeader(),
+      '#rows' => array(),
+      '#empty' => $this->t('No clusters available. <a href="@link">Add new cluster</a>.', array(
       '@link' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/add'),
-    ));
-    return $build;
-  }
+      )),
+    );
+    foreach ($entity_groups as $cluster_group) {
+      foreach ($cluster_group as $entity) {
+        if (isset($entity->cluster_id)) {
+          $list['clusters']['#rows'][$entity->cluster_id] = $this->buildRow($entity);
+        }
+      }
+    }
 
+    return $list;
+  }
 }
 ?>
