@@ -1782,7 +1782,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         $item_title = $index->datasource()->getItemLabel($item);
         $url_item = $index->datasource()->getItemUrl($item);
         if (!empty($search->options['custom']['link_suggestions'])) {
-          $matches[$item_title] = l($item_title, $url_item['path'], array('html' => TRUE));
+          $matches[$item_title] = array(
+            'user_input' => '',
+            'suggestion_suffix' => l($item_title, $url_item['path'], array('html' => TRUE)),
+          );
         }
         else {
           $matches[$item_title] = $item_title;
