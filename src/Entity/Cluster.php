@@ -148,7 +148,7 @@ class Cluster extends ConfigEntityBase {
    * @param boolean
    * @return \Elasticsearch\Client $client
    */
-  protected function getClusterById($cluster_id = NULL) {
+  protected function getClusterById($cluster_id) {
     $default_cluster = getDefaultCluster();
     if (!isset($cluster_id) && !empty($default_cluster)) {
       $cluster_id = getDefaultCluster();

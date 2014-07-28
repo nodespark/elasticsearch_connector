@@ -26,9 +26,8 @@ use Drupal\elasticsearch\Entity\Cluster;
  *   admin_permission = "administer elasticsearch",
  *   config_prefix = "index",
  *   entity_keys = {
- *     "label" = "index_name",
- *     "shards" = "num_of_shards",
- *     "replica" = "num_of_replica"
+ *     "id" = "index_id",
+ *     "label" = "name",
  *   },
  *   links = {
  *     "canonical" = "elasticsearch.clusterindex_view",
@@ -39,13 +38,21 @@ use Drupal\elasticsearch\Entity\Cluster;
  */
 class Index extends ConfigEntityBase {
 
-  /**
-   * {@inheritdoc}
-   */
-  public $index_name;
+    /**
+    * {@inheritdoc}
+    */
+    public $name;
 
-  public $num_of_shards;
+    public $index_id;
 
-  public $num_of_replica;
+    public $num_of_shards;
+
+    public $num_of_replica;
+
+    public $server;
+
+    public function id() {
+        return isset($this->index_id) ? $this->index_id : NULL;
+  }
 
 }

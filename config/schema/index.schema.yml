@@ -1,8 +1,11 @@
-elasticsearch.clusterindex.*:
+elasticsearch.index.*:
   type: config_entity
   label: 'Elasticsearch Cluster Indices'
   mapping:
-    index_name:
+    index_id:
+      type: string
+      label: 'Index ID'
+    name:
       type: string
       label: 'Index Name'
     num_of_shards:
@@ -11,3 +14,6 @@ elasticsearch.clusterindex.*:
     num_of_replica:
       type: string
       label: 'Replica'
+    server:
+      type: string
+      label: 'Cluster machine name'

@@ -12,6 +12,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Url;
+use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\Entity;
 use Drupal\Core\Entity\EntityManager;
 use Drupal\elasticsearch\Entity\Cluster;
@@ -22,7 +23,7 @@ use Elasticsearch\Common\Exceptions\Curl\CouldNotResolveHostException;
  */
 class IndexForm extends EntityForm {
 
-  /*
+
   protected $entityManager;
 
   public function __construct(EntityManager $entity_manager) {
@@ -55,17 +56,27 @@ class IndexForm extends EntityForm {
     return $options;
   }
 
+  protected function getSelectedClusterUrl($id) {
+    $clusters = $this->getAllClusters();
+    foreach ($clusters as $cluster) {
+      if ($cluster->cluster_id == $id) {
+        $result = $cluster->url;
+      }
+    }
+    return $result;
+  }
+
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity.manager')
     );
   }
-  */
+
+
   public function form(array $form, array &$form_state) {
     $form = parent::form($form, $form_state);
-    // Get the entity and attach to the form state.
-    $index = $form_state['entity'] = $this->getEntity();
-    //$cluster = $this->entity;
+
+    //$index = $form_state['entity'] = $this->getEntity();
 
     if ($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Index @label', array('@label' => $index->label()));
@@ -74,12 +85,12 @@ class IndexForm extends EntityForm {
       $form['#title'] = $this->t('Index');
     } 
     
-    $this->buildEntityForm($form, $form_state, $cluster);
+    $this->buildEntityForm($form, $form_state);
     return $form;
   }
 
-  public function buildEntityForm(array &$form, array &$form_state, ConfigEntityInterface $cluster) {
-    $form['index_name'] = array(
+  public function buildEntityForm(array &$form, array &$form_state) {
+    $form['name'] = array(
       '#type' => 'textfield',
       '#title' => t('Index name'),
       '#required' => TRUE,
@@ -87,14 +98,30 @@ class IndexForm extends EntityForm {
       '#description' => t('Enter the index name.')
     );
 
-    /*$form['server'] = array(
+    $form['index_id'] = array(
+      '#type' => 'machine_name',
+      '#title' => t('Index id'),
+      '#default_value' => !empty($index->index_id) ? $index->index_id : '',
+      '#maxlength' => 125,
+      '#description' => t('Unique, machine-readable identifier for this Index'),
+      '#machine_name' => array(
+        'exists' => '\Drupal\elasticsearch\Entity\Index::load',
+        'source' => array('name'),
+        'replace_pattern' => '[^a-z0-9-]+',
+        'replace' => '_',
+      ),
+      '#required' => TRUE,
+      '#disabled' => !empty($index->index_id),
+    );
+
+    $form['server'] = array(
       '#type' => 'radios',
       '#title' => $this->t('Server'),
       '#description' => $this->t('Select the server this index should reside on. Index can not be enabled without connection to valid server.'),
-      '#options' => array('' => $this->t('- No server -')) + $this->getClusterField('cluster_id'),
+      '#options' => $this->getClusterField('cluster_id'),
       '#weight' => 9,
+      '#required' => TRUE,
     );
-    */
 
     $form['num_of_shards'] = array(
       '#type' => 'textfield',
@@ -118,12 +145,12 @@ class IndexForm extends EntityForm {
   public function validate(array $form, array &$form_state) {
     parent::validate($form, $form_state);
 
-    $indices = $this->entity;
+    //$index = $this->entity;
 
-    $indices_from_form = entity_create('elasticsearch_cluster_index', $form_state['values']);
+    //$index_from_form = entity_create('elasticsearch_cluster_index', $form_state['values']);
     
-    if (!preg_match('/^[a-z][a-z0-9_]*$/i', $form_state['values']['index_name'])) {
-      form_set_error('index_name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
+    if (!preg_match('/^[a-z][a-z0-9_]*$/i', $form_state['values']['name'])) {
+      form_set_error('name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
     }
 
     if (!is_numeric($form_state['values']['num_of_shards']) || $form_state['values']['num_of_shards'] < 1) {
@@ -138,24 +165,22 @@ class IndexForm extends EntityForm {
 public function submit(array $form, array &$form_state) {
   $values = $form_state['values'];
 
-  $client = Cluster::getClusterByUrls($cluster);
+  //@TODO Temporary. To be removed by calling Cluster::getClusterById()
+  $cluster_url = self::getSelectedClusterUrl($form_state['values']['server']);
+
+  $client = Cluster::getClusterByUrls(array($cluster_url));
   if ($client) {
     try {
-      $index_params['index'] = $values['index_name'];
+      $index_params['index'] = $values['name'];
       $index_params['body']['settings']['number_of_shards']   = $values['num_of_shards'];
       $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
+      $index_params['body']['settings']['cluster_machine_name'] = $values['server'];
       $response = $client->indices()->create($index_params);
       if (elasticsearch_check_response_ack($response)) {
-        drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['index_name'])));
+        drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['name'])));
       }
       else {
-        drupal_set_message(t('Fail to create the index %index', array('%index' => $values['index_name'])), 'error');
-      }
-
-      // If the form has been opened in dialog, close the window if it was
-      // setup to do so.
-      if (elasticsearch_in_dialog() && elasticsearch_close_on_submit()) {
-        elasticsearch_close_on_redirect($cluster->cluster_id, $values['index_name']);
+        drupal_set_message(t('Fail to create the index %index', array('%index' => $values['name'])), 'error');
       }
     }
     catch (Exception $e) {
@@ -167,16 +192,15 @@ public function submit(array $form, array &$form_state) {
 
   // @TODO
   public function save(array $form, array &$form_state) {
-    $indices = $this->entity;
+    $index = $this->entity;
     
-    $status = $indices->save();
+    $status = $index->save();
 
-    //$edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
     if ($status == SAVED_UPDATED) {
-      drupal_set_message(t('Cluster %label has been updated.', array('%label' => $indices->label())));
+      drupal_set_message(t('Index %label has been updated.', array('%label' => $index->label())));
     }
     else {
-      drupal_set_message(t('Cluster %label has been added.', array('%label' => $indices->label())));
+      drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
     }
 
     $form_state['redirect_route'] = new Url('elasticsearch.clusters');
