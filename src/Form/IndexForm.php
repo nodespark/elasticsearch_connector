@@ -11,6 +11,7 @@ use Drupal\Core\Entity\EntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\Entity;
@@ -74,9 +75,14 @@ class IndexForm extends EntityForm {
 
 
   public function form(array $form, array &$form_state) {
+    if (!empty($form_state['rebuild'])) {
+      // Rebuild the entity with the form state values.
+      $this->entity = $this->buildEntity($form, $form_state);
+    }
+
     $form = parent::form($form, $form_state);
 
-    //$index = $form_state['entity'] = $this->getEntity();
+    $index = $form_state['entity'] = $this->getEntity();
 
     if ($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Index @label', array('@label' => $index->label()));
@@ -85,16 +91,21 @@ class IndexForm extends EntityForm {
       $form['#title'] = $this->t('Index');
     } 
     
-    $this->buildEntityForm($form, $form_state);
+    $this->buildEntityForm($form, $form_state, $index);
     return $form;
   }
 
-  public function buildEntityForm(array &$form, array &$form_state) {
+  public function buildEntityForm(array &$form, array &$form_state, ConfigEntityInterface $index) {
+    $form['index'] = array(
+      '#type'  => 'value',
+      '#value' => $index,
+    );
+
     $form['name'] = array(
       '#type' => 'textfield',
       '#title' => t('Index name'),
       '#required' => TRUE,
-      '#default_value' => '',
+      '#default_value' => empty($index->name) ? '' : $index->name,
       '#description' => t('Enter the index name.')
     );
 
@@ -117,6 +128,7 @@ class IndexForm extends EntityForm {
     $form['server'] = array(
       '#type' => 'radios',
       '#title' => $this->t('Server'),
+      '#default_value' => empty($index->server) ? $index->server : '',
       '#description' => $this->t('Select the server this index should reside on. Index can not be enabled without connection to valid server.'),
       '#options' => $this->getClusterField('cluster_id'),
       '#weight' => 9,
@@ -127,14 +139,14 @@ class IndexForm extends EntityForm {
       '#type' => 'textfield',
       '#title' => t('Number of shards'),
       '#required' => TRUE,
-      '#default_value' => '',
+      '#default_value' => empty($index->num_of_shards) ? '' : $index->num_of_shards,
       '#description' => t('Enter the number of shards for the index.')
     );
 
     $form['num_of_replica'] = array(
       '#type' => 'textfield',
       '#title' => t('Number of replica'),
-      '#default_value' => '',
+      '#default_value' => empty($index->num_of_replica) ? '' : $index->num_of_replica,
       '#description' => t('Enter the number of shards replicas.')
     );
   }
@@ -145,10 +157,6 @@ class IndexForm extends EntityForm {
   public function validate(array $form, array &$form_state) {
     parent::validate($form, $form_state);
 
-    //$index = $this->entity;
-
-    //$index_from_form = entity_create('elasticsearch_cluster_index', $form_state['values']);
-    
     if (!preg_match('/^[a-z][a-z0-9_]*$/i', $form_state['values']['name'])) {
       form_set_error('name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
     }
