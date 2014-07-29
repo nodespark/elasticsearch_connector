@@ -30,29 +30,29 @@ use Drupal\elasticsearch\Entity\Cluster;
  *     "label" = "name",
  *   },
  *   links = {
- *     "canonical" = "elasticsearch.clusterindex_view",
+ *     "canonical" = "elasticsearch.clusters",
  *     "add-form" = "elasticsearch.clusterindex_add",
+ *     "edit-form" = "elasticsearch.clusterindex_edit",
  *     "delete-form" = "elasticsearch.clusterindex_delete",
  *   }
  * )
  */
 class Index extends ConfigEntityBase {
 
-    /**
-    * {@inheritdoc}
-    */
-    public $name;
+  /**
+  * {@inheritdoc}
+  */
+  public $name;
 
-    public $index_id;
+  public $index_id;
 
-    public $num_of_shards;
+  public $num_of_shards;
 
-    public $num_of_replica;
+  public $num_of_replica;
 
-    public $server;
+  public $server;
 
-    public function id() {
-        return isset($this->index_id) ? $this->index_id : NULL;
+  public function id() {
+    return isset($this->index_id) ? $this->index_id : NULL;
   }
-
 }

@@ -32,6 +32,7 @@ use Drupal\Component\Utility\UrlHelper;
  *   },
  *   links = {
  *     "canonical" = "elasticsearch.clusters",
+ *     "info" = "elasticsearch.cluster_info",
  *     "add-form" = "elasticsearch.cluster_add",
  *     "edit-form" = "elasticsearch.cluster_edit",
  *     "delete-form" = "elasticsearch.cluster_delete",
