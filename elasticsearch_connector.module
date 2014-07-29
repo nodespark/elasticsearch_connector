@@ -133,6 +133,16 @@ function elasticsearch_connector_menu() {
     'type'               => MENU_LOCAL_ACTION,
   );
 
+  $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/indices/%elasticsearch_connector_index/edit'] = array(
+    'title'              => 'Elasticsearch cluster indices',
+    'description'        => 'Elasticsearch cluster indices',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_connector_cluster_indices_add', 4, 6),
+    'access arguments'   => array('adminiser elasticsearch connector'),
+    'load arguments'     => array('%map', '%index'),
+    'file'               => 'elasticsearch_connector.admin.inc',
+  );
+
   $items[$settings_path . '/clusters/%elasticsearch_connector_cluster/indices/%elasticsearch_connector_index_valid/aliases'] = array(
     'title'              => 'Elasticsearch cluster indices',
     'description'        => 'Elasticsearch cluster indices',
@@ -209,6 +219,30 @@ function _elasticsearch_connector_ec_clusters_process($element, &$form_state, $f
   }
 
   return $element;
+}
+
+/**
+ * Check if the index is valid and compare it with the indexes comming from Elasticsearch.
+ *
+ * @param string $index_name
+ * @param array $map_array
+ * @param int $index
+ * @return string|boolean
+ */
+function elasticsearch_connector_index_load($index_name, $map_array, $index) {
+  if (elasticsearch_connector_index_valid_load($index_name)) {
+    $cluster = $map_array[4];
+    $client = elasticsearch_connector_load_library($cluster);
+    if (!empty($client)) {
+      $indices = $client->indices()->stats();
+      if (isset($indices['indices'][$index_name])) {
+        return $index_name;
+      }
+      else {
+        return FALSE;
+      }
+    }
+  }
 }
 
 /**
@@ -290,24 +324,32 @@ function _elasticsearch_connector_ec_index_process($element, &$form_state, $form
 
   // TODO: Add icon if the cluster is OK or not.
 
-  $element['cluster_id'] = array(
-    '#type' => 'select',
-    '#id' => $element_id . '-cluster-id',
-    '#title' => t('Select cluster'),
-    '#required' => $element['#required'],
-    '#default_value' => isset($element['#default_value'])
-                    && is_array($element['#default_value'])
-                    && isset($element['#default_value']['cluster_id'])
-                    ? $element['#default_value']['cluster_id'] : '',
-    // TODO: Allow this option to be overwritten and #value if we had such.
-    '#description' => t('Select the cluster.'),
-    '#ajax' => array(
-      'callback' => '_elasticsearch_connector_ec_index_ajax',
-      'wrapper' => $wrapper_id,
-      'method' => 'replace',
-      'effect' => 'fade',
-    )
-  );
+  if (empty($element['#cluster_id'])) {
+    $element['cluster_id'] = array(
+      '#type' => 'select',
+      '#id' => $element_id . '-cluster-id',
+      '#title' => t('Select cluster'),
+      '#required' => $element['#required'],
+      '#default_value' => isset($element['#default_value'])
+                      && is_array($element['#default_value'])
+                      && isset($element['#default_value']['cluster_id'])
+                      ? $element['#default_value']['cluster_id'] : '',
+      // TODO: Allow this option to be overwritten and #value if we had such.
+      '#description' => t('Select the cluster.'),
+      '#ajax' => array(
+        'callback' => '_elasticsearch_connector_ec_index_ajax',
+        'wrapper' => $wrapper_id,
+        'method' => 'replace',
+        'effect' => 'fade',
+      )
+    );
+  }
+  else {
+    $element['cluster_id'] = array(
+      '#type'   => 'value',
+      '#value'  => $element['#cluster_id']
+    );
+  }
 
   if (!isset($element['cluster_id']['#current_path'])) {
     $element['cluster_id']['#current_path'] = current_path();
@@ -321,12 +363,13 @@ function _elasticsearch_connector_ec_index_process($element, &$form_state, $form
   }
 
   // TODO: We need to handle the incomming tree name if such.
-  $links = array();
+  $links = $manage_indices = array();
   $index_options = array('' => t('Select index'));
-  if (is_array($element['#value']) && !empty($element['#value']['cluster_id'])) {
+  if ((is_array($element['#value']) && !empty($element['#value']['cluster_id'])) || !empty($element['#cluster_id'])) {
+    $cluster_id = (is_array($element['#value']) && !empty($element['#value']['cluster_id'])) ? $element['#value']['cluster_id'] : $element['#cluster_id'];
     $index_options = array();
     try {
-      $index_options = elasticsearch_connector_get_indices_options($element['#value']['cluster_id'], TRUE);
+      $index_options = elasticsearch_connector_get_indices_options($cluster_id, TRUE);
     }
     catch (Exception $e) {
       if (!empty($element['#throw_exp'])) {
@@ -335,14 +378,45 @@ function _elasticsearch_connector_ec_index_process($element, &$form_state, $form
     }
     $links[] = array(
       'title' => t('Add index'),
-      'href' => 'admin/config/elasticsearch-connector/clusters/' . $element['#value']['cluster_id'] . '/indices/add',
-      'attributes' => array('target' => '_blank', 'class' => 'ec-index-dialog'),
+      'href' => 'admin/config/elasticsearch-connector/clusters/' .$cluster_id . '/indices/add',
+      'attributes' => array('target' => '_blank', 'class' => 'ec-index-dialog ec-index-dialog-add'),
       'query' => array(
         'render' => 'elasticsearch-connector-dialog',
         'index_element_id' => $element_id . '-index',
         'cluster_element_id' => $element_id . '-cluster-id'
       )
     );
+
+    $manage_indices = array(
+      'title' => t('Manage indices'),
+      'href' => 'admin/config/elasticsearch-connector/clusters/' .$cluster_id . '/indices',
+      'attributes' => array('target' => '_blank', 'class' => 'manage-indices'),
+    );
+  }
+
+  $index = '';
+  if (isset($element['#value']) && is_array($element['#value']) && isset($element['#value']['index'])) {
+    $index = $element['#value']['index'];
+  }
+  elseif (isset($element['#default_value']) && is_array($element['#default_value']) && isset($element['#default_value']['index'])) {
+    $index = $element['#default_value']['index'];
+  }
+
+  if (!empty($index)) {
+    $links[] = array(
+      'title' => t('Edit @index index', array('@index' => $index)),
+      'href' => 'admin/config/elasticsearch-connector/clusters/' .$cluster_id . '/indices/' . $index . '/edit',
+      'attributes' => array('target' => '_blank', 'class' => 'ec-index-dialog ec-index-dialog-edit'),
+      'query' => array(
+        'render' => 'elasticsearch-connector-dialog',
+        'index_element_id' => $element_id . '-index',
+        'cluster_element_id' => $element_id . '-cluster-id'
+      )
+    );
+  }
+
+  if (!empty($manage_indices)) {
+    $links[] = $manage_indices;
   }
 
   $element['index'] = array(
@@ -356,8 +430,14 @@ function _elasticsearch_connector_ec_index_process($element, &$form_state, $form
                     ? $element['#default_value']['index'] : '',
     '#description' => t('Select the index.'),
     '#options' => $index_options,
+    '#ajax' => array(
+      'callback' => '_elasticsearch_connector_ec_index_links_ajax',
+      'wrapper' => $element['#id'] . '-dialog-links',
+      'method' => 'replace',
+      'effect' => 'fade',
+    ),
     '#prefix' => '<div id="' . $wrapper_id . '">',
-    '#suffix' =>'<div class="dialog-links ' . $element['#id'] . '">'
+    '#suffix' =>'<div id="' . $element['#id'] . '-dialog-links" class="dialog-links ' . $element['#id'] . '">'
         . theme('links__es_index_links', array(
             'links' => $links,
             'attributes' => array('class' => 'index-dialog-links')
@@ -460,6 +540,14 @@ function _elasticsearch_connector_ec_index_ajax($form, $form_state) {
   $index_element = drupal_array_get_nested_value($form, $parents);
 
   return $index_element;
+}
+
+function _elasticsearch_connector_ec_index_links_ajax($form, $form_state) {
+  $element_name = $form_state['triggering_element']['#name'];
+  $parents = $form_state['triggering_element']['#parents'];
+  $index_element = drupal_array_get_nested_value($form, $parents);
+
+  return $index_element['#suffix'];
 }
 
 /**

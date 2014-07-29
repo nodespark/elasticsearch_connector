@@ -270,18 +270,23 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       try {
         $client = $this->elasticsearchClient;
         if (!$client->indices()->exists(array('index' => $index_name))) {
-          $params = array(
-            'index' => $index_name,
-            'body' => array(
-              'settings' => array(
-                'number_of_shards' => $index->options['number_of_shards'],
-                'number_of_replicas' => $index->options['number_of_replicas'],
+          if (!empty($index->force_create)) {
+            $params = array(
+              'index' => $index_name,
+              'body' => array(
+                'settings' => array(
+                  'number_of_shards' => $index->force_create['number_of_shards'],
+                  'number_of_replicas' => $index->force_create['number_of_replicas'],
+                )
               )
-            )
-          );
-          $response = $client->indices()->create($params);
-          if (!elasticsearch_connector_check_response_ack($response)) {
-            drupal_set_message(t('The elasticsearch client wasn\'t able to create index'), 'error');
+            );
+            $response = $client->indices()->create($params);
+            if (!elasticsearch_connector_check_response_ack($response)) {
+              drupal_set_message(t('The elasticsearch client wasn\'t able to create index'), 'error');
+            }
+          }
+          else {
+            throw new SearchApiElasticsearchConnectorException(t('The index you have selected, does not exsits.'));
           }
         }
 

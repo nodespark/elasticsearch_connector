@@ -14,6 +14,7 @@
 
               // Trigger change to update the form cache.
               $('#' + settings.cluster_element_id).trigger('change');
+              $('#' + settings.index_element_id).trigger('change');
             }
 
             return false;

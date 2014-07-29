@@ -95,6 +95,7 @@ function elasticsearch_connector_cluster_indices($cluster) {
 
       $operations = theme('links__ctools_dropbutton', array(
         'links' => array(
+          array('title' => t('Edit'), 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/edit'),
           array('title' => t('Aliases'), 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/aliases'),
           array('title' => t('Delete'), 'href' => elasticsearch_connector_main_settings_path() . '/clusters/' . $cluster->cluster_id . '/indices/' . $index_name . '/delete'),
         ),
@@ -408,16 +409,34 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
  * @param array $cluster
  * @return array
  */
-function elasticsearch_connector_cluster_indices_add($form, &$form_state, $cluster) {
+function elasticsearch_connector_cluster_indices_add($form, &$form_state, $cluster, $index = NULL) {
   $form = array();
 
   $form['#cluster'] = $cluster;
+
+  if (isset($index)) {
+    $form['#index'] = $index;
+
+    $client = elasticsearch_connector_load_library($cluster);
+    $settings = array();
+    try {
+      $settings = $client->indices()->getSettings(array(
+        'index' => $index
+      ));
+
+      $settings = $settings[$index]['settings'];
+    }
+    catch (Exception $e) {
+      watchdog('elasticsearch_connector', $e->getMessage(), array(), WATCHDOG_WARNING);
+    }
+  }
 
   $form['index_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Index name'),
     '#required' => TRUE,
-    '#default_value' => '',
+    '#disabled' => isset($index),
+    '#default_value' => isset($index) ? $index : '',
     '#description' => t('Enter the index name.')
   );
 
@@ -425,14 +444,16 @@ function elasticsearch_connector_cluster_indices_add($form, &$form_state, $clust
     '#type' => 'textfield',
     '#title' => t('Number of shards'),
     '#required' => TRUE,
-    '#default_value' => '',
+    '#disabled' => isset($index),
+    '#default_value' => isset($settings['index']['number_of_shards']) ? $settings['index']['number_of_shards'] : '',
     '#description' => t('Enter the number of shards for the index.')
   );
 
   $form['num_of_replica'] = array(
     '#type' => 'textfield',
     '#title' => t('Number of replica'),
-    '#default_value' => '',
+    '#required' => TRUE,
+    '#default_value' => isset($settings['index']['number_of_replicas']) ? $settings['index']['number_of_replicas'] : '',
     '#description' => t('Enter the number of shards replicas.')
   );
 
@@ -444,7 +465,7 @@ function elasticsearch_connector_cluster_indices_add($form, &$form_state, $clust
     '#type' => 'submit',
     '#validate' => array('elasticsearch_connector_cluster_indices_add_validate'),
     '#submit' => array('elasticsearch_connector_cluster_indices_add_submit'),
-    '#value' => t('Save'),
+    '#value' => (isset($index) ? t('Update') : t('Save')),
   );
 
   return $form;
@@ -479,27 +500,52 @@ function elasticsearch_connector_cluster_indices_add_submit($form, &$form_state)
   $values = $form_state['values'];
   $cluster = $form['#cluster'];
   $client = elasticsearch_connector_load_library($cluster);
+  $index = isset($form['#index']) ? $form['#index'] : FALSE;
   if ($client) {
-    try {
-      $index_params['index'] = $values['index_name'];
-      $index_params['body']['settings']['number_of_shards']   = $values['num_of_shards'];
-      $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
-      $response = $client->indices()->create($index_params);
-      if (elasticsearch_connector_check_response_ack($response)) {
-        drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['index_name'])));
-      }
-      else {
-        drupal_set_message(t('Fail to create the index %index', array('%index' => $values['index_name'])), 'error');
-      }
+    if (empty($index)) {
+      try {
+        $index_params['index'] = $values['index_name'];
+        $index_params['body']['settings']['number_of_shards']   = $values['num_of_shards'];
+        $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
+        $response = $client->indices()->create($index_params);
+        if (elasticsearch_connector_check_response_ack($response)) {
+          drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['index_name'])));
+        }
+        else {
+          drupal_set_message(t('Fail to create the index %index', array('%index' => $values['index_name'])), 'error');
+        }
 
-      // If the form has been opened in dialog, close the window if it was
-      // setup to do so.
-      if (elasticsearch_connector_in_dialog() && elasticsearch_connector_close_on_submit()) {
-        elasticsearch_connector_close_on_redirect($cluster->cluster_id, $values['index_name']);
+        // If the form has been opened in dialog, close the window if it was
+        // setup to do so.
+        if (elasticsearch_connector_in_dialog() && elasticsearch_connector_close_on_submit()) {
+          elasticsearch_connector_close_on_redirect($cluster->cluster_id, $values['index_name']);
+        }
+      }
+      catch (Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
       }
     }
-    catch (Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
+    else {
+      try {
+        $index_params['index'] = $values['index_name'];
+        $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
+        $response = $client->indices()->putSettings($index_params);
+        if (elasticsearch_connector_check_response_ack($response)) {
+          drupal_set_message(t('The index %index has been successfully updated.', array('%index' => $values['index_name'])));
+        }
+        else {
+          drupal_set_message(t('Fail to update the index %index', array('%index' => $values['index_name'])), 'error');
+        }
+
+        // If the form has been opened in dialog, close the window if it was
+        // setup to do so.
+        if (elasticsearch_connector_in_dialog() && elasticsearch_connector_close_on_submit()) {
+          elasticsearch_connector_close_on_redirect($cluster->cluster_id, $values['index_name']);
+        }
+      }
+      catch (Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
     }
   }
 }

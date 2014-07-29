@@ -14,7 +14,11 @@ ul.index-dialog-links a {
   margin: 5px;
 }
 
-ul.index-dialog-links li a {
+ul.index-dialog-links li a.ec-index-dialog-add {
   background: url('../img/plus.png') left no-repeat;
+}
+
+ul.index-dialog-links li a.ec-index-dialog-edit {
+  background: url('../img/edit.png') left no-repeat;
 }
 

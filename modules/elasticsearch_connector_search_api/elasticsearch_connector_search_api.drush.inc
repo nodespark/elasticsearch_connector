@@ -48,7 +48,7 @@ function drush_elasticsearch_connector_search_api_reset_elasticsearch($search_ap
       $affected_indexes[] = $index;
     }
   }
-  
+
   // List Search API indexes this opperation will affect.
   drush_print('The following Search API indexes will be affected:');
   foreach ($affected_indexes as $index) {
@@ -66,12 +66,9 @@ function drush_elasticsearch_connector_search_api_reset_elasticsearch($search_ap
   // Remove the existing indexes.
   foreach ($affected_indexes as $index) {
     try {
-      $index->server()->removeIndex($index);
+      $index->server()->deleteItems('all', $index);
     }
-    catch (Exception $e) {
-      // The removeIndex() method throws an exception when the index does not
-      // exist, but that is ok in this situation.
-    }
+    catch (Exception $e) {}
   }
 
   // Re-create and re-index the indexes.
