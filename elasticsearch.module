@@ -104,7 +104,7 @@ function elasticsearch_menu() {
     'route_name'         => 'elasticsearch.clusterindex_view'
    );
 
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/indices/add'] = array(
+  $items[$settings_path . '/indices/add'] = array(
     'title'              => 'Add index',
     'description'        => 'Add index',
     'route_name'         => 'elasticsearch.clusterindex_add'
@@ -119,7 +119,7 @@ function elasticsearch_menu() {
     'file'               => 'elasticsearch.admin.inc',
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/indices/%elasticsearch_index_valid/delete'] = array(
+  $items[$settings_path . '/indices/%elasticsearch_cluster_index/delete'] = array(
     'title'              => 'Elasticsearch cluster indices',
     'description'        => 'Elasticsearch cluster indices',
     'page callback'      => 'drupal_get_form',

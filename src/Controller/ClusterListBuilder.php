@@ -39,7 +39,6 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
 
   public function __construct(EntityTypeInterface $entity_type, EntityStorageInterface $storage, EntityStorageInterface $index_storage) {
     parent::__construct($entity_type, $storage);
-    //$this->urlGenerator = $url_generator;
     $this->indexStorage = $index_storage;
   }
 
@@ -47,9 +46,6 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   public function load() {
     $clusters = $this->storage->loadMultiple();
     $indices = $this->indexStorage->loadMultiple();
-
-    //$this->sortByStatusThenAlphabetically($indexes);
-    //$this->sortByStatusThenAlphabetically($clusers);
 
     $cluster_groups = array();
     foreach ($clusters as $cluster) {
@@ -71,43 +67,93 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
       return array(
         'type' => $this->t('Type'),
         'title' => $this->t('Name'),
-        'status' => array(
-          'data' => $this->t('Status'),
-          'class' => array('checkbox'),
-        ),
+        'status' => $this->t('Status'),
       ) + parent::buildHeader();
   }
 
   /**
    * {@inheritdoc}
    */
-  public function buildRow(EntityInterface $cluster) {
-    $row['title'] = array(
-      'data' => $this->getLabel($cluster),
-      'class' => array('cluster-label'),
-    );
-    $row['status'] = $cluster->status;
-
-    $cluster_info = Cluster::getClusterInfo($cluster);
-    if (!empty($cluster_info['info']) && Cluster::checkClusterStatus($cluster_info['info'])) {
-      $row['cluster_status'] = $cluster_info['health']['status'];
+  public function buildRow(EntityInterface $entity) {
+    $row = parent::buildRow($entity);
+    $result = array();
+    $status = NULL;
+    if (isset($entity->cluster_id)) {
+      $cluster_info = Cluster::getClusterInfo($entity);
+      if (!empty($cluster_info['info']) && Cluster::checkClusterStatus($cluster_info['info'])) {
+        $status = $cluster_info['health']['status'];
+      }
+      else {
+        $status = t('Not available');
+      }
+      $result = array(
+        'data' => array(
+          'type' => array(
+            'data' => $this->t('Cluster'),
+          ),
+          'title' => array(
+            'data' => array(
+              '#type' => 'link',
+              '#title' => $entity->label(),
+            ) + $entity->urlInfo('info')->toRenderArray(),
+          ),
+          'status' => array(
+            'data' => $status,
+          ),
+          'operations' => $row['operations'],
+        ),
+        'title' => $this->t('Machine name: @name', array('@name' => $entity->id())),
+      );
+    } else if (isset($entity->index_id)) {
+      $result = array(
+        'data' => array(
+          'type' => array(
+            'data' => $this->t('Index'),
+          ),
+          'title' => array(
+            'data' => $entity->label(),
+          ),
+          'status' => array(
+            'data' => '',
+          ),
+          'operations' => $row['operations'],
+        ),
+        'title' => $this->t('Machine name: @name', array('@name' => $entity->id())),
+      );
     }
-    else {
-      $row['cluster_status'] = t('Not available');
-    }
-
-    $row['operations'] = t('<a href="@link0">Info</a> | <a href="@link1">Edit</a> | <a href="@link2">Indices</a> | <a href="@link3">Delete</a>', array(
-      '@link0' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $cluster->cluster_id . '/info'),
-      '@link1' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $cluster->cluster_id . '/edit'),
-      '@link2' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $cluster->cluster_id . '/indices'),
-      '@link3' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/' . $cluster->cluster_id . '/delete'),
-
-    ));
-    return $row + parent::buildRow($cluster);
+    return $result;
   }
 
-  public function getDefaultOperations(EntityInterface $cluster) {
-    $operations = parent::getDefaultOperations($cluster);
+  public function getDefaultOperations(EntityInterface $entity) {
+    $operations = parent::getDefaultOperations($entity);
+
+    if (isset($entity->cluster_id)) {
+      $operations['info'] = array(
+        'title' => $this->t('Info'),
+        'weight' => 20,
+        'route_name' => 'elasticsearch.cluster_info',
+        'route_parameters' => array(
+          'elasticsearch_cluster' => $entity->id(),
+        ),
+      );
+    } elseif (isset($entity->index_id)) {
+      $operations['edit'] = array(
+        'title' => $this->t('Edit'),
+        'weight' => 20,
+        'route_name' => 'elasticsearch.clusterindex_edit',
+        'route_parameters' => array(
+          'elasticsearch_cluster_index' => $entity->id(),
+        ),
+      );
+      $operations['delete'] = array(
+        'title' => $this->t('Delete'),
+        'weight' => 20,
+        'route_name' => 'elasticsearch.clusterindex_delete',
+        'route_parameters' => array(
+          'elasticsearch_cluster_index' => $entity->id(),
+        ),
+      );
+    }
     return $operations;
   }
 
@@ -127,9 +173,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     );
     foreach ($entity_groups as $cluster_group) {
       foreach ($cluster_group as $entity) {
-        if (isset($entity->cluster_id)) {
-          $list['clusters']['#rows'][$entity->cluster_id] = $this->buildRow($entity);
-        }
+        $list['clusters']['#rows'][$entity->id()] = $this->buildRow($entity);
       }
     }
 
