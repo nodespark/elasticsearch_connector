@@ -949,7 +949,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   public function getIndexName(SearchApiIndex $index) {
     global $databases;
     $site_database = $databases['default']['default']['database'];
-    return !empty($index->options['index_name']) ? $index->options['index_name'] : $site_database;
+    return !empty($index->options['index_name']['index']) ? $index->options['index_name']['index'] : $site_database;
   }
 
   /**

@@ -64,3 +64,25 @@ function elasticsearch_connector_search_api_update_7001() {
 
   return t('Updated Search API servers and indexes that use ElasticSearch. You may need to re-export Search API configuration features.');
 }
+
+/**
+ * Update Search API indexes to use the new settings options.
+ */
+function elasticsearch_connector_search_api_update_7002() {
+  if (!function_exists('search_api_server_load_multiple')) {
+    return t('No Search API servers to update.');
+  }
+
+  $indexes = search_api_index_load_multiple(FALSE);
+  foreach ($indexes as $index) {
+    // If the index uses a server with our service class, then the server
+    // configuration needs to be updated.
+    if ($index->server && $index->server()->class == 'search_api_elasticsearch_connector') {
+      // If the server's cluster index name isn't set yet, update it.
+      $index->options['index_name'] = array('index' => $index->options['index_name']);
+      $index->save();
+    }
+  }
+
+  return t('Updated Search API indexes that use ElasticSearch to the new settings format.');
+}

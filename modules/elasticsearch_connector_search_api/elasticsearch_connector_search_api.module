@@ -156,7 +156,19 @@ function elasticsearch_connector_search_api_get_server_id_by_name($server_machin
 function elasticsearch_connector_search_api_return_form_options(&$form, &$form_state, $default_values = array(), $flag) {
   global $databases;
 
-  $cluster_id = $form_state['index']->server()->options['cluster'];
+  if (isset($form_state['index'])) {
+    $server = $form_state['index']->server();
+  }
+  else {
+    $server = search_api_server_load($form_state['values']['server']);
+  }
+
+  if (empty($server)) {
+    watchdog('elasticsearch_connector_search_api', 'System cannot load the server.');
+    return;
+  }
+
+  $cluster_id = $server->options['cluster'];
   if (empty($cluster_id)) {
     $cluster_id = elasticsearch_connector_get_default_connector();
   }
@@ -166,7 +178,7 @@ function elasticsearch_connector_search_api_return_form_options(&$form, &$form_s
     '#title' => t('Select cluster'),
     '#required' => TRUE,
     '#cluster_id' => $cluster_id,
-    '#default_value' => isset($default_values['index_name']) ? array('cluster_id' => $cluster_id, 'index' => $default_values['index_name']) : array(),
+    '#default_value' => isset($default_values['index_name']['index']) ? $default_values['index_name'] : array(),
   );
 
   $form['options']['collect_index_statistics'] = array(
@@ -374,7 +386,7 @@ function elasticsearch_connector_search_api_elasticsearch_connector_edit_lock($t
   elseif ('index' == $type) {
     $indexes = search_api_index_load_multiple(FALSE);
     foreach($indexes as $id => $search_api_index) {
-      if (!empty($search_api_index->options['index_name']) && $search_api_index->options['index_name'] == $index) {
+      if (!empty($search_api_index->options['index_name']['index']) && $search_api_index->options['index_name']['index'] == $index) {
         return TRUE;
       }
     }

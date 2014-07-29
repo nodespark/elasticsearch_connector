@@ -32,7 +32,7 @@ function drush_elasticsearch_connector_search_api_reset_elasticsearch($search_ap
     return drush_set_error('elasticsearch_connector_search_api', t("Search API index '@index_name' not found.", array('@index_name' => $search_api_index_name)));
   }
 
-  $es_index = $index->options['index_name'];
+  $es_index = $index->options['index_name']['index'];
 
   // Find the affected Search API indexes.
   $all_indexes = search_api_index_load_multiple(FALSE, array('enabled' => TRUE));
@@ -44,7 +44,7 @@ function drush_elasticsearch_connector_search_api_reset_elasticsearch($search_ap
     }
 
     $server = $index->server();
-    if ($server->class == 'search_api_elasticsearch_connector' && $index->options['index_name'] == $es_index) {
+    if ($server->class == 'search_api_elasticsearch_connector' && $index->options['index_name']['index'] == $es_index) {
       $affected_indexes[] = $index;
     }
   }
