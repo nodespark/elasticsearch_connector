@@ -13,6 +13,8 @@ function elasticsearch_connector_search_api_drush_command() {
     'description' => dt('Drop and re-create a Search API Elasticsearch index.'),
     'arguments' => array(
       'index' => 'The name of the Search API index whose Elasticsearch index to re-create.',
+      'number_of_shards'    => 'The new number of shards the elasticsearch index should have.',
+      'number_of_replicas'  => 'The new number of replica the elasticsearch index should have.',
     ),
     'required-arguments' => TRUE,
     'options' => array(
@@ -25,11 +27,19 @@ function elasticsearch_connector_search_api_drush_command() {
 /**
  * Callback for the reset-elasticsearch drush command.
  */
-function drush_elasticsearch_connector_search_api_reset_elasticsearch($search_api_index_name) {
+function drush_elasticsearch_connector_search_api_reset_elasticsearch($search_api_index_name, $number_of_shards, $number_of_replicas = 0) {
   // Load the Search API index.
   $index = search_api_index_load($search_api_index_name);
   if (!$index || $index->server()->class != 'search_api_elasticsearch_connector') {
     return drush_set_error('elasticsearch_connector_search_api', t("Search API index '@index_name' not found.", array('@index_name' => $search_api_index_name)));
+  }
+
+  if (!is_int($number_of_shards) || $number_of_shards < 1) {
+    return drush_set_error('elasticsearch_connector_search_api', t("Invalid number of shards. The params should be integer and bigger than or equal to 1."));
+  }
+
+  if (!is_int($number_of_replicas) || $number_of_replicas < 0) {
+    return drush_set_error('elasticsearch_connector_search_api', t("Invalid number of replica. The params should be integer and bigger than or equal to 0."));
   }
 
   $es_index = $index->options['index_name']['index'];
@@ -66,7 +76,7 @@ function drush_elasticsearch_connector_search_api_reset_elasticsearch($search_ap
   // Remove the existing indexes.
   foreach ($affected_indexes as $index) {
     try {
-      $index->server()->deleteItems('all', $index);
+      $index->server()->removeIndex($index);
     }
     catch (Exception $e) {}
   }
@@ -74,6 +84,8 @@ function drush_elasticsearch_connector_search_api_reset_elasticsearch($search_ap
   // Re-create and re-index the indexes.
   foreach ($affected_indexes as $index) {
     try {
+      $index->force_create['number_of_shards'] = $number_of_shards;
+      $index->force_create['number_of_replicas'] = $number_of_replicas;
       $index->server()->addIndex($index);
       $index->reindex();
       drush_log(dt('Re-initialized Search API index @name (@machine_name)', array(
