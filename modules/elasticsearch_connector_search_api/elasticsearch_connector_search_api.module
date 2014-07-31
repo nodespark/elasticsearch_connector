@@ -35,6 +35,20 @@ function elasticsearch_connector_search_api_search_api_service_info() {
 }
 
 /**
+ * Implements hook_search_api_processor_info().
+ */
+function elasticsearch_connector_search_api_search_api_processor_info() {
+  $processors['search_api_elasticsearch_highlighting'] = array(
+    'name' => t('Elasticsearch Highlighting'),
+    'description' => t('Adds highlighting for search results for Elasticsearch server. This will throw error if the server your are using is not'),
+    'class' => 'ElasticsearchConnectorSearchApiHighlight',
+    'weight' => 35,
+  );
+
+  return $processors;
+}
+
+/**
  * Implements hook_form_alter().
  */
 function elasticsearch_connector_search_api_form_alter(&$form, &$form_state, $form_id) {
@@ -71,9 +85,11 @@ function elasticsearch_connector_search_api_form_alter(&$form, &$form_state, $fo
     // Remove all processors from the form for this server.
     if (elasticsearch_connector_search_api_elasticsearch_server_enabled($form_state['index']->server)) {
       foreach (element_children($form['processors']['status']) as $key) {
-        $form['processors']['status'][$key]['#default'] = 0;
-        $form['processors']['status'][$key]['#value'] = 0;
-        $form['processors']['status'][$key]['#disabled'] = TRUE;
+        if (strpos($key, 'search_api_elasticsearch') === FALSE) {
+          $form['processors']['status'][$key]['#default'] = 0;
+          $form['processors']['status'][$key]['#value'] = 0;
+          $form['processors']['status'][$key]['#disabled'] = TRUE;
+        }
       }
     }
   }
@@ -225,7 +241,9 @@ function elasticsearch_connector_search_api_entity_presave($entity, $entity_type
     if (!empty($server) && $server->class == 'search_api_elasticsearch_connector') {
       if (!empty($entity->options['processors'])) {
         foreach($entity->options['processors'] as $proc_key => $proc_options) {
-          $entity->options['processors'][$proc_key]['status'] = 0;
+          if (strpos($proc_key, 'search_api_elasticsearch') === FALSE) {
+            $entity->options['processors'][$proc_key]['status'] = 0;
+          }
         }
       }
     }
@@ -267,6 +285,7 @@ function elasticsearch_connector_search_api_module_implements_alter(&$implementa
  * user.
  */
 function elasticsearch_connector_search_api_form_search_api_page_search_form_alter(array &$form, array &$form_state) {
+
   if (module_exists('search_api_autocomplete')) {
     if (isset($form['form'])) {
       $form = &$form['form'];

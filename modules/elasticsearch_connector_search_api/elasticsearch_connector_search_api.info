@@ -9,3 +9,4 @@ dependencies[] = search_api
 files[] = service.inc
 files[] = includes/spellcheck.inc
 files[] = includes/elasticsearch_stats.inc
+files[] = includes/processor_highlight.inc

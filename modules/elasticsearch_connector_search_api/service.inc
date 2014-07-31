@@ -563,6 +563,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     // Add facets.
     $this->addSearchFacets($params, $query);
 
+    $this->buildAdditionalProcessorQuery($params, $query);
+
     // Alter the query and params.
     drupal_alter('elasticsearch_connector_search_api_query', $query, $params);
 
@@ -587,6 +589,20 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
 
     return $results;
+  }
+
+  /**
+   * Adding all additional parameters to the search comming from processors.
+   * @param array $params
+   * @param SearchApiQueryInterface $query
+   */
+  protected function buildAdditionalProcessorQuery(&$params, SearchApiQueryInterface $query) {
+    $elasticsearch_processors_params = $query->getOption('elasticsearch_processors_params', array());
+    if (!empty($elasticsearch_processors_params)) {
+      foreach ($elasticsearch_processors_params as $body_key => $body_value) {
+        $params['body'][$body_key] = $body_value;
+      }
+    }
   }
 
   /**
@@ -1685,6 +1701,12 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           'score' => $result['_score'],
           'fields' => $result['_source'],
         );
+
+        foreach ($result as $key => $value) {
+          if (!in_array($key, array('_id', '_score', '_source'))) {
+            $search_result['results'][$id][$key] = $value;
+          }
+        }
       }
     }
 
@@ -1766,14 +1788,14 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $incomp = drupal_strtolower($incomplete_key);
 
     $index = $query->getIndex();
-    $index_fields = $this->getIndexFields($query);
-
     $complete = $query->getOriginalKeys();
     $query->keys($user_input);
 
     try {
       // TODO: Making autocomplete to work as autocomplete instead of exact string match.
       $response = $this->search($query, TRUE);
+      // Postprocess the search results.
+      $query->postExecute($response);
     }
     catch (Exception $e) {
       watchdog('Elasticsearch Search API', check_plain($e->getMessage()), array(), WATCHDOG_ERROR);
@@ -1782,9 +1804,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     $matches = array();
     if (isset($response['results'])) {
+      $label_field = $index->datasource()->getMetadataWrapper()->entityKey('label');
       $items = $index->loadItems(array_keys($response['results']));
       foreach ($items as $id => $item) {
-        $item_title = $index->datasource()->getItemLabel($item);
+        $item_title = isset($response['results'][$id]['fields'][$label_field]) ? $response['results'][$id]['fields'][$label_field] : $index->datasource()->getItemLabel($item);
         $url_item = $index->datasource()->getItemUrl($item);
         if (!empty($search->options['custom']['link_suggestions'])) {
           $matches[$item_title] = array(
