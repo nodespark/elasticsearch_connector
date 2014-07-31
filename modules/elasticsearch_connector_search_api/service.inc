@@ -1828,10 +1828,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           }
         }
 
-        // The $count in this array is actually a score. We want the
-        // highest ones first.
-        arsort($matches);
-
         // Shorten the array to the right ones.
         $additional_matches = array_slice($matches, $limit - count($suggestions), NULL, TRUE);
         $matches = array_slice($matches, 0, $limit, TRUE);
