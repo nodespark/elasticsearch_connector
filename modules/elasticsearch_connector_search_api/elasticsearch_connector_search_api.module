@@ -49,6 +49,21 @@ function elasticsearch_connector_search_api_search_api_processor_info() {
 }
 
 /**
+ * Implements hook_search_api_autocomplete_suggestions_alter().
+ */
+function elasticsearch_connector_search_api_search_api_autocomplete_suggestions_alter(&$ret, &$alter_params) {
+  // Change the key of the autocomplete.
+  $new_ret = array();
+  foreach ($ret as $key => $suggestion) {
+    if (isset($suggestion['key'])) {
+      $new_ret[$suggestion['key']] = $ret[$key];
+    }
+  }
+
+  $ret = $new_ret;
+}
+
+/**
  * Implements hook_form_alter().
  */
 function elasticsearch_connector_search_api_form_alter(&$form, &$form_state, $form_id) {
@@ -285,27 +300,26 @@ function elasticsearch_connector_search_api_module_implements_alter(&$implementa
  * user.
  */
 function elasticsearch_connector_search_api_form_search_api_page_search_form_alter(array &$form, array &$form_state) {
-
   if (module_exists('search_api_autocomplete')) {
     if (isset($form['form'])) {
       $form = &$form['form'];
     }
-    $id = 'search_api_page_' . $form['id']['#value'];
-    $search = search_api_autocomplete_search_load($id);
-    if ($search && $search->enabled) {
-      $include_js = FALSE;
-      $search->alterElement($form['keys_' . $form['id']['#value']]);
-      if (!empty($search->options['custom']['link_suggestions'])) {
-        $form['keys_' . $form['id']['#value']]['#attributes'] = array(
-          'class' => array('elasticsearch-autocomplete')
-        );
-        $include_js = TRUE;
-      }
 
-      if ($include_js) {
-        $form['#attached']['js'][] =
-          drupal_get_path('module', 'elasticsearch_connector_search_api') . '/js/elasticsearch_connector_search_api_autocomplete.js';
-      }
+    $id = 'search_api_page_' . $form_state['build_info']['args'][0]->machine_name;
+    $search = search_api_autocomplete_search_load($id);
+
+    if (!$search || !search_api_autocomplete_access($search)) {
+      return;
+    }
+
+    $search->alterElement($form['keys_' . $form['id']['#value']]);
+    if (!empty($search->options['custom']['link_suggestions'])) {
+      $form['keys_' . $form['id']['#value']]['#attached']['js'][] =
+        drupal_get_path('module', 'elasticsearch_connector_search_api') . '/js/elasticsearch_connector_search_api_autocomplete.js';
+
+      $form['keys_' . $form['id']['#value']]['#attributes'] = array(
+        'class' => array('elasticsearch-autocomplete')
+      );
     }
   }
 }
@@ -318,14 +332,13 @@ function elasticsearch_connector_search_api_form_search_api_page_search_form_alt
  */
 function elasticsearch_connector_search_api_form_views_exposed_form_alter(array &$form, array &$form_state) {
   if (module_exists('search_api_autocomplete')) {
-
     $view = $form_state['view'];
     if (substr($view->base_table, 0, 17) != 'search_api_index_') {
       return;
     }
     $search_id = 'search_api_views_' . $view->name;
     $search = search_api_autocomplete_search_load($search_id);
-    if (empty($search->enabled)) {
+    if (!$search || !search_api_autocomplete_access($search)) {
       return;
     }
     $index_id = substr($view->base_table, 17);
@@ -333,32 +346,31 @@ function elasticsearch_connector_search_api_form_views_exposed_form_alter(array 
     if (empty($index->options['fields'])) {
       return;
     }
-    $fields = $index->getFulltextFields(FALSE);
+    $fields = $index->getFulltextFields(TRUE);
     // Add the "Search: Fulltext search" filter as another text field.
     $fields[] = 'search_api_views_fulltext';
     // We need the _entity_views_field_identifier() function to translate Search
     // API field names into Views identifiers.
     module_load_include('views.inc', 'entity', 'views/entity');
-    $include_js = FALSE;
-    foreach ($fields as $field) {
-      $field = _entity_views_field_identifier($field, array());
+    foreach ($fields as $search_field) {
+      $field = _entity_views_field_identifier($search_field, array());
       if (!empty($view->filter[$field]->options['expose']['identifier'])) {
         $key = $view->filter[$field]->options['expose']['identifier'];
         if (isset($form[$key]) && $form[$key]['#type'] == 'textfield') {
-          $search->alterElement($form[$key]);
+          if ($field == 'search_api_views_fulltext') {
+            $fields = $view->filter[$field]->options['fields'];
+          }
+          else {
+            $fields = array($search_field);
+          }
+          $search->alterElement($form[$key], $fields);
           if (!empty($search->options['custom']['link_suggestions'])) {
-            $form[$key]['#attributes'] = array(
-              'class' => array('elasticsearch-autocomplete')
-            );
-            $include_js = TRUE;
+            $form[$key]['#attributes']['class'] = array('elasticsearch-autocomplete');
+            $form[$key]['#attached']['js'][] =
+              drupal_get_path('module', 'elasticsearch_connector_search_api') . '/js/elasticsearch_connector_search_api_autocomplete.js';
           }
         }
       }
-    }
-
-    if ($include_js) {
-      $form['#attached']['js'][] =
-        drupal_get_path('module', 'elasticsearch_connector_search_api') . '/js/elasticsearch_connector_search_api_autocomplete.js';
     }
   }
 }

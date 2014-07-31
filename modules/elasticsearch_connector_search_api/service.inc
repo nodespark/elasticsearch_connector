@@ -1811,36 +1811,22 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         $url_item = $index->datasource()->getItemUrl($item);
         if (!empty($search->options['custom']['link_suggestions'])) {
           $matches[$item_title] = array(
+            'key' => $index->datasource()->getItemLabel($item),
             'user_input' => '',
             'suggestion_suffix' => l($item_title, $url_item['path'], array('html' => TRUE)),
           );
         }
         else {
-          $matches[$item_title] = $item_title;
+          $matches[$item_title] = array(
+            'key' => $index->datasource()->getItemLabel($item),
+            'user_input' => '',
+            'suggestion_suffix' => $item_title,
+          );
         }
       }
 
-      if ($matches) {
-        // Eliminate suggestions that are too short or already in the query.
-        foreach ($matches as $name => $item_title) {
-          if (drupal_strlen($name) < 3 || isset($keys_array[$name])) {
-            unset($matches[$name]);
-          }
-        }
-
-        // Shorten the array to the right ones.
-        $additional_matches = array_slice($matches, $limit - count($suggestions), NULL, TRUE);
-        $matches = array_slice($matches, 0, $limit, TRUE);
-
-        foreach ($matches as $node => $name) {
-          $suggestions[] = $name;
-        }
-      }
-      $keys = trim($keys . ' ' . $incomplete_key);
-      return $suggestions;
+      return $matches;
     }
   }
-
-  // TODO: Implement the settings update feature.
 
 }
