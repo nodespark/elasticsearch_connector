@@ -209,7 +209,7 @@ function elasticsearch_connector_info_cluster($cluster) {
         array('data' => $cluster_status['health']['active_shards'] + $cluster_status['health']['unassigned_shards']
               . '<br/>' . t('Total Shards')),
         array('data' => $cluster_status['health']['active_shards'] . '<br/>' . t('Successful Shards')),
-        array('data' => count($cluster_status['state']['metadata']['indices']) . '<br/>' . t('Indices')),
+        array('data' => (isset($cluster_status['state']['metadata']['indices']) ? count($cluster_status['state']['metadata']['indices']) : 0) . '<br/>' . t('Indices')),
         array('data' => $total_docs . '<br/>' . t('Total Documents')),
         array('data' => format_size($total_size) . '<br/>' . t('Total Size')),
       )
