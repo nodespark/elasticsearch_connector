@@ -498,7 +498,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     foreach ($ids as $id) {
       $params['body'][] = array(
         'delete' => array(
-          '_index'  => $params['index'],
           '_type'   => $params['type'],
           '_id'     => $id,
         )

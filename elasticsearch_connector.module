@@ -4,6 +4,8 @@
  * This module provide an interface to connecting to the elasticsearch
  * cluster and implementing the Elastica library.
  *
+ * TODO: There must be a default connection. WelinCluster is still the default connection. Please change the default setting on the cluster you wish to set as default.
+ *
  * Created on Dec 21, 2013
  */
 
@@ -796,6 +798,12 @@ function elasticsearch_connector_load_library($cluster) {
         )
       );
 
+      if (!empty($cluster->options['use_authentication'])) {
+        $options['connectionParams'] = array(
+          'auth'    => array($cluster->options['username'], $cluster->options['password'], $cluster->options['authentication_type']),
+        );
+      }
+
       drupal_alter('elasticsearch_connector_load_library_options', $options, $cluster);
 
       try {
@@ -805,6 +813,7 @@ function elasticsearch_connector_load_library($cluster) {
           // has not been invoked.
           composer_manager_register_autoloader();
         }
+
         $clients[$cluster->cluster_id] = new \Elasticsearch\Client($options);
       }
       catch (Exception $e) {
@@ -848,9 +857,15 @@ function elasticsearch_connector_check_response_ack($response) {
  * Return cluster info.
  * @param object
  *    $cluster - The cluster object.
+ * @param boolean
+ *    $enable_messages - Set error message if the get status function throw exception.
  * @return return array
+ *    Return the info for the cluster:
+ *      'info'
+ *      'state'
+ *      'health'
  */
-function elasticsearch_connector_get_cluster_info($cluster) {
+function elasticsearch_connector_get_cluster_info($cluster, $enable_messages = FALSE) {
   $result = FALSE;
   $client = elasticsearch_connector_load_library($cluster);
   if (!empty($client)) {
@@ -866,7 +881,9 @@ function elasticsearch_connector_get_cluster_info($cluster) {
       }
     }
     catch (Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      if ($enable_messages) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
     }
   }
 

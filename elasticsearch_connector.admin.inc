@@ -320,10 +320,12 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#type' => 'textfield',
     '#title' => t('Server URL'),
     '#default_value' => !empty($cluster->url) ? $cluster->url : '',
-    '#description' => t('Enter the URL of a node in the cluster. ' .
-        'All nodes will be automatically discover. ' .
-        'Example: http://localhost:9200'),
+    '#description' => t('Enter the URL of a node in the cluster.'
+       . ' Example: http://localhost:9200.'
+       . ' <a class="free-hosting" href="#hosting-iframe-container">Don\'t have installed server? Get a hosted solution with free 3 month trial!</a>'
+    ),
     '#required' => TRUE,
+    //'#limit_validation_errors' => array(array('url')),
     '#ajax' => array(
       'method' => 'replace',
       'callback' => 'elasticsearch_connector_edit_cluster_ajax',
@@ -368,16 +370,6 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#default_value' => (!empty($cluster->options['multiple_nodes_connection']) ? 1 : 0),
   );
 
-  $form['options']['timeout'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Connection timeout'),
-    '#size'  => 20,
-    '#required' => TRUE,
-    '#element_validate' => array('element_validate_number'),
-    '#description' => t('Set the connection timeout in seconds.'),
-    '#default_value' => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT),
-  );
-
   $form['status'] = array(
     '#type' => 'radios',
     '#title' => t('Status'),
@@ -389,6 +381,83 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#required' => TRUE,
   );
 
+  $form['options']['use_authentication'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use authentication'),
+    '#description' => t('Use HTTP authentication method to connect to Elasticsearch.'),
+    '#default_value' => (!empty($cluster->options['use_authentication']) ? 1 : 0),
+    '#suffix' => '<div id="hosting-iframe-container">&nbsp;</div>',
+  );
+
+  $form['options']['authentication_type'] = array(
+    '#type' => 'radios',
+    '#title' => t('Authentication type'),
+    '#description' => t('Select the http authentication type.'),
+    '#options'  => array(
+      'Digest' => t('Digest'),
+      'Basic'  => t('Basic'),
+      'NTLM'   => t('NTLM')
+    ),
+    '#default_value' => (!empty($cluster->options['authentication_type']) ? $cluster->options['authentication_type'] : 'Digest'),
+    '#states' => array (
+      'visible' => array(
+        ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
+      ),
+    ),
+    '#ajax' => array(
+      'method' => 'replace',
+      'callback' => 'elasticsearch_connector_edit_cluster_ajax',
+      'effect' => 'fade',
+      'event'  => 'blur'
+    ),
+  );
+
+  $form['options']['username'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Username'),
+    '#description' => t('The username for the authentication.'),
+    '#default_value' => (!empty($cluster->options['username']) ? $cluster->options['username'] : ''),
+    '#states' => array (
+      'visible' => array(
+        ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
+      ),
+    ),
+    '#ajax' => array(
+      'method' => 'replace',
+      'callback' => 'elasticsearch_connector_edit_cluster_ajax',
+      'effect' => 'fade',
+      'event'  => 'blur'
+    ),
+  );
+
+  $form['options']['password'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Password'),
+    '#description' => t('The password for the authentication.'),
+    '#default_value' => (!empty($cluster->options['password']) ? $cluster->options['password'] : ''),
+    '#states' => array (
+      'visible' => array(
+        ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
+      ),
+    ),
+    '#ajax' => array(
+      'method' => 'replace',
+      'callback' => 'elasticsearch_connector_edit_cluster_ajax',
+      'effect' => 'fade',
+      'event'  => 'blur'
+    ),
+  );
+
+  $form['options']['timeout'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Connection timeout'),
+    '#size'  => 20,
+    '#required' => TRUE,
+    '#element_validate' => array('element_validate_number'),
+    '#description' => t('Set the connection timeout in seconds.'),
+    '#default_value' => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT),
+  );
+
   $form['actions'] = array(
     '#type' => 'actions',
   );
@@ -398,6 +467,24 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#validate' => array('elasticsearch_connector_edit_cluster_validate'),
     '#submit' => array('elasticsearch_connector_edit_cluster_submit'),
     '#value' => t('Save')
+  );
+
+  $js_settings['hosting_domain'] = variable_get('hosting_domain', 'https://utilis.io');
+  $js_settings['hosting_url'] = url(variable_get('hosting_url', 'https://utilis.io/user/register'), array(
+    'query' => array(
+      'iframe' => TRUE,
+      'time'  => time(),
+      'iframe-source' => url('<front>', array('absolute' => TRUE))
+    )
+  ));
+
+  $form['#attached']['js'] = array(
+    drupal_get_path('module', 'elasticsearch_connector') . '/js/postmessage/jquery.ba-postmessage.min.js',
+    drupal_get_path('module', 'elasticsearch_connector') . '/js/elasticsearch_connector_admin.js',
+    array(
+      'data' => array('elasticsearch_connector' => $js_settings),
+      'type' => 'setting'
+    ),
   );
 
   return $form;
