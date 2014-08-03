@@ -34,60 +34,66 @@ function elasticsearch_connector_views_views_data() {
 
   foreach (elasticsearch_connector_clusters(FALSE) as $cluster) {
     $info = elasticsearch_connector_get_cluster_info($cluster);
-    if (!empty($info['client'])) {
-      $elastic_client = $info['client'];
-      $indices = (array)$info['state']['metadata']['indices'];
-      foreach ($indices as $index_name => $index_info) {
-        // In elasticsearch the table is actually the document type.
-        // So get all types and build data array.
-        $mapping = $elastic_client->indices()->getMapping(array('index' => $index_name));
-        if (!empty($mapping[$index_name]['mappings'])) {
-          foreach ($mapping[$index_name]['mappings'] as $type_name => $type_settings) {
-            $name = format_string('@cluster (@index_name:@type)', array('@cluster' => $cluster->name, '@index_name' => $index_name, '@type' => $type_name));
-            $base_table = 'elsv__' . $cluster->cluster_id . '__' . $index_name . '__' . $type_name;
+    $elastic_client = $info['client'];
+    if ($elastic_client && !empty($info['info']) && elasticsearch_connector_check_status($info['info'])) {
+      $indices = $elastic_client->indices()->stats();
+      if (!empty($indices['indices'])) {
+        foreach ($indices['indices'] as $index_name => $index_info) {
+          // In elasticsearch the table is actually the document type.
+          // So get all types and build data array.
+          $mapping = $elastic_client->indices()->getMapping(array('index' => $index_name));
+          if (!empty($mapping[$index_name]['mappings'])) {
+            foreach ($mapping[$index_name]['mappings'] as $type_name => $type_settings) {
+              $name = format_string('@cluster (@index_name:@type)', array('@cluster' => $cluster->name, '@index_name' => $index_name, '@type' => $type_name));
+              $base_table = 'elsv__' . $cluster->cluster_id . '__' . $index_name . '__' . $type_name;
 
-            $data[$base_table]['table']['group'] = t('Elasticsearch Connector');
-            $data[$base_table]['table']['base'] = array(
-              'query class' => 'elasticsearch_connector_views_query',
-              'title' => t('Cluster !name', array('!name' => $name)),
-              'help' => t('Searches the site with the Elasticsearch search engine for !name', array('!name' => $name)),
-            );
+              $data[$base_table]['table']['group'] = t('Elasticsearch Connector');
+              $data[$base_table]['table']['base'] = array(
+                'query class' => 'elasticsearch_connector_views_query',
+                'title' => t('Cluster !name', array('!name' => $name)),
+                'help' => t('Searches the site with the Elasticsearch search engine for !name', array('!name' => $name)),
+              );
 
-            // Get the list of the fields in index directly from Solr.
-            $fields = _elasticsearch_connector_views_handle_fields($base_table, $data, $type_settings['properties']);
+              // Get the list of the fields in index directly from Solr.
+              if (!empty($type_settings['properties'])) {
+                $fields = _elasticsearch_connector_views_handle_fields($base_table, $data, $type_settings['properties']);
+              }
 
-            // Keyword field.
-            $data[$base_table]['keyword'] = array(
-              'title' => t('Search'),
-              'help' => t('Fulltext search'),
-              'filter' => array(
-                'handler' => 'elasticsearch_connector_views_keyword_handler_filter',
-              ),
-            );
+              // Keyword field.
+              $data[$base_table]['keyword'] = array(
+                'title' => t('Search'),
+                'help' => t('Fulltext search'),
+                'filter' => array(
+                  'handler' => 'elasticsearch_connector_views_keyword_handler_filter',
+                ),
+              );
 
-            // Snippet field.
-            $data[$base_table]['snippet'] = array(
-              'title' => t('Snippet'),
-              'help' => t('Search snippet'),
-              'field' => array(
-                'handler' => 'elasticsearch_connector_views_snippet_handler_field',
-                'click sortable' => TRUE,
-              ),
-            );
+              // Snippet field.
+              $data[$base_table]['snippet'] = array(
+                'title' => t('Snippet'),
+                'help' => t('Search snippet'),
+                'field' => array(
+                  'handler' => 'elasticsearch_connector_views_snippet_handler_field',
+                  'click sortable' => TRUE,
+                ),
+              );
 
-            // Score field.
-            $data[$base_table]['score'] = array(
-              'title' => t('Score'),
-              'help' => t('Score'),
-              'field' => array(
-                'handler' => 'elasticsearch_connector_views_handler_field',
-                'click sortable' => TRUE,
-              ),
-            );
+              // Score field.
+              $data[$base_table]['score'] = array(
+                'title' => t('Score'),
+                'help' => t('Score'),
+                'field' => array(
+                  'handler' => 'elasticsearch_connector_views_handler_field',
+                  'click sortable' => TRUE,
+                ),
+              );
+            }
+
           }
-
         }
+
       }
+
     }
   }
 
@@ -118,7 +124,9 @@ function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fiel
       $set = TRUE;
       switch ($field_type) {
         case 'object':
-          _elasticsearch_connector_views_handle_fields($base_table, $data, $field['properties'], $base_field_name . $field_name . '.');
+          if (!empty($field['properties'])) {
+            _elasticsearch_connector_views_handle_fields($base_table, $data, $field['properties'], $base_field_name . $field_name . '.');
+          }
           $set = FALSE;
           break;
         case 'date':
