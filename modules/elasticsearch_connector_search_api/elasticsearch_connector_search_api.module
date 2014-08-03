@@ -187,7 +187,7 @@ function elasticsearch_connector_search_api_get_server_id_by_name($server_machin
 function elasticsearch_connector_search_api_return_form_options(&$form, &$form_state, $default_values = array(), $flag) {
   global $databases;
 
-  if (isset($form_state['index'])) {
+  if (!isset($form_state['values'])) {
     $server = $form_state['index']->server();
   }
   else {
