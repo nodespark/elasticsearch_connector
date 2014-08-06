@@ -2,9 +2,9 @@
 /**
  * @file
  * This module provide an interface to connecting to the elasticsearch
- * cluster and implementing the Elastica library.
+ * cluster and implementing the official Elasticsearch library.
  *
- * TODO: There must be a default connection. WelinCluster is still the default connection. Please change the default setting on the cluster you wish to set as default.
+ * TODO: There must be a default connection. Cluster is still the default connection. Please change the default setting on the cluster you wish to set as default.
  *
  * Created on Dec 21, 2013
  */
@@ -22,7 +22,8 @@ function elasticsearch_connector_help($path, $arg) {
     case 'admin/help#elasticsearch_connector':
       return '<p>' . t('Abstraction of making connection to the elasticsearch
         server. This module is API for a whole bunch of functionality connected
-        with this module."') . '</p>';
+        with this module. If you don\'t have installed server, you can use the Utilis.io hosted solution.
+        Checkout this video tutorial:') . '<br/><br/><iframe width="100%" height="400" frameborder="0" src="//www.youtube.com/embed/rOCU6qlLRPI"></iframe></p>';
   }
 }
 
