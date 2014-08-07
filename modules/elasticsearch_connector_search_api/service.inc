@@ -48,6 +48,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   const FILTER_TYPE   = 'filter';
   const QUERY_TYPE    = 'query';
 
+  const AUTOCOMPLETE_OPTION = 'AutocompleteSuggestions';
+
   /**
    * Overrides __construct().
    */
@@ -553,6 +555,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     // Check elasticsearch index.
     if (!$this->checkClient()) {
       return $search_result;
+    }
+
+    if ($suggestions) {
+      $query->setOption(self::AUTOCOMPLETE_OPTION, TRUE);
     }
     $query->setOption('ElasticParams', $params);
 
@@ -1288,6 +1294,40 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   /**
    *
    * @param SearchApiQueryInterface $query
+   * @param array $index_fields
+   * @return array
+   *  The query to be used in final query structure.
+   */
+  protected function handlePrefixQuery(SearchApiQueryInterface $query, $index_fields) {
+    $originalKeys = $query->getOriginalKeys();
+    $prefix_query = array();
+
+    if (!empty($originalKeys)) {
+      $query_full_text_fields = $query->getFields();
+      foreach ($query_full_text_fields as $fulltext_field) {
+        $boost = isset($index_fields[$fulltext_field]['boost']) ? '^' . $index_fields[$fulltext_field]['boost'] : '';
+        $field_values = array('prefix' => strtolower($originalKeys));
+        if (isset($index_fields[$fulltext_field]['boost'])) {
+          $field_values['boost'] = $index_fields[$fulltext_field]['boost'];
+        }
+
+        $prefix_query[] = array(
+          'prefix' => array(
+            $fulltext_field => $field_values
+          )
+        );
+      }
+    }
+    return $prefix_query;
+  }
+
+  /**
+   * Handle the multy match query.
+   *
+   * @param SearchApiQueryInterface $query
+   * @param array $index_fields
+   * @return array
+   *  The query to be used in final query structure.
    */
   protected function handleMultyMatchQuery(SearchApiQueryInterface $query, $index_fields) {
     $originalKeys = $query->getOriginalKeys();
@@ -1382,7 +1422,17 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
 
     $multyMatch = $this->handleMultyMatchQuery($query, $index_fields);
+    // If autocomplete try using also the prefix query.
+    $prefixMatch = array();
+    if ($query->getOption(self::AUTOCOMPLETE_OPTION, FALSE)) {
+      $prefixMatch = $this->handlePrefixQuery($query, $index_fields);
+    }
+
     if (!empty($multyMatch) && $this->isWildcardQuery($query)) {
+      $bool_query['bool']['should'][] = $multyMatch;
+    }
+    elseif (!empty($multyMatch) && !$this->isWildcardQuery($query) && !empty($prefixMatch)) {
+      $bool_query['bool']['should'][] = $prefixMatch;
       $bool_query['bool']['should'][] = $multyMatch;
     }
     elseif (!empty($multyMatch) && !$this->isWildcardQuery($query)) {
