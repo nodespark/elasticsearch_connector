@@ -6,6 +6,7 @@ use Drupal\Core\Entity\EntityForm;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Entity\Entity;
 use Drupal\elasticsearch\Entity\Cluster;
@@ -18,7 +19,7 @@ class ClusterForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
     if (!empty($form_state['rebuild'])) {
       // Rebuild the entity with the form state values.
       $this->entity = $this->buildEntity($form, $form_state);
@@ -39,7 +40,7 @@ class ClusterForm extends EntityForm {
     return $form;
   }
 
-  public function buildEntityForm(array &$form, array &$form_state, ConfigEntityInterface $cluster) {
+  public function buildEntityForm(array &$form, FormStateInterface $form_state, ConfigEntityInterface $cluster) {
     $form['cluster'] = array(
       '#type'  => 'value',
       '#value' => $cluster,
@@ -132,7 +133,7 @@ class ClusterForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function validate(array $form, array &$form_state) {
+  public function validate(array $form, FormStateInterface $form_state) {
     // TODO: Handle the validation of the elements.
     parent::validate($form, $form_state);
 
@@ -214,7 +215,7 @@ class ClusterForm extends EntityForm {
     return $element;
   }
 
-  public function save(array $form, array &$form_state) {
+  public function save(array $form, FormStateInterface $form_state) {
     $cluster = $this->entity;
     
     $status = $cluster->save();

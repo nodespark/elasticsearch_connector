@@ -12,6 +12,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\Entity;
@@ -74,7 +75,7 @@ class IndexForm extends EntityForm {
   }
 
 
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
     if (!empty($form_state['rebuild'])) {
       // Rebuild the entity with the form state values.
       $this->entity = $this->buildEntity($form, $form_state);
@@ -95,7 +96,7 @@ class IndexForm extends EntityForm {
     return $form;
   }
 
-  public function buildEntityForm(array &$form, array &$form_state, ConfigEntityInterface $index) {
+  public function buildEntityForm(array &$form, FormStateInterface $form_state, ConfigEntityInterface $index) {
     $form['index'] = array(
       '#type'  => 'value',
       '#value' => $index,
@@ -154,7 +155,7 @@ class IndexForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function validate(array $form, array &$form_state) {
+  public function validate(array $form, FormStateInterface $form_state) {
     parent::validate($form, $form_state);
 
     if (!preg_match('/^[a-z][a-z0-9_]*$/i', $form_state['values']['name'])) {
@@ -170,7 +171,7 @@ class IndexForm extends EntityForm {
     }
   }
 
-public function submit(array $form, array &$form_state) {
+public function submit(array $form, FormStateInterface $form_state) {
   $values = $form_state['values'];
 
   //@TODO Temporary. To be removed by calling Cluster::getClusterById()
@@ -199,7 +200,7 @@ public function submit(array $form, array &$form_state) {
 }
 
   // @TODO
-  public function save(array $form, array &$form_state) {
+  public function save(array $form, FormStateInterface $form_state) {
     $index = $this->entity;
     
     $status = $index->save();
