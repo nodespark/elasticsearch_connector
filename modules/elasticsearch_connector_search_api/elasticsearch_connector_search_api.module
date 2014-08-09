@@ -45,6 +45,13 @@ function elasticsearch_connector_search_api_search_api_processor_info() {
     'weight' => 35,
   );
 
+  $processors['search_api_elasticsearch_prefix_search'] = array(
+    'name' => t('Elasticsearch Prefix Search'),
+    'description' => t('By enabling this processor you will allows users to search the fields using the Elasticsearch prefix query.'),
+    'class' => 'ElasticsearchConnectorSearchApiPrefixSearch',
+    'weight' => 35,
+  );
+
   return $processors;
 }
 

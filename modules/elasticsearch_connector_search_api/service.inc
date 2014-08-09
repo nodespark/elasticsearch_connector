@@ -48,7 +48,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   const FILTER_TYPE   = 'filter';
   const QUERY_TYPE    = 'query';
 
-  const AUTOCOMPLETE_OPTION = 'AutocompleteSuggestions';
+  const PREFIX_SEARCH = 'prefix_search';
+  const PREFIX_SEARCH_FIELDS = 'prefix_search_fields';
 
   /**
    * Overrides __construct().
@@ -557,9 +558,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       return $search_result;
     }
 
-    if ($suggestions) {
-      $query->setOption(self::AUTOCOMPLETE_OPTION, TRUE);
-    }
     $query->setOption('ElasticParams', $params);
 
     // Build Elastica query.
@@ -1292,6 +1290,23 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   }
 
   /**
+   * @param SearchApiQueryInterface $query
+   * @return array
+   */
+  private function handlePrefixQueryFields(SearchApiQueryInterface $query) {
+    $query_full_text_fields = $query->getFields();
+    $fields = $query->getOption(self::PREFIX_SEARCH_FIELDS, array());
+    if (empty($fields)) {
+      $fields = $query_full_text_fields;
+    }
+    else {
+      $fields = array_keys($fields);
+    }
+
+    return $fields;
+  }
+
+  /**
    *
    * @param SearchApiQueryInterface $query
    * @param array $index_fields
@@ -1301,9 +1316,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   protected function handlePrefixQuery(SearchApiQueryInterface $query, $index_fields) {
     $originalKeys = $query->getOriginalKeys();
     $prefix_query = array();
-
     if (!empty($originalKeys)) {
-      $query_full_text_fields = $query->getFields();
+      $query_full_text_fields = $this->handlePrefixQueryFields($query);
       foreach ($query_full_text_fields as $fulltext_field) {
         $boost = isset($index_fields[$fulltext_field]['boost']) ? '^' . $index_fields[$fulltext_field]['boost'] : '';
         $field_values = array('prefix' => strtolower($originalKeys));
@@ -1422,9 +1436,9 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
 
     $multyMatch = $this->handleMultyMatchQuery($query, $index_fields);
-    // If autocomplete try using also the prefix query.
+    // If prefix enabled execute the prefix query.
     $prefixMatch = array();
-    if ($query->getOption(self::AUTOCOMPLETE_OPTION, FALSE)) {
+    if ($query->getOption(self::PREFIX_SEARCH, FALSE) && !$this->isWildcardQuery($query)) {
       $prefixMatch = $this->handlePrefixQuery($query, $index_fields);
     }
 
@@ -1841,7 +1855,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $query->keys($user_input);
 
     try {
-      // TODO: Making autocomplete to work as autocomplete instead of exact string match.
+      $query->setOption(self::PREFIX_SEARCH, TRUE);
+      $query->setOption(self::PREFIX_SEARCH_FIELDS, array_flip($query->getFields()));
       $response = $this->search($query, TRUE);
       // Postprocess the search results.
       $query->postExecute($response);
