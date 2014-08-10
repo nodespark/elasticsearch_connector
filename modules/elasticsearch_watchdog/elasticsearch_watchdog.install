@@ -52,11 +52,10 @@ function elasticsearch_watchdog_uninstall() {
   }
 
   variable_del('elasticsearch_watchdog_cluster_id');
-  variable_del('elasticsearch_watchdog_num_of_shards');
-  variable_del('elasticsearch_watchdog_num_of_replica');
   variable_del('elasticsearch_watchdog_ttl');
   variable_del('elasticsearch_watchdog_index');
   variable_del('elasticsearch_watchdog_type');
+  variable_del('elasticsearch_watchdog_types_view');
 }
 
 /**

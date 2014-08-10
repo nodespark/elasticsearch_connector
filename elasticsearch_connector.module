@@ -978,3 +978,18 @@ function _elasticsearch_connector_validate_ttl_field($element, &$form_state, $fo
     form_error($element, t('Invalid elasticsearch TTL value. Please use the proper syntax e.g. 1d (d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks)).'));
   }
 }
+
+/**
+ * Helper function you can use with #element_validate of any form element
+ * you want to be validated as Elasticsearch type field.
+ *
+ * @param array $element
+ * @param array $form_state
+ * @param array $form
+ * @return void
+ */
+function elasticsearch_connector_validate_type_field($element, &$form_state, $form) {
+  if (!empty($element['#value']) && !preg_match('/^[a-z][a-z0-9_]*$/i', $element['#value'])) {
+    form_error($element, t('Enter a type name that begins with a letter and contains only letters, numbers, and underscores.'));
+  }
+}
