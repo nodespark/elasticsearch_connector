@@ -71,6 +71,17 @@ function elasticsearch_connector_search_api_search_api_autocomplete_suggestions_
 }
 
 /**
+ * Implements hook_views_data_alter().
+ */
+function elasticsearch_connector_search_api_views_data_alter(&$data) {
+  foreach ($data as $key => $value) {
+    if (strpos($key, 'search_api_index_') === 0) {
+      $data[$key]['search_api_views_more_like_this']['argument']['handler'] = 'ElasticsearchConnectorSearchApiViewsHandlerArgumentMoreLikeThis';
+    }
+  }
+}
+
+/**
  * Implements hook_form_alter().
  */
 function elasticsearch_connector_search_api_form_alter(&$form, &$form_state, $form_id) {

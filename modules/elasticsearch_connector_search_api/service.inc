@@ -1086,6 +1086,37 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   }
 
   /**
+   *
+   */
+  protected function getItemFromElasticsearch(SearchApiIndex $index, $id) {
+    $params = $this->getIndexParam($index, TRUE);
+    $params['id'] = $id;
+    try {
+      $response = $this->elasticsearchClient->get($params);
+      return $response;
+    }
+    catch (Exception $e) {
+      watchdog('Elasticsearch Search API', check_plain($e->getMessage()), array(), WATCHDOG_ERROR);
+    }
+  }
+
+  protected function getClusterVersion() {
+    static $version;
+
+    if (!isset($version)) {
+      try {
+        $info = $this->elasticsearchClient->info();
+        $version = $info['version']['number'];
+      }
+      catch (Exception $e) {
+        watchdog('Elasticsearch Search API', check_plain($e->getMessage()), array(), WATCHDOG_ERROR);
+      }
+    }
+
+    return $version;
+  }
+
+  /**
    * Helper function build search query().
    */
   protected function buildSearchQuery(SearchApiQueryInterface $query) {
@@ -1110,20 +1141,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     // Handle spellcheck if enabled
     $this->buildSpellcheckQuery($query, $params);
-
-    // More Like This
-    // TODO: Check how we can handle this properly!
-    if (!empty($query_options['mlt'])) {
-      $mlt_query['more_like_this'] = array();
-      $mlt_query['more_like_this']['like_text'] = $query_options['mlt']['id'];
-      $mlt_query['more_like_this']['fields'] = array_values($query_options['mlt']['fields']);
-      // TODO: Make this settings configurable in the view.
-      $mlt_query['more_like_this']['max_query_terms'] = 1;
-      $mlt_query['more_like_this']['min_doc_freq'] = 1;
-      $mlt_query['more_like_this']['min_term_freq'] = 1;
-      $fields += array_values($query_options['mlt']['fields']);
-      $body['query'] = $mlt_query;
-    }
 
     /**
      * $query_options['spatials']:
@@ -1453,12 +1470,61 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $bool_query['bool']['must'][] = $multyMatch;
     }
 
+    $mlt_query = $this->handleMLTSearch($query, $index_fields);
+    //var_dump($mlt_query);exit;
+    if (!empty($mlt_query)) {
+      $bool_query['bool']['should'][] = $mlt_query;
+    }
+
     $stringQuery = $this->handleStringQuery($query, $index_fields);
     if (!empty($stringQuery)) {
       $bool_query['bool']['should'][] = $stringQuery;
     }
 
     return $bool_query;
+  }
+
+  /**
+   * Handle the "More like this" functionality if it is required.
+   *
+   * @param SearchApiQueryInterface $query
+   * @param array $index_fields
+   * @return array
+   */
+  protected function handleMLTSearch(SearchApiQueryInterface $query, $index_fields) {
+    $query_options = $query->getOptions();
+    $mlt_queries = array();
+    // More Like This
+    if (!empty($query_options['search_api_mlt'])) {
+      $mlt = $query_options['search_api_mlt'];
+      $mlt_query['more_like_this'] = array();
+      $version = $this->getClusterVersion();
+      if (version_compare($version, '1.3.0', '>=')) {
+        $mlt_query['more_like_this']['ids'] = $mlt['id'];
+        $mlt_query['more_like_this']['fields'] = array_values($mlt['fields']);
+        $mlt_query['more_like_this']['max_query_terms']   = $mlt['max_query_terms'];
+        $mlt_query['more_like_this']['min_doc_freq']      = $mlt['min_doc_freq'];
+        $mlt_query['more_like_this']['min_term_freq']     = $mlt['min_term_freq'];
+
+        $mlt_queries[] = $mlt_query;
+      }
+      else {
+        $document = $this->getItemFromElasticsearch($query->getIndex(), $mlt['id']);
+        $fields = array_values($mlt['fields']);
+        foreach ($fields as $field) {
+          $mlt_query = array();
+          $mlt_query['more_like_this']['fields']            = array($field);
+          $mlt_query['more_like_this']['max_query_terms']   = $mlt['max_query_terms'];
+          $mlt_query['more_like_this']['min_doc_freq']      = $mlt['min_doc_freq'];
+          $mlt_query['more_like_this']['min_term_freq']     = $mlt['min_term_freq'];
+          $mlt_query['more_like_this']['like_text']         = $document['_source'][$field];
+
+          $mlt_queries[] = $mlt_query;
+        }
+      }
+    }
+
+    return $mlt_queries;
   }
 
   /**
@@ -1524,7 +1590,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       'query_search' => $query_search,
       'query_search_filter' => $query_search_filter,
       'sort' => $sort,
-      'mlt' => $mlt,
       'spatials' => $spatial,
     );
   }
@@ -1762,7 +1827,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         $search_result['results'][$id] = array(
           'id' => $result['_id'],
           'score' => $result['_score'],
-          'fields' => $result['_source'],
+          'fields' => isset($result['_source']) ? $result['_source'] : array(),
         );
 
         foreach ($result as $key => $value) {

@@ -11,3 +11,4 @@ files[] = includes/spellcheck.inc
 files[] = includes/elasticsearch_stats.inc
 files[] = includes/processor_highlight.inc
 files[] = includes/processor_prefix_search.inc
+files[] = includes/more_like_this_handler.inc
