@@ -322,7 +322,8 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#default_value' => !empty($cluster->url) ? $cluster->url : '',
     '#description' => t('Enter the URL of a node in the cluster.'
        . ' Example: http://localhost:9200.'
-       . ' <a class="free-hosting" href="#hosting-iframe-container">Don\'t have installed server? Get a hosted solution with free 3 month trial!</a>'
+       . ' <a class="free-hosting" href="#hosting-iframe-container">Don\'t have installed server? Get a hosted solution with free 3 month trial from'
+       . ' <img weight="50" height="20" src="' . base_path() . drupal_get_path('module', 'elasticsearch_connector') . '/img/utilis-logo.png" /></a>'
     ),
     '#required' => TRUE,
     //'#limit_validation_errors' => array(array('url')),
