@@ -30,7 +30,7 @@ class IndexDeleteForm extends EntityConfirmFormBase {
   public function submit(array $form, FormStateInterface $form_state) {
     $this->entity->delete();
     drupal_set_message($this->t('The index %title has been deleted.', array('%title' => $this->entity->label())));
-    $form_state['redirect_route'] = $this->getCancelUrl();
+    $form_state->setRedirect('elasticsearch.clusters');
   }
 
   public function getConfirmText() {

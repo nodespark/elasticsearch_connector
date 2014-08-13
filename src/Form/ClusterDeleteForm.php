@@ -30,7 +30,7 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
   public function submit(array $form, FormStateInterface $form_state) {
     $this->entity->delete();
     drupal_set_message($this->t('The cluster %title has been deleted.', array('%title' => $this->entity->label())));
-    $form_state['redirect_route'] = $this->getCancelUrl();
+    $form_state->setRedirect('elasticsearch.clusters');
   }
 
   public function getConfirmText() {

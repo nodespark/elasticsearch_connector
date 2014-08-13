@@ -174,7 +174,6 @@ class IndexForm extends EntityForm {
 public function submit(array $form, FormStateInterface $form_state) {
   $values = $form_state['values'];
 
-  //@TODO Temporary. To be removed by calling Cluster::getClusterById()
   $cluster_url = self::getSelectedClusterUrl($form_state['values']['server']);
 
   $client = Cluster::getClusterByUrls(array($cluster_url));
@@ -192,7 +191,7 @@ public function submit(array $form, FormStateInterface $form_state) {
         drupal_set_message(t('Fail to create the index %index', array('%index' => $values['name'])), 'error');
       }
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
   }
@@ -212,6 +211,6 @@ public function submit(array $form, FormStateInterface $form_state) {
       drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
     }
 
-    $form_state['redirect_route'] = new Url('elasticsearch.clusters');
+    $form_state->setRedirect('elasticsearch.clusters');
   }
 }

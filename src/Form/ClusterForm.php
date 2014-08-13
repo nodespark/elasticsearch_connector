@@ -27,7 +27,6 @@ class ClusterForm extends EntityForm {
     $form = parent::form($form, $form_state);
     // Get the entity and attach to the form state.
     $cluster = $form_state['entity'] = $this->getEntity();
-    //$cluster = $this->entity;
 
     if ($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Elasticsearch Cluster @label', array('@label' => $cluster->label()));
@@ -79,8 +78,7 @@ class ClusterForm extends EntityForm {
           'Example: http://localhost:9200'),
       '#required' => TRUE,
     );
-    // Added by Nick to avoid errors
-    // @todo: Cleanup these things
+
     $cluster_info = "";
     $form_state_active = FALSE;
 
@@ -96,9 +94,7 @@ class ClusterForm extends EntityForm {
 
     $form['status_info'] = $this->clusterFormInfo($cluster_info, $form_state_active);
 
-    // @todo : Find a better way to get the default Cluster. Most likely a variable
-    //$default = Cluster::getDefaultCluster();
-    $default = "";
+    $default = Cluster::getDefaultCluster();
     $form['default'] = array(
       '#type' => 'checkbox',
       '#title' => t('Make this cluster default connection'),
@@ -172,7 +168,6 @@ class ClusterForm extends EntityForm {
       array('data' => t('Status')),
       array('data' => t('Number of nodes')),
     );
-
     $rows = $element = array();
 
     if (isset($cluster_info['state'])) {
@@ -227,6 +222,6 @@ class ClusterForm extends EntityForm {
       drupal_set_message(t('Cluster %label has been added.', array('%label' => $cluster->label())));
     }
 
-    $form_state['redirect_route'] = new Url('elasticsearch.clusters');
+    $form_state->setRedirect('elasticsearch.clusters');
   }
 }
