@@ -86,7 +86,6 @@ class Cluster extends ConfigEntityBase {
 
   /**
    * The locked status of this cluster.
-   *
    * @var bool
    */
   protected $locked = FALSE;
@@ -125,28 +124,33 @@ class Cluster extends ConfigEntityBase {
     try {
       $client = self::getClusterByUrls(array($cluster->url));
       if (!empty($client)) {
-        $info = $client->info();
-        $result['client'] = $client;
-        $result['info'] = $result['state'] = $result['health'] = $result['stats'] = array();
-        if (self::checkClusterStatus($info)) {
-          $result['info'] = $info;
-          $result['state'] = $client->cluster()->state();
-          $result['health'] = $client->cluster()->health();
-          $result['stats'] = $client->nodes()->stats();
+        try {
+          $info = $client->info();
+          $result['client'] = $client;
+          $result['info'] = $result['state'] = $result['health'] = $result['stats'] = array();
+          if (self::checkClusterStatus($info)) {
+            $result['info'] = $info;
+            $result['state'] = $client->cluster()->state();
+            $result['health'] = $client->cluster()->health();
+            $result['stats'] = $client->nodes()->stats();
+          }
+        }
+        catch (\Exception $e) {
+          drupal_set_message($e->getMessage(), 'error');
         }
       }
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       throw $e;
     }
 
     return $result;
   }
+
   /**
    * Return the cluster object based on Cluster ID.
    *
    * @param string $cluster_id
-   * @param boolean
    * @return \Elasticsearch\Client $client
    */
   protected function getClusterById($cluster_id) {
@@ -166,16 +170,26 @@ class Cluster extends ConfigEntityBase {
     return $client;
   }
 
+  public static function loadCluster($cluster_id) {
+    return entity_load('elasticsearch_cluster', $cluster_id);
+  }
+
+  public static function loadAllClusters($include_inactive = TRUE) {
+    $clusters = entity_load_multiple('elasticsearch_cluster');
+    foreach ($clusters as $cluster) {
+      if (!$include_inactive && !$cluster->status) {
+        unset($clusters[$cluster->cluster_id]);
+      }
+    }
+    return $clusters;
+  }
+
   /**
    * We need to handle the case where url is and array of urls
    * @param string $url
    * @return
    */
   public static function getClusterByUrls($urls) {
-    // TODO: Handle cluster connection. This should be accomplished if the setting is enabled.
-    // If enabled, discover all the nodes in the cluster initialize the Pool connection.
-    //$this->isValid($urls);
-
     $options = array(
       'hosts' => $urls,
     );
@@ -184,12 +198,21 @@ class Cluster extends ConfigEntityBase {
     return new Client($options);
   }
 
+  public static function elasticsearchCheckResponseAck($response) {
+    if (is_array($response) && !empty($response['acknowledged'])) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+
   /**
    * Check if the status is OK.
    * @param array $status
    * @return bool
    */
-  public static function checkClusterStatus($status) {
+    public static function checkClusterStatus($status) {
     if (is_array($status) && $status['status'] == ELASTICSEARCH_CLUSTER_STATUS_OK) {
       return TRUE;
     }

@@ -68,6 +68,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         'type' => $this->t('Type'),
         'title' => $this->t('Name'),
         'status' => $this->t('Status'),
+        'clusterStatus' => $this->t('Cluster Status'),
       ) + parent::buildHeader();
   }
 
@@ -79,9 +80,10 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     $result = array();
     $status = NULL;
     if (isset($entity->cluster_id)) {
-      $cluster_info = Cluster::getClusterInfo($entity);
-      if (!empty($cluster_info['info']) && Cluster::checkClusterStatus($cluster_info['info'])) {
-        $status = $cluster_info['health']['status'];
+      $cluster = Cluster::loadCluster($entity->cluster_id);
+      $client_info = Cluster::getClusterInfo($cluster);
+      if (!empty($client_info['info']) && Cluster::checkClusterStatus($client_info['info'])) {
+        $status = $client_info['health']['status'];
       }
       else {
         $status = t('Not available');
@@ -98,6 +100,9 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
             ) + $entity->urlInfo('info')->toRenderArray(),
           ),
           'status' => array(
+            'data' => $cluster->status,
+          ),
+          'clusterStatus' => array(
             'data' => $status,
           ),
           'operations' => $row['operations'],
@@ -115,6 +120,9 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
           ),
           'status' => array(
             'data' => '',
+          ),
+          'clusterStatus' => array(
+            'data' => '-',
           ),
           'operations' => $row['operations'],
         ),
