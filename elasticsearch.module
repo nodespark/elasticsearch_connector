@@ -305,7 +305,7 @@ function _elasticsearch_ec_index_process($element, &$form_state, $form) {
     try {
       $index_options = elasticsearch_get_indices_options($element['#value']['cluster_id'], TRUE);
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       if (!empty($element['#throw_exp'])) {
         throw $e;
       }
@@ -571,112 +571,6 @@ function elasticsearch_index_valid_load($index_name) {
 }
 
 /**
- * Load all cluster objects.
- *
- * @param bool $include_inactive
- *   Included inactive clusters. Defaults to true.
- *
- * @return array
- *   An array of ElasticSearch connection cluster objects.
- */
-function loadAllClusters($include_inactive = TRUE) {
-  // TODO: Remove ctools
-  //ctools_include('export');
-  //$clusters = ctools_export_load_object('elasticsearch_cluster', 'all');
-
-  // Filter out inactive clusters.
-  foreach ($clusters as $cluster_id => $cluster) {
-    // Unserialize the options if they are loaded from database.
-    // If they are loaded from exported object it will be array.
-    if (isset($cluster->options) && !is_array($cluster->options)) {
-      $cluster->options = unserialize($cluster->options);
-    }
-    if (!$include_inactive && !$cluster->status) {
-      unset($clusters[$cluster_id]);
-    }
-  }
-
-  return $clusters;
-}
-
-/**
- * Prepare list of all clusters by status.
- *
- * @param bool $active
- *   Flag to return clusters with certain status.
- * @param bool $add_empty_option
- *   Flag whether to add empty option to the list.
- *
- * @return array
- *   An array of ElasticSearch connection cluster names, indexed by id.
- */
-function loadCluserByStatus($active = TRUE, $add_empty_option = FALSE) {
-  $clusters = elasticsearch_clusters($active);
-  $options = array();
-
-  if ($add_empty_option) {
-    $options[''] = t('None');
-  }
-
-  foreach ($clusters as $cluster) {
-    $options[$cluster->cluster_id] = $cluster->name;
-  }
-
-  return $options;
-}
-
-/**
- *
- * @param string $url
- * @return
- */
-// Removed. Called from src/Entitiy/Cluster::getClusterByUrls
-function elasticsearch_load_library($cluster) {
-  static $clients;
-
-  if (!isset($clients[$cluster->cluster_id])) {
-    $clients[$cluster->cluster_id] = FALSE;
-
-    // TODO: Handle cluster connection. This should be accomplished if the setting is enabled.
-    // If enabled, discover all the nodes in the cluster initialize the Pool connection.
-    if (Url::isValid($cluster->url)) {
-      $options = array(
-        'hosts' => array($cluster->url),
-      );
-      drupal_alter('elasticsearch_load_library_options', $options);
-      try {
-        if (!class_exists('\Elasticsearch\Client') && module_exists('composer_manager')) {
-          // If the class doesn't exists try to explicity load the classes!
-          // The issues is in update.php where search api call this function, but the function
-          // has not been invoked.
-          composer_manager_register_autoloader();
-        }
-        $clients[$cluster->cluster_id] = new \Elasticsearch\Client($options);
-      }
-      catch (Exception $e) {
-        drupal_set_message($e->getMessage(), 'error');
-      }
-    }
-  }
-
-  return $clients[$cluster->cluster_id];
-}
-
-/**
- * Check if the REST response is successful and with status code 200.
- * @param array $response
- * @return boolean
- */
-function elasticsearch_check_response_ack($response) {
-  if (is_array($response) && !empty($response['acknowledged'])) {
-    return TRUE;
-  }
-  else {
-    return FALSE;
-  }
-}
-
-/**
  * Get the nodes stats from elasticsearch server.
  * @param \Elasticsearch\Client $client
  * @return array
@@ -685,7 +579,7 @@ function elasticsearch_get_cluster_nodes_stat(\Elasticsearch\Client $client) {
   try {
     return $client->nodes()->stats();
   }
-  catch (Exception $e) {
+  catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
 }
@@ -726,7 +620,7 @@ function elasticsearch_check_plugin_exists(\Elasticsearch\Client $client, $plugi
 
     return $result;
   }
-  catch (Exception $e) {
+  catch (\Exception $e) {
     drupal_set_message($e->getMessage(), 'error');
     return FALSE;
   }
@@ -763,4 +657,23 @@ function elasticsearch_clusters() {
   $cluster_ids = \Drupal::entityQuery('search_api_index')
     ->execute();
   return array();
+}
+
+/**
+ * Returns a unique hash for the current site.
+ *
+ * This is used to identify Solr documents from different sites within a single
+ * Solr server.
+ *
+ * @return string
+ *   A unique site hash, containing only alphanumeric characters.
+ */
+function elasticsearch_site_hash() {
+  // Copied from apachesolr_site_hash().
+  if (!($hash = \Drupal::config('elasticsearch.settings')->get('site_hash'))) {
+    global $base_url;
+    $hash = substr(base_convert(sha1(uniqid($base_url, TRUE)), 16, 36), 0, 6);
+    \Drupal::config('elasticsearch.settings')->set('site_hash', $hash)->save();
+  }
+  return $hash;
 }

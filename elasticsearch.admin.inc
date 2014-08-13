@@ -160,7 +160,7 @@ function elasticsearch_cluster_indices_aliases($cluster, $index_name) {
         $rows[] = $row;
       }
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
   }
@@ -498,7 +498,7 @@ function elasticsearch_cluster_indices_add_submit($form, &$form_state) {
         elasticsearch_close_on_redirect($cluster->cluster_id, $values['index_name']);
       }
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
   }
@@ -698,7 +698,7 @@ function elasticsearch_cluster_indices_delete_submit($form, &$form_state) {
       drupal_set_message(t('%name has been deleted.', array('%name' => $form_state['values']['index'])));
       $form_state['redirect'] = elasticsearch_main_settings_path() . '/clusters/' . $form_state['values']['cluster']->cluster_id . '/indices';
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
   }
