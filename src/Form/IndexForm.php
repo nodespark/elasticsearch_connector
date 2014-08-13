@@ -182,7 +182,7 @@ class IndexForm extends EntityForm {
         $index_params['body']['settings']['cluster_machine_name'] = $values['server'];
         $response = $client->indices()->create($index_params);
         // @todo: the check response ack function does not exist
-        if (elasticsearch_check_response_ack($response)) {
+        if (Cluster::elasticsearchCheckResponseAck($response)) {
           drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['name'])));
         }
         else {
