@@ -8,23 +8,18 @@
 namespace Drupal\elasticsearch\Form;
 
 use Drupal\Core\Entity\EntityForm;
+use Drupal\elasticsearch\Entity\Index;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Component\Utility\String;
-use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Url;
-use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\Core\Entity\Entity;
 use Drupal\Core\Entity\EntityManager;
 use Drupal\elasticsearch\Entity\Cluster;
-use Elasticsearch\Common\Exceptions\Curl\CouldNotResolveHostException;
 
 /**
  * Form controller for node type forms.
  */
 class IndexForm extends EntityForm {
 
+  // @todo: A lot of documentation is missing here!
 
   protected $entityManager;
 
@@ -59,6 +54,7 @@ class IndexForm extends EntityForm {
   }
 
   protected function getSelectedClusterUrl($id) {
+    $result = NULL;
     $clusters = $this->getAllClusters();
     foreach ($clusters as $cluster) {
       if ($cluster->cluster_id == $id) {
@@ -96,7 +92,7 @@ class IndexForm extends EntityForm {
     return $form;
   }
 
-  public function buildEntityForm(array &$form, FormStateInterface $form_state, ConfigEntityInterface $index) {
+  public function buildEntityForm(array &$form, FormStateInterface $form_state, Index $index) {
     $form['index'] = array(
       '#type'  => 'value',
       '#value' => $index,
@@ -158,6 +154,7 @@ class IndexForm extends EntityForm {
   public function validate(array $form, FormStateInterface $form_state) {
     parent::validate($form, $form_state);
 
+    // @todo form_set_error is deprecated
     if (!preg_match('/^[a-z][a-z0-9_]*$/i', $form_state['values']['name'])) {
       form_set_error('name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
     }
@@ -171,32 +168,33 @@ class IndexForm extends EntityForm {
     }
   }
 
-public function submit(array $form, FormStateInterface $form_state) {
-  $values = $form_state['values'];
+  public function submit(array $form, FormStateInterface $form_state) {
+    $values = $form_state['values'];
 
-  $cluster_url = self::getSelectedClusterUrl($form_state['values']['server']);
+    $cluster_url = self::getSelectedClusterUrl($form_state['values']['server']);
 
-  $client = Cluster::getClusterByUrls(array($cluster_url));
-  if ($client) {
-    try {
-      $index_params['index'] = $values['name'];
-      $index_params['body']['settings']['number_of_shards']   = $values['num_of_shards'];
-      $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
-      $index_params['body']['settings']['cluster_machine_name'] = $values['server'];
-      $response = $client->indices()->create($index_params);
-      if (elasticsearch_check_response_ack($response)) {
-        drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['name'])));
+    $client = Cluster::getClusterByUrls(array($cluster_url));
+    if ($client) {
+      try {
+        $index_params['index'] = $values['name'];
+        $index_params['body']['settings']['number_of_shards']   = $values['num_of_shards'];
+        $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
+        $index_params['body']['settings']['cluster_machine_name'] = $values['server'];
+        $response = $client->indices()->create($index_params);
+        // @todo: the check response ack function does not exist
+        if (elasticsearch_check_response_ack($response)) {
+          drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['name'])));
+        }
+        else {
+          drupal_set_message(t('Fail to create the index %index', array('%index' => $values['name'])), 'error');
+        }
       }
-      else {
-        drupal_set_message(t('Fail to create the index %index', array('%index' => $values['name'])), 'error');
+      catch (\Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
       }
     }
-    catch (\Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
-    }
+    return parent::submit($form, $form_state);
   }
-  return parent::submit($form, $form_state);
-}
 
   // @TODO
   public function save(array $form, FormStateInterface $form_state) {

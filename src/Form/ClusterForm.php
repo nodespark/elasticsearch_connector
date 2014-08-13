@@ -3,19 +3,14 @@
 namespace Drupal\elasticsearch\Form;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Component\Utility\String;
-use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Config\Entity\ConfigEntityInterface;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Url;
-use Drupal\Core\Entity\Entity;
 use Drupal\elasticsearch\Entity\Cluster;
-use Elasticsearch\Common\Exceptions\Curl\CouldNotResolveHostException;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Provides a form for the Cluster entity.
  */
 class ClusterForm extends EntityForm {
+
   /**
    * {@inheritdoc}
    */
@@ -39,7 +34,10 @@ class ClusterForm extends EntityForm {
     return $form;
   }
 
-  public function buildEntityForm(array &$form, FormStateInterface $form_state, ConfigEntityInterface $cluster) {
+  /**
+   * {@inheritdoc}
+   */
+  public function buildEntityForm(array &$form, FormStateInterface $form_state, Cluster $cluster) {
     $form['cluster'] = array(
       '#type'  => 'value',
       '#value' => $cluster,
@@ -133,15 +131,17 @@ class ClusterForm extends EntityForm {
     // TODO: Handle the validation of the elements.
     parent::validate($form, $form_state);
 
-    /** @var \Drupal\elasticsearch\Entity\Cluster $cluster_from_form */
+    /** @var Cluster $cluster_from_form */
     $cluster_from_form = entity_create('elasticsearch_cluster', $form_state['values']);
     try {
       $cluster_info = Cluster::getClusterInfo($cluster_from_form);
       if (!isset($cluster_info['info']) || !Cluster::checkClusterStatus($cluster_info['info'])) {
+        // @todo form_set_error is deprecated
         form_set_error('url', $form_state, t('Cannot connect to the cluster!'));
       }
     }
     catch (\Exception $e) {
+      // @todo form_set_error is deprecated
       form_set_error('url', $form_state, t('Cannot connect to the cluster!'));
     }
 
@@ -168,6 +168,7 @@ class ClusterForm extends EntityForm {
       array('data' => t('Status')),
       array('data' => t('Number of nodes')),
     );
+    // @todo $rows is already overwritten below. no need to initialize it.
     $rows = $element = array();
 
     if (isset($cluster_info['state'])) {
@@ -210,6 +211,12 @@ class ClusterForm extends EntityForm {
     return $element;
   }
 
+  /**
+   * @todo Missing documentation
+   *
+   * @param array $form
+   * @param FormStateInterface $form_state
+   */
   public function save(array $form, FormStateInterface $form_state) {
     $cluster = $this->entity;
     

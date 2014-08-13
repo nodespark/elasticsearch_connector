@@ -6,8 +6,6 @@ use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\elasticsearch\Entity\Cluster;
-use Drupal\Core\Entity\EntityInterface;
-use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Example page controller.
@@ -17,13 +15,13 @@ class ElasticSearchController extends ControllerBase {
   /**
    * Displays information about a Search API index.
    *
-   * @param \Drupal\search_api\Index\IndexInterface $search_api_index
+   * @param \Drupal\elasticsearch\Entity\Cluster $cluster
    *   An instance of IndexInterface.
    *
    * @return array
    *   An array suitable for drupal_render().
    */
-  public function page(ConfigEntityBase $elasticsearch_cluster) {
+  public function page(Cluster $elasticsearch_cluster) {
     // Build the Search API index information.
     //print_r($elasticsearch_cluster);
     $render = array(
@@ -32,7 +30,8 @@ class ElasticSearchController extends ControllerBase {
         '#cluster' => $elasticsearch_cluster,
       ),
     );
-    // Check if the index is enabled and can be written to.
+    // Check if the index is enabled and can be written to
+    // @todo: Remove debug statements here
     if ($elasticsearch_cluster->cluster_id) {
       //debug
       //print_r($elasticsearch_cluster);
@@ -42,7 +41,13 @@ class ElasticSearchController extends ControllerBase {
     return $render;
   }
 
-  public function pageTitle(ConfigEntityBase $elasticsearch_cluster) {
+  /**
+   * @todo Missing documentation
+   *
+   * @param Cluster $elasticsearch_cluster
+   * @return string
+   */
+  public function pageTitle(Cluster $elasticsearch_cluster) {
     if ($elasticsearch_cluster->cluster_id) {
       return String::checkPlain($elasticsearch_cluster->label());
     }
@@ -51,7 +56,15 @@ class ElasticSearchController extends ControllerBase {
     }
   }
 
-  public function getInfo(ConfigEntityBase $elasticsearch_cluster) {
+  /**
+   * @todo: Missing documentation
+   *
+   * @param ConfigEntityBase $elasticsearch_cluster
+   * @return mixed
+   * @throws \Drupal\elasticsearch\Entity\Exception
+   * @throws \Exception
+   */
+  public function getInfo(Cluster $elasticsearch_cluster) {
     //print_r($elasticsearch_cluster);
     $cluster_status = Cluster::getClusterInfo($elasticsearch_cluster);
     //print_r($cluster_status);
@@ -152,7 +165,7 @@ class ElasticSearchController extends ControllerBase {
    * @param object
    * @return array
    */
-  public function elasticsearchClusterIndices(ConfigEntityBase $elasticsearch_cluster) {
+  public function elasticsearchClusterIndices(Cluster $elasticsearch_cluster) {
     $headers = array(
       array('data' => t('Index name')),
       array('data' => t('Docs')),
@@ -162,6 +175,8 @@ class ElasticSearchController extends ControllerBase {
 
     $rows = array();
     $cluster_info = Cluster::getClusterInfo($elasticsearch_cluster);
+
+    /** @var \Elasticsearch\Client $client */
     $client = $cluster_info['client'];
 
     if ($client && !empty($cluster_info['info']) && Cluster::checkClusterStatus($cluster_info['info'])) {

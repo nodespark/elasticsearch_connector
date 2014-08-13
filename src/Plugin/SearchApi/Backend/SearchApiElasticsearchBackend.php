@@ -10,17 +10,18 @@ namespace Drupal\elasticsearch\Plugin\SearchApi\Backend;
 use Drupal\Core\Config\Config;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
+use Drupal\elasticsearch\Entity\Index;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\Index\IndexInterface;
+use Drupal\search_api\Query\FilterInterface;
 use Drupal\search_api\Utility\Utility;
+use Elasticsearch\Client;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\search_api\Query\QueryInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Elasticsearch\Client;
 use Drupal\elasticsearch\Entity\Cluster;
-use \Drupal\Component\Utility\String;
-use \Drupal\search_api\Item\FieldInterface;
+use Drupal\Component\Utility\String;
+use Drupal\search_api\Item\FieldInterface;
 
 /**
  * @SearchApiBackend(
@@ -33,6 +34,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
   protected $elasticSearchSettings = NULL;
   protected $clusterId = NULL;
+
+  /** @var Client $elasticsearchClient  */
   protected $elasticsearchClient = NULL;
 
   public function __construct(array $configuration, $plugin_id, array $plugin_definition, FormBuilderInterface $form_builder, ModuleHandlerInterface $module_handler, Config $elastic_search_settings) {
@@ -175,6 +178,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state['values'];
     if (isset($values['port']) && (!is_numeric($values['port']) || $values['port'] < 0 || $values['port'] > 65535)) {
+      // @todo setError method does not exist in formbuilder. This will fail when called
       $this->formBuilder->setError($form['port'], $form_state, $this->t('The port has to be an integer between 0 and 65535.'));
     }
   }
@@ -266,7 +270,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     }
 
     if ($this->server->status()) {
-      // If the server is enabled, check whether Solr can be reached.
+      // If the server is enabled, check whether Elasticsearch can be reached.
       $ping = $this->ping();
       if ($ping) {
         $msg = $this->t('The Elasticsearch server could be reached');
@@ -287,6 +291,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Helper function. Parse an option form element.
    */
   protected function parseOptionFormElement($element, $key) {
+    // @todo element_children is deprecated
     $children_keys = element_children($element);
 
     if (!empty($children_keys)) {
@@ -355,6 +360,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Helper function. Return server options.
    */
   public function getOptions() {
+    // @todo confused, where is this variable defined? Not in the class
     return $this->options;
   }
 
@@ -478,7 +484,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     $params = array();
     $params['index'] = $index_name;
-    
+
+    // @todo machine_name is not a valid field anymore afaik. Please check
     if ($with_type) {
       $params['type'] = $index->machine_name;
     }
@@ -608,6 +615,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function deleteItems(IndexInterface $index = NULL, array $ids) {
     if (empty($index)) {
+      // @todo getIndexes function does not exist. Did you test this?
       foreach ($this->getIndexes() as $index) {
         $this->deleteItems($index, 'all');
       }
@@ -687,7 +695,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /**
    * Recursively parse Search API filters.
    */
-  protected function parseFilter(QueryFilter $query_filter, $index_fields, $ignored_field_id = '') {
+  protected function parseFilter(FilterInterface $query_filter, $index_fields, $ignored_field_id = '') {
 
     if (empty($query_filter)) {
       return NULL;
@@ -713,7 +721,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
             }
           }
           // Nested filters.
-          elseif ($filter_info instanceof QueryFilter) {
+          elseif ($filter_info instanceof FilterInterface) {
             $nested_filters = $this->parseFilter($filter_info, $index_fields, $ignored_field_id);
             // TODO: handle error. - here is unnecessary cause in if we thow exceptions and this is still in try{}  .
             if (!empty($nested_filters)) {
@@ -756,7 +764,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
           break;
 
         default:
-          throw new Exception(t('Value is empty for :field_id! Incorrect filter criteria is using for searching!', array(':field_id' => $filter_assoc['field_id'])));
+          throw new \Exception(t('Value is empty for :field_id! Incorrect filter criteria is using for searching!', array(':field_id' => $filter_assoc['field_id'])));
       }
     }
     // Normal filters.
@@ -831,7 +839,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
           break;
 
         default:
-          throw new Exception(t('Undefined operator :field_operator for :field_id field! Incorrect filter criteria is using for searching!',
+          throw new \Exception(t('Undefined operator :field_operator for :field_id field! Incorrect filter criteria is using for searching!',
           array(':field_operator' => $filter_assoc['filter_operator'], ':field_id' => $filter_assoc['field_id'])));
       }
     }
@@ -864,7 +872,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         $filters = array(array('and' => $filters));
       }
       else {
-        throw new Exception(t('Undefined conjunction :conjunction! Available values are :avail_conjunction! Incorrect filter criteria is using for searching!',
+        throw new \Exception(t('Undefined conjunction :conjunction! Available values are :avail_conjunction! Incorrect filter criteria is using for searching!',
             array(':conjunction!' => $conjunction, ':avail_conjunction' => $conjunction)));
         return NULL;
       }
@@ -885,12 +893,12 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     $field_id = $filter_assoc['field_id'];
     if (!isset($index_fields[$field_id])) {
-      throw new Exception(t(':field_id Undefined field ! Incorrect filter criteria is using for searching!', array(':field_id' => $field_id)));
+      throw new \Exception(t(':field_id Undefined field ! Incorrect filter criteria is using for searching!', array(':field_id' => $field_id)));
     }
 
     // Check operator.
     if (empty($filter_assoc['filter_operator'])) {
-      throw new Exception(t('Empty filter operator for :field_id field! Incorrect filter criteria is using for searching!', array(':field_id' => $field_id)));
+      throw new \Exception(t('Empty filter operator for :field_id field! Incorrect filter criteria is using for searching!', array(':field_id' => $field_id)));
     }
 
     // If field should be ignored, we skip.

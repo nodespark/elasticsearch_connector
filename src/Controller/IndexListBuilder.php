@@ -1,17 +1,18 @@
 <?php
+
 /**
  * @file
  * Contains \Drupal\elasticsearch\Controller\IndexListBuilder.
  */
 namespace Drupal\elasticsearch\Controller;
+
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Component\Utility\Xss;
-use Drupal\Component\Utility\String;
+
 /**
  * Provides a listing of Example.
  */

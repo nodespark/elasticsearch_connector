@@ -3,9 +3,7 @@
 namespace Drupal\elasticsearch\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Elasticsearch\Client;
-use Drupal\Component\Utility\UrlHelper;
 
 /**
  * Defines the search server configuration entity.
@@ -151,29 +149,43 @@ class Cluster extends ConfigEntityBase {
    * Return the cluster object based on Cluster ID.
    *
    * @param string $cluster_id
-   * @return \Elasticsearch\Client $client
+   * @return \Elasticsearch\Client
    */
   protected function getClusterById($cluster_id) {
-    $default_cluster = getDefaultCluster();
+    $client = NULL;
+
+    $default_cluster = $this::getDefaultCluster();
     if (!isset($cluster_id) && !empty($default_cluster)) {
-      $cluster_id = getDefaultCluster();
+      $cluster_id = $this::getDefaultCluster();
     }
 
     if (!empty($cluster_id)) {
       $client = FALSE;
-      $cluster = loadCluster($cluster_id);
+      $cluster = $this::loadCluster($cluster_id);
       if ($cluster) {
-        $client = getClusterByUrls($cluster->url);
+        $client = $this::getClusterByUrls($cluster->url);
       }
     }
 
     return $client;
   }
 
+  /**
+   * @todo missing documentation
+   *
+   * @param $cluster_id
+   * @return \Drupal\elasticsearch\Entity\Cluster
+   */
   public static function loadCluster($cluster_id) {
     return entity_load('elasticsearch_cluster', $cluster_id);
   }
 
+  /**
+   * @todo missing documentation
+   *
+   * @param bool $include_inactive
+   * @return \Drupal\elasticsearch\Entity\Cluster[]
+   */
   public static function loadAllClusters($include_inactive = TRUE) {
     $clusters = entity_load_multiple('elasticsearch_cluster');
     foreach ($clusters as $cluster) {
@@ -186,8 +198,9 @@ class Cluster extends ConfigEntityBase {
 
   /**
    * We need to handle the case where url is and array of urls
+   *
    * @param string $url
-   * @return
+   * @return Client
    */
   public static function getClusterByUrls($urls) {
     $options = array(
@@ -198,6 +211,12 @@ class Cluster extends ConfigEntityBase {
     return new Client($options);
   }
 
+  /**
+   * @todo missing documentation
+   *
+   * @param $response
+   * @return bool
+   */
   public static function elasticsearchCheckResponseAck($response) {
     if (is_array($response) && !empty($response['acknowledged'])) {
       return TRUE;
@@ -209,6 +228,7 @@ class Cluster extends ConfigEntityBase {
 
   /**
    * Check if the status is OK.
+   *
    * @param array $status
    * @return bool
    */

@@ -3,10 +3,6 @@
 namespace Drupal\elasticsearch\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\Core\Entity\EntityStorageInterface;
-use Elasticsearch\Client;
-use Drupal\Component\Utility\UrlHelper;
-use Drupal\elasticsearch\Entity\Cluster;
 
 /**
  * Defines the search server configuration entity.

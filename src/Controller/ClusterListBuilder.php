@@ -5,17 +5,13 @@
  */
 namespace Drupal\elasticsearch\Controller;
 
-use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Url;
 use Drupal\elasticsearch\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Component\Utility\Xss;
-use Drupal\Component\Utility\String;
+
 /**
  * Provides a listing of Example.
  */
@@ -37,12 +33,18 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function __construct(EntityTypeInterface $entity_type, EntityStorageInterface $storage, EntityStorageInterface $index_storage) {
     parent::__construct($entity_type, $storage);
     $this->indexStorage = $index_storage;
   }
 
 
+  /**
+   * {@inheritdoc}
+   */
   public function load() {
     $clusters = $this->storage->loadMultiple();
     $indices = $this->indexStorage->loadMultiple();
@@ -63,6 +65,9 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     return $cluster_groups;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function buildHeader() {
       return array(
         'type' => $this->t('Type'),
@@ -132,6 +137,9 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     return $result;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getDefaultOperations(EntityInterface $entity) {
     $operations = parent::getDefaultOperations($entity);
 
@@ -171,6 +179,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   public function render() {
     $entity_groups = $this->load();
     $list['#type'] = 'container';
+    // @todo: fix the deprecated generateFromPath
     $list['clusters'] = array(
       '#type' => 'table',
       '#header' => $this->buildHeader(),
