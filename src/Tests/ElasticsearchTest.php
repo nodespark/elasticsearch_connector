@@ -9,11 +9,7 @@ namespace Drupal\elasticsearch\Tests;
 
 use Drupal\search_api\Entity\Index;
 use Drupal\search_api\Entity\Server;
-use Drupal\elasticsearch\Entity\Cluster;
 use Drupal\search_api\Query\ResultSetInterface;
-use Drupal\search_api\Tests\ExampleContentTrait;
-use Drupal\elasticsearch\Tests\ElasticsearchTest;
-use Drupal\system\Tests\Entity\EntityUnitTestBase;
 use Drupal\search_api_db\Tests\SearchApiDbTest;
 
 /**
