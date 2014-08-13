@@ -2,9 +2,7 @@
 
 /**
  * @file
- * Provides a Elasticsearch-based service class for the Search API using
- * Elasticsearch module.
- * Contains \Drupal\elasticsearch\Plugin\SearchApi\Backend\SearchApiElasticsearch.
+ * Contains \Drupal\elasticsearch\Plugin\SearchApi\Backend\SearchApiElasticsearchBackend
  */
 
 namespace Drupal\elasticsearch\Plugin\SearchApi\Backend;
@@ -13,22 +11,30 @@ use Drupal\Core\Config\Config;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\search_api\Backend\BackendPluginBase;
+use Drupal\search_api\Index\IndexInterface;
+use Drupal\search_api\Utility\Utility;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\search_api\Query\QueryInterface;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Elasticsearch\Client;
+use Drupal\elasticsearch\Entity\Cluster;
+use \Drupal\Component\Utility\String;
+use \Drupal\search_api\Item\FieldInterface;
 
 /**
- * Search service class.
+ * @SearchApiBackend(
+ *   id = "elasticsearch",
+ *   label = @Translation("Elasticsearch"),
+ *   description = @Translation("Index items using an Elasticsearch server.")
+ * )
  */
-class ElasticsearchBackend extends BackendPluginBase {
+class SearchApiElasticsearchBackend extends BackendPluginBase {
 
-  /**
-   * Elasticsearch Connection.
-   */
   protected $elasticSearchSettings = NULL;
   protected $clusterId = NULL;
+  protected $elasticsearchClient = NULL;
 
-  /**
-   * {@inheritdoc}
-   */
   public function __construct(array $configuration, $plugin_id, array $plugin_definition, FormBuilderInterface $form_builder, ModuleHandlerInterface $module_handler, Config $elastic_search_settings) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
@@ -36,11 +42,15 @@ class ElasticsearchBackend extends BackendPluginBase {
     $this->moduleHandler = $module_handler;
     $this->elasticSearchSettings = $elastic_search_settings;
 
-    /*$this->cluster_id = $this->getOption('cluster', '');
-    if ($this->cluster_id) {
-      $this->elasticsearchClient = elasticsearch_connector_get_client_by_id($this->cluster_id);
-    }*/
-
+    if ($this->configuration) {
+      $url = array($this->getServerLink());  
+      try {
+        $this->elasticsearchClient = Cluster::getClusterByUrls($url);
+      }
+      catch (\Exception $e) {
+        throw $e;
+      }
+    }
   }
 
   /**
@@ -65,13 +75,12 @@ class ElasticsearchBackend extends BackendPluginBase {
       'scheme' => 'http',
       'host' => 'localhost',
       'port' => '9200',
-      'path' => '/elasticsearch',
+      'path' => '',
       'http_user' => '',
       'http_pass' => '',
       'excerpt' => FALSE,
       'retrieve_data' => FALSE,
       'highlight_data' => FALSE,
-      'skip_schema_check' => FALSE,
       'http_method' => 'AUTO',
       'autocorrect_spell' => TRUE,
       'autocorrect_suggest_words' => TRUE,
@@ -81,24 +90,81 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Overrides configurationForm().
    */
-  public function configurationForm(array $form, array &$form_state) {
-    // Connector settings.
-    $form['connector_settings'] = array(
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    if (!$this->server->isNew()) {
+      // Editing this server
+      $form['server_description'] = array(
+        '#type' => 'item',
+        '#title' => $this->t('Elasticsearch Cluster'),
+        '#description' => $this->getServerLink(),
+      );
+    }
+
+    $form['cluster_settings'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Elasticsearch connector settings'),
+      '#title' => t('Elasticsearch settings'),
       '#tree' => FALSE,
     );
 
-    /*$clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
-    $form['connector_settings']['cluster'] = array(
+    $clusters = array('' => t('Default cluster')) + array(Cluster::loadAllClusters(FALSE));
+    $form['cluster_settings']['cluster'] = array(
       '#type' => 'select',
       '#title' => t('Cluster'),
       '#required' => TRUE,
-      '#default_value' => $this->getOption('cluster', ''),
       '#options' => $clusters,
       '#description' => t('Select the cluster you want to handle the connections.'),
       '#parents' => array('options', 'form', 'cluster'),
-    );*/
+    );
+
+    $form['scheme'] = array(
+      '#type' => 'select',
+      '#title' => $this->t('HTTP protocol'),
+      '#description' => $this->t('The HTTP protocol to use for sending queries.'),
+      '#default_value' => $this->configuration['scheme'],
+      '#options' => array(
+        'http' => 'http',
+        'https' => 'https',
+      ),
+    );
+
+    $form['host'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Solr host'),
+      '#description' => $this->t('The host name or IP of your Solr server, e.g. <code>localhost</code> or <code>www.example.com</code>.'),
+      '#default_value' => $this->configuration['host'],
+      '#required' => TRUE,
+    );
+    $form['port'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Solr port'),
+      '#description' => $this->t('The Jetty example server is at port 8983, while Tomcat uses 8080 by default.'),
+      '#default_value' => $this->configuration['port'],
+      '#required' => TRUE,
+    );
+    $form['path'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Solr path'),
+      '#description' => $this->t('The path that identifies the Solr instance to use on the server.'),
+      '#default_value' => $this->configuration['path'],
+    );
+
+    $form['http'] = array(
+      '#type' => 'fieldset',
+      '#title' => $this->t('Basic HTTP authentication'),
+      '#description' => $this->t('If your Solr server is protected by basic HTTP authentication, enter the login data here.'),
+      '#collapsible' => TRUE,
+      '#collapsed' => empty($this->configuration['http_user']),
+    );
+    $form['http']['http_user'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Username'),
+      '#default_value' => $this->configuration['http_user'],
+    );
+    $form['http']['http_pass'] = array(
+      '#type' => 'password',
+      '#title' => $this->t('Password'),
+      '#description' => $this->t('If this field is left blank and the HTTP username is filled out, the current password will not be changed.'),
+    );
 
     return $form;
   }
@@ -106,17 +172,27 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Overrides configurationFormValidate().
    */
-  public function configurationFormValidate(array $form, array &$values, array &$form_state) {
-    /*$clusters = elasticsearch_connector_cluster_load_all(TRUE, TRUE);
-    // Check cluster!
-    if (empty($clusters[$values['cluster']])) {
-      form_set_error('options][form][cluster', t('You must select a valid Cluster from the elasticsearch clusters dropdown.'));
+  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
+    $values = $form_state['values'];
+    if (isset($values['port']) && (!is_numeric($values['port']) || $values['port'] < 0 || $values['port'] > 65535)) {
+      $this->formBuilder->setError($form['port'], $form_state, $this->t('The port has to be an integer between 0 and 65535.'));
+    }
+  }
+
+  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
+    $values = $form_state['values'];
+
+    // For password fields, there is no default value, they're empty by default.
+    // Therefore we ignore empty submissions if the user didn't change either.
+    if ($values['http']['http_pass'] === ''
+        && isset($this->configuration['http_user'])
+        && $values['http']['http_user'] === $this->configuration['http_user']) {
+      $values['http']['http_pass'] = $this->configuration['http_pass'];
     }
 
-    // Facet limit.
-    if (filter_var($values['facet_limit'], FILTER_VALIDATE_INT, array('options' => array('min_range' => 0))) === FALSE) {
-      form_set_error('options][form][facet_limit', t('You must enter a positive integer for the elasticsearch facet limit.'));
-    }*/
+    $form_state['values'] = $values;
+
+    parent::submitConfigurationForm($form, $form_state);
   }
 
   /**
@@ -161,46 +237,50 @@ class ElasticsearchBackend extends BackendPluginBase {
   public function preDelete() {
   }
 
+  public function deleteAllIndexItems(IndexInterface $index) {
+  }
+
   /**
    * Overrides viewSettings().
    */
-  public function viewSettings() {
-    $output = array();
 
-    $status = !empty($this->elasticsearchClient) ? $this->elasticsearchClient->info() : NULL;
-    //$elasticsearch_connector_path = elasticsearch_connector_main_settings_path();
-    $elasticsearch_connector_path = "";
-    $output['status'] = array(
-      '#type' => 'item',
-      '#title' => t('Elasticsearch cluster status'),
-      '#markup' => '<div class="elasticsearch-daemon-status"><em>' . (!empty($status['ok']) ? 'running' : 'not running') . '</em>' .
-                   ' - <a href=" ' . url($elasticsearch_connector_path . '/clusters/' . $this->cluster_id . '/info') .  ' ">' . t('More info') . '</a></div>',
+  public function viewSettings() {
+    $info = array();
+
+    $serverlink = $this->getServerLink();
+    $info[] = array(
+      'label' => $this->t('Elasticsearch server URI'),
+      'info' => l($serverlink, $serverlink),
     );
 
-    // Display settings.
-    $form = $form_state = array();
-    $option_form = $this->configurationForm($form, $form_state);
-    $option_form['#title'] = t('Elasticsearch server settings');
-
-    $element = $this->parseOptionFormElement($option_form, 'options');
-    if (!empty($element)) {
-      $settings = '';
-      foreach ($element['option'] as $sub_element) {
-        $settings .= $this->viewSettingElement($sub_element);
-      }
-
-      $output['settings'] = array(
-        '#type' => 'fieldset',
-        '#title' => $element['label'],
+    if ($this->configuration['http_user']) {
+      $vars = array(
+        '@user' => $this->configuration['http_user'],
+        '@pass' => str_repeat('*', strlen($this->configuration['http_pass'])),
       );
-
-      $output['settings'][] = array(
-        '#type' => 'markup',
-        '#markup' => '<div class="elasticsearch-server-settings">' . $settings . '</div>',
+      $http = $this->t('Username: @user; Password: @pass', $vars);
+      $info[] = array(
+        'label' => $this->t('Basic HTTP authentication'),
+        'info' => $http,
       );
     }
 
-    return $output;
+    if ($this->server->status()) {
+      // If the server is enabled, check whether Solr can be reached.
+      $ping = $this->ping();
+      if ($ping) {
+        $msg = $this->t('The Elasticsearch server could be reached');
+      }
+      else {
+        $msg = $this->t('The Elasticsearch server could not be reached. Further data is therefore unavailable.');
+      }
+      $info[] = array(
+        'label' => $this->t('Connection'),
+        'info' => $msg,
+        'status' => $ping ? 'ok' : 'error',
+      );
+    }
+    return $info;
   }
 
   /**
@@ -235,6 +315,66 @@ class ElasticsearchBackend extends BackendPluginBase {
   }
 
   /**
+   * Returns a link to the Elasticsearch server, if the necessary options are set.
+   */
+  public function getServerLink() {
+    if (!$this->configuration) {
+      return '';
+    }
+    $host = $this->configuration['host'];
+    if ($host == 'localhost' && !empty($_SERVER['SERVER_NAME'])) {
+      $host = $_SERVER['SERVER_NAME'];
+    }
+    $url = $this->configuration['scheme'] . '://' . $host . ':' . $this->configuration['port'] . $this->configuration['path'];
+    return $url;
+  }
+
+  public function ping() {
+    $serverConfig = array($this->configuration);
+    foreach ($serverConfig as $field) {
+      $url = array($field['host'] . ':' . $field['port']);
+    }
+    try {
+      $client = Cluster::getClusterByUrls($url);
+      if (!empty($client)) {
+        $this->elasticsearchClient = $client;
+        return $client;
+        $info = $client->info();
+        if (Cluster::checkClusterStatus($info)) {
+          return $client;
+        }
+      }
+    }
+    catch (\Exception $e) {
+      throw $e;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Helper function. Return server options.
+   */
+  public function getOptions() {
+    return $this->options;
+  }
+
+  /**
+   * Helper function. Return a server option.
+   */
+  public function getOption($option, $default = NULL) {
+    $options = $this->getOptions();
+    return isset($options->$option) ? $options->option : $default;
+  }
+
+  /**
+   * Get the configured cluster; if the cluster is blank, use the default.
+   */
+  public function getCluster() {
+    $cluster_id = $this->getOption('elasticsearch_cluster', '');
+    return empty($cluster_id) ? Cluster::getDefaultCluster() : $cluster_id;
+  }
+
+  /**
    * Helper function. Display a setting element.
    */
   protected function viewSettingElement($element) {
@@ -248,9 +388,9 @@ class ElasticsearchBackend extends BackendPluginBase {
     }
     else {
       $value = $this->getOption($element['option']);
-      $value = nl2br(check_plain(print_r($value, TRUE)));
+      $value = nl2br(String::checkPlain(print_r($value, TRUE)));
     }
-    $output .= '<dt><em>' . check_plain($element['label']) . '</em></dt>' . "\n";
+    $output .= '<dt><em>' . String::checkPlain($element['label']) . '</em></dt>' . "\n";
     $output .= '<dd>' . $value . '</dd>' . "\n";
 
     return "<dl>\n{$output}</dl>";
@@ -260,42 +400,47 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Overrides addIndex().
    */
-  /*public function addIndex(SearchApiIndex $index) {
+  public function addIndex(IndexInterface $index) {
     $index_name = $this->getIndexName($index);
     if (!empty($index_name)) {
       try {
-        $response = $this->elasticsearchClient->indices()->create(array(
-          'index' => $index_name,
-          'body' => array(
-            'settings' => array(
-              'number_of_shards' => $index->options['number_of_shards'],
-              'number_of_replicas' => $index->options['number_of_replicas'],
+        $client = $this->elasticsearchClient;
+        if (!$client->indices()->exists(array('index' => $index_name))) {
+          $params = array(
+            'index' => $index_name,
+            'body' => array(
+              'settings' => array(
+                'number_of_shards' => 5,//@TODO: Remove hard-coded value. $index->options['number_of_shards'],
+                'number_of_replicas' => 1,//@TODO: Remove hard-coded value. $index->options['number_of_replicas'],
+              )
             )
-          )
-        ));
-        if (empty($response['ok'])) {
-          drupal_set_message(t('The elasticsearch client wasn\'t able to create index'), 'error');
+          );
+          $response = $client->indices()->create($params);
+          if (!Cluster::elasticsearchCheckResponseAck($response)) {
+            drupal_set_message(t('The elasticsearch client wasn\'t able to create index'), 'error');
+          }
         }
+
         // Update mapping.
-        $this->fieldsUpdated($index);
+        //$this->fieldsUpdated($index);
       }
-      catch (Exception $e) {
+      catch (\Exception $e) {
         drupal_set_message($e->getMessage(), 'error');
       }
     }
-  }*/
+  }
 
   /**
    * Overrides fieldsUpdated().
    */
-  public function fieldsUpdated(SearchApiIndex $index) {
+  public function fieldsUpdated(IndexInterface $index) {
     $params = $this->getIndexParam($index, TRUE);
-
     $properties = array(
       'id' => array('type' => 'integer', 'include_in_all' => FALSE),
     );
 
     // Map index fields.
+    /** @var \Drupal\search_api\Item\FieldInterface[] $field_data */
     foreach ($index->getFields() as $field_id => $field_data) {
       $properties[$field_id] = $this->getFieldMapping($field_data);
     }
@@ -315,7 +460,7 @@ class ElasticsearchBackend extends BackendPluginBase {
         drupal_set_message(t('Cannot create the matting of the fields!'), 'error');
       }
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
       return FALSE;
     }
@@ -325,15 +470,15 @@ class ElasticsearchBackend extends BackendPluginBase {
 
   /**
    * Helper function to return the index param.
-   * @param SearchApiIndex $index
+   * @param IndexInterface $index
    * @return array
    */
-  protected function getIndexParam(SearchApiIndex $index, $with_type = FALSE) {
+  protected function getIndexParam(IndexInterface $index, $with_type = FALSE) {
     $index_name = $this->getIndexName($index);
 
     $params = array();
     $params['index'] = $index_name;
-
+    
     if ($with_type) {
       $params['type'] = $index->machine_name;
     }
@@ -350,22 +495,23 @@ class ElasticsearchBackend extends BackendPluginBase {
     try {
       $response = $this->elasticsearchClient->indices()->delete($params);
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
   }
 
   /**
    * Helper function, check if the type exists.
-   * @param SearchApiIndex $index
+   * @param IndexInterface $index
    * @return boolean
    */
-  protected function getElasticsearchTypeExists(SearchApiIndex $index) {
+  protected function getElasticsearchTypeExists(IndexInterface $index) {
     $params = $this->getIndexParam($index, TRUE);
+    //print_r($params);
     try {
       return $this->elasticsearchClient->indices()->existsType($params);
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
       return FALSE;
     }
@@ -374,30 +520,47 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Overrides indexItems().
    */
-  public function indexItems(SearchApiIndex $index, array $items) {
+  public function indexItems(IndexInterface $index, array $items) {
     $elastic_type_exists = $this->getElasticsearchTypeExists($index);
-
+    //print_r(json_encode($elastic_type_exists));
+    /*
     if (empty($elastic_type_exists) || empty($items)) {
       return array();
     }
+    */
+    if (empty($items)) {
+      return array();
+    }
+
+    //$index_id = $this->getIndexId($index->id());
     $params = $this->getIndexParam($index, TRUE);
 
-    $documents = array();
-    $params['refresh'] = TRUE;
-    foreach ($items as $id => $fields) {
+    /** @var \Drupal\search_api\Item\ItemInterface[] $items */
+    foreach ($items as $id => $item) {
       $data = array('id' => $id);
-      foreach ($fields as $field_id => $field_data) {
-        $data[$field_id] = $field_data['value'];
+      /** @var \Drupal\search_api\Item\FieldInterface $field */
+      foreach ($item as $name => $field) {
+        $data[$field->getFieldIdentifier()] = $field->getValues();
       }
-
       $params['body'][] = array('index' => array('_id' => $data['id']));
       $params['body'][] = $data;
     }
 
     try {
       $this->elasticsearchClient->bulk($params);
+      // If error throw the error we have.
+      if (!empty($response['errors'])) {
+        foreach($response['items'] as $item) {
+          if (!empty($item['index']['status']) && $item['index']['status'] == '400') {
+            // TODO: This foreach maybe is better to return only the indexed items for return
+            // instead of throwing an error and stop the process cause we are in bulk
+            // and some of the items can be indexed successfully.
+            throw new \Exception($item['index']['error']);
+          }
+        }
+      }
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
 
@@ -405,12 +568,48 @@ class ElasticsearchBackend extends BackendPluginBase {
   }
 
   /**
+   * Prefixes an index ID as configured.
+   *
+   * The resulting ID will be a concatenation of the following strings:
+   * - If set, the "elasticsearch.settings.index_prefix" configuration.
+   * - If set, the index-specific "elasticsearch.settings.index_prefix_INDEX"
+   *   configuration.
+   * - The index's machine name.
+   *
+   * @param string $machine_name
+   *   The index's machine name.
+   *
+   * @return string
+   *   The prefixed machine name.
+   */
+  protected function getIndexId($machine_name) {
+    // Prepend per-index prefix.
+    $id = $this->elasticSearchSettings->get('index_prefix_' . $machine_name) . $machine_name;
+    // Prepend environment prefix.
+    $id = $this->elasticSearchSettings->get('index_prefix') . $id;
+    return $id;
+  }
+
+  /**
+   * Creates an ID used as the unique identifier at the Solr server.
+   *
+   * This has to consist of both index and item ID. Optionally, the site hash is
+   * also included.
+   *
+   * @see elasticsearch_site_hash()
+   */
+  protected function createId($index_id, $item_id) {
+    $site_hash = !empty($this->configuration['site_hash']) ? elasticsearch_site_hash() . '-' : '';
+    return "$site_hash$index_id-$item_id";
+  }
+
+  /**
    * Overrides deleteItems().
    */
-  public function deleteItems($ids = 'all', SearchApiIndex $index = NULL) {
+  public function deleteItems(IndexInterface $index = NULL, array $ids) {
     if (empty($index)) {
       foreach ($this->getIndexes() as $index) {
-        $this->deleteItems('all', $index);
+        $this->deleteItems($index, 'all');
       }
     }
     elseif ($ids === 'all') {
@@ -427,12 +626,12 @@ class ElasticsearchBackend extends BackendPluginBase {
    * Helper function for bulk delete operation.
    *
    * @param array $ids
-   * @param SearchApiIndex $index
+   * @param IndexInterface $index
    *
    * TODO: Test function if working.
    *
    */
-  private function deleteItemsIds($ids, SearchApiIndex $index = NULL) {
+  private function deleteItemsIds($ids, IndexInterface $index = NULL) {
     $params = $this->getIndexParam($index, TRUE);
     foreach ($ids as $id) {
       $params['body'][] = array(
@@ -447,7 +646,7 @@ class ElasticsearchBackend extends BackendPluginBase {
     try {
       $this->elasticsearchClient->bulk($params);
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
   }
@@ -456,10 +655,9 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Overrides search().
    */
-  public function search(SearchApiQueryInterface $query) {
-
+  public function search(QueryInterface $query) {
     // Results.
-    $search_result = array('result count' => 0);
+    $search_result = \Drupal\search_api\Utility\Utility::createSearchResultSet($query);
 
     // Get index
     $index = $query->getIndex();
@@ -470,13 +668,14 @@ class ElasticsearchBackend extends BackendPluginBase {
     if (!$this->elasticsearchClient->indices()->existsType($params)) {
       return $search_result;
     }
+    
     $query->setOption('ElasticParams', $params);
 
     // Build Elastica query.
     $params = $this->buildSearchQuery($query);
 
     // Add facets.
-    $this->addSearchFacets($params, $query);
+    //$this->addSearchFacets($params, $query);
 
     // Do search.
     $response = $this->elasticsearchClient->search($params);
@@ -488,7 +687,7 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Recursively parse Search API filters.
    */
-  protected function parseFilter(SearchApiQueryFilter $query_filter, $index_fields, $ignored_field_id = '') {
+  protected function parseFilter(QueryFilter $query_filter, $index_fields, $ignored_field_id = '') {
 
     if (empty($query_filter)) {
       return NULL;
@@ -514,7 +713,7 @@ class ElasticsearchBackend extends BackendPluginBase {
             }
           }
           // Nested filters.
-          elseif ($filter_info instanceof SearchApiQueryFilter) {
+          elseif ($filter_info instanceof QueryFilter) {
             $nested_filters = $this->parseFilter($filter_info, $index_fields, $ignored_field_id);
             // TODO: handle error. - here is unnecessary cause in if we thow exceptions and this is still in try{}  .
             if (!empty($nested_filters)) {
@@ -524,9 +723,9 @@ class ElasticsearchBackend extends BackendPluginBase {
         }
         $filters = $this->setFiltersConjunction($filters, $conjunction);
       }
-      catch (Exception $e) {
-        watchdog('Elasticsearch Search API', check_plain($e->getMessage()), array(), WATCHDOG_ERROR);
-        drupal_set_message(check_plain($e->getMessage()), 'error');
+      catch (\Exception $e) {
+        watchdog('Elasticsearch Search API', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
+        drupal_set_message(String::checkPlain($e->getMessage()), 'error');
       }
 
       return $filters;
@@ -712,23 +911,23 @@ class ElasticsearchBackend extends BackendPluginBase {
     $negation = !empty($keys['#negation']);
     $values = array();
 
-    foreach (element_children($keys) as $key) {
-      $value = $keys[$key];
-
-      if (empty($value)) {
+    foreach ($keys as $key_nr => $key) {
+      // We cannot use \Drupal\Core\Render\Element::children() anymore because
+      // $keys is not a valid render array.
+      if ($key_nr[0] === '#' || !$key) {
         continue;
       }
 
-      if (is_array($value)) {
-        $values[] = $this->flattenKeys($value);
+      if (is_array($key)) {
+        $values[] = $this->flattenKeys($key);
       }
-      elseif (is_string($value)) {
+      elseif (is_string($key)) {
         // If parse mode is not "direct": quote the keyword.
         if ($parse_mode !== 'direct') {
-          $value = '"' . $value . '"';
+          $key = '"' . $key . '"';
         }
 
-        $values[] = $value;
+        $values[] = $key;
       }
     }
     if (!empty($values)) {
@@ -742,7 +941,7 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function. Returns the elasticsearch name of an index.
    */
-  public function getIndexName(SearchApiIndex $index) {
+  public function getIndexName(IndexInterface $index) {
     global $databases;
 
     $site_database = $databases['default']['default']['database'];
@@ -764,8 +963,8 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function. Get the elasticsearch mapping for a field.
    */
-  public function getFieldMapping($field) {
-    $type = search_api_extract_inner_type($field['type']);
+  public function getFieldMapping(FieldInterface $field) {
+    $type = \Drupal\search_api\Utility\Utility::isTextType($field['type']);
 
     switch ($type) {
       case 'text':
@@ -842,24 +1041,9 @@ class ElasticsearchBackend extends BackendPluginBase {
   }
 
   /**
-   * Helper function. Return server options.
-   */
-  public function getOptions() {
-    return $this->options;
-  }
-
-  /**
-   * Helper function. Return a server option.
-   */
-  public function getOption($option, $default = NULL) {
-    $options = $this->getOptions();
-    return isset($options[$option]) ? $options[$option] : $default;
-  }
-
-  /**
    * Helper function. Return index fields.
    */
-  public function getIndexFields(SearchApiQueryInterface $query) {
+  public function getIndexFields(QueryInterface $query) {
     $index = $query->getIndex();
     $index_fields = $index->getFields();
     return $index_fields;
@@ -868,7 +1052,7 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function build search query().
    */
-  protected function buildSearchQuery(SearchApiQueryInterface $query) {
+  protected function buildSearchQuery(QueryInterface $query) {
     // Query options.
     $query_options = $this->getSearchQueryOptions($query);
 
@@ -937,7 +1121,7 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function return associative array with query options.
    */
-  protected function getSearchQueryOptions(SearchApiQueryInterface $query) {
+  protected function getSearchQueryOptions(QueryInterface $query) {
 
     // Query options.
     $query_options = $query->getOptions();
@@ -976,21 +1160,22 @@ class ElasticsearchBackend extends BackendPluginBase {
       }
     }
 
+    $sort = NULL;
     // Sort.
     try {
       // TODO: Why we are calling SolrSearchQuery????
       $sort = $this->getSortSearchQuery($query);
     }
-    catch (Exception $e) {
-      watchdog('Elasticsearch Search API', check_plain($e->getMessage()), array(), WATCHDOG_ERROR);
+    catch (\Exception $e) {
+      watchdog('Elasticsearch Search API', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
       drupal_set_message($e->getMessage(), 'error');
     }
 
     // Filters.
-    $parsed_query_filters = $this->parseFilter($query->getFilter(), $index_fields);
-    if (!empty($parsed_query_filters)) {
-      $query_search_filter = $parsed_query_filters[0];
-    }
+    //$parsed_query_filters = $this->parseFilter($query->getFilter(), $index_fields);
+    //if (!empty($parsed_query_filters)) {
+    //  $query_search_filter = $parsed_query_filters[0];
+    //}
 
     // More Like This
     $mlt = array();
@@ -1002,7 +1187,6 @@ class ElasticsearchBackend extends BackendPluginBase {
       'query_offset' => $query_offset,
       'query_limit' => $query_limit,
       'query_search_string' => $query_search_string,
-      'query_search_filter' => $query_search_filter,
       'sort' => $sort,
       'mlt' => $mlt,
     );
@@ -1011,7 +1195,7 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function that return Sort for query in search.
    */
-  protected function getSortSearchQuery(SearchApiQueryInterface $query) {
+  protected function getSortSearchQuery(QueryInterface $query) {
 
     $index_fields = $this->getIndexFields($query);
     $sort = array();
@@ -1025,7 +1209,7 @@ class ElasticsearchBackend extends BackendPluginBase {
         $sort[$field_id] = $direction;
       }
       else {
-        throw new Exception(t('Incorrect sorting!.'));
+        throw new \Exception(t('Incorrect sorting!.'));
       }
     }
     return $sort;
@@ -1034,7 +1218,7 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function build facets in search.
    */
-  protected function addSearchFacets(array &$params, SearchApiQueryInterface $query) {
+  protected function addSearchFacets(array &$params, QueryInterface $query) {
 
     // SEARCH API FACETS.
     $facets = $query->getOption('search_api_facets');
@@ -1077,7 +1261,7 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function that add options and return facet
    */
-  protected function addFacetOptions(&$facet, SearchApiQueryInterface $query, $facet_info) {
+  protected function addFacetOptions(&$facet, QueryInterface $query, $facet_info) {
     $facet_limit = $this->getFacetLimit($facet_info);
     $facet_search_filter = $this->getFacetSearchFilter($query, $facet_info);
 
@@ -1103,7 +1287,7 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function return Facet filter.
    */
-  protected function getFacetSearchFilter(SearchApiQueryInterface $query, $facet_info ) {
+  protected function getFacetSearchFilter(QueryInterface $query, $facet_info ) {
     $index_fields = $this->getIndexFields($query);
     $facet_search_filter = '';
 
@@ -1227,34 +1411,42 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function which parse facets in search().
    */
-  public function parseSearchResponse($response, SearchApiQueryInterface $query) {
+  public function parseSearchResponse(array $response, QueryInterface $query) {
+    $index = $query->getIndex();
 
-    $search_result = array('results' => array());
+    // Set up the results array.
+    $results = Utility::createSearchResultSet($query);
+    $results->setExtraData('elasticsearch_response', $response);
+    $results->setResultCount($response['hits']['total']);
 
-    $search_result['result count'] = $response['hits']['total'];
-
-    // Parse results.
+    // Add each search result to the results array.
     if (!empty($response['hits']['hits'])) {
       foreach ($response['hits']['hits'] as $result) {
-        $id = $result['_id'];
+        $result_item = Utility::createItem($index, $result['_id']);
+        $result_item->setScore($result['_score']);
 
-        $search_result['results'][$id] = array(
-          'id' => $result['_id'],
-          'score' => $result['_score'],
-          'fields' => $result['_source'],
-        );
+        // Set each item in _source as a field in Search API
+        foreach ($result['_source'] as $elasticsearch_property_id => $elasticsearch_property) {
+          // Make everything a multifield
+          if (!is_array($elasticsearch_property)) {
+            $elasticsearch_property = array($elasticsearch_property);
+          }
+          $field = Utility::createField($index, $elasticsearch_property_id);
+          $field->setValues($elasticsearch_property);
+          $result_item->setField($elasticsearch_property_id, $field);
+        }
+        // @todo: Add excerpt handling
+        $results->addResultItem($result_item);
       }
     }
 
-    $search_result['search_api_facets'] = $this->parseSearchFacets($response, $query);
-
-    return $search_result;
+    return $results;
   }
 
   /**
    *  Helper function that parse facets.
    */
-  protected function parseSearchFacets($response, SearchApiQueryInterface $query) {
+  protected function parseSearchFacets($response, QueryInterface $query) {
 
     $result = array();
     $index_fields = $this->getIndexFields($query);
@@ -1301,12 +1493,12 @@ class ElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function. Get Autocomplete suggestions.
    *
-   * @param SearchApiQueryInterface $query
+   * @param QueryInterface $query
    * @param SearchApiAutocompleteSearch $search
    * @param string $incomplete_key
    * @param string $user_input
    */
-  public function getAutocompleteSuggestions(SearchApiQueryInterface $query, SearchApiAutocompleteSearch $search, $incomplete_key, $user_input) {
+  public function getAutocompleteSuggestions(QueryInterface $query, SearchApiAutocompleteSearch $search, $incomplete_key, $user_input) {
     $suggestions = array();
     // Turn inputs to lower case, otherwise we get case sensivity problems.
     $incomp = drupal_strtolower($incomplete_key);
@@ -1321,8 +1513,8 @@ class ElasticsearchBackend extends BackendPluginBase {
       // TODO: Making autocomplete to work as autocomplete instead of exact string match.
       $response = $this->search($query);
     }
-    catch (Exception $e) {
-      watchdog('Elasticsearch Search API', check_plain($e->getMessage()), array(), WATCHDOG_ERROR);
+    catch (\Exception $e) {
+      watchdog('Elasticsearch Search API', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
       return array();
     }
 
