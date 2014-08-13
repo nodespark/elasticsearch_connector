@@ -9,8 +9,11 @@ namespace Drupal\elasticsearch\Tests;
 
 use Drupal\search_api\Entity\Index;
 use Drupal\search_api\Entity\Server;
+use Drupal\elasticsearch\Entity\Cluster;
 use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api\Tests\ExampleContentTrait;
+use Drupal\elasticsearch\Tests\ElasticsearchTest;
+use Drupal\system\Tests\Entity\EntityUnitTestBase;
 use Drupal\search_api_db\Tests\SearchApiDbTest;
 
 /**
@@ -61,6 +64,7 @@ class ElasticsearchTest extends SearchApiDbTest {
     $this->installConfig(array('elasticsearch_test'));
 
     try {
+      /** @var \Drupal\search_api\Entity\Server $server */
       $server = Server::load($this->serverId);
       if ($server->getBackend()->ping()) {
         $this->elasticsearchAvailable = TRUE;
@@ -98,23 +102,68 @@ class ElasticsearchTest extends SearchApiDbTest {
   protected function clearIndex() {
     $server = Server::load($this->serverId);
     $index = Index::load($this->indexId);
-    $index->clear();
-    // manual commit
-    $server->getBackend()->commit();
+    $server->getBackend()->removeIndex($index);
+  }
+
+  /**
+   * Tests whether some test searches have the correct results.
+   */
+  protected function searchSuccess1() {
+    $prepareSearch = $this->buildSearch('test')->range(1, 2)->sort($this->getFieldId('id'), 'ASC');
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 4, 'Search for »test« returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(2, 3)), 'Search for »test« returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
+
+    $ids = $this->getItemIds(array(2));
+    $id = reset($ids);
+    $this->assertEqual(key($results->getResultItems()), $id);
+    $this->assertEqual($results->getResultItems()[$id]->getId(), $id);
+    $this->assertEqual($results->getResultItems()[$id]->getDatasourceId(), 'entity:entity_test');
+
+    $prepareSearch = $this->buildSearch('test foo')->sort($this->getFieldId('id'), 'ASC');
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 3, 'Search for »test foo« returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 4)), 'Search for »test foo« returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
+
+    $keys = array(
+      '#conjunction' => 'AND',
+      'test',
+      array(
+        '#conjunction' => 'OR',
+        'baz',
+        'foobar',
+      ),
+      array(
+        '#conjunction' => 'OR',
+        '#negation' => TRUE,
+        'bar',
+        'fooblob',
+      ),
+    );
+    $prepareSearch = $this->buildSearch($keys);
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 1, 'Complex search 1 returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(4)), 'Complex search 1 returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
   }
 
   /**
    * {@inheritdoc}
    */
   protected function uninstallModule() {
-    // See whether clearing the server works.
-    // Regression test for #2156151.
+    /** @var \Drupal\search_api\Entity\Server $server */
     $server = Server::load($this->serverId);
+    /** @var \Drupal\search_api\Entity\Index $index */
     $index = Index::load($this->indexId);
     $server->deleteAllItems($index);
-
-    // manual commit
-    $server->getBackend()->commit();
 
     $query = $this->buildSearch();
     $results = $query->execute();
@@ -125,13 +174,19 @@ class ElasticsearchTest extends SearchApiDbTest {
   protected function checkServerTables() {
   }
 
+  protected function searchSuccess2() {
+  }
+
+  protected function regressionTests() {
+  }
+
+  protected function regressionTests2() {
+  }
+
   protected function updateIndex() {
   }
 
   protected function editServer() {
-  }
-
-  protected function searchSuccess2() {
   }
 
   protected function assertIgnored(ResultSetInterface $results, array $ignored = array(), $message = 'No keys were ignored.') {
