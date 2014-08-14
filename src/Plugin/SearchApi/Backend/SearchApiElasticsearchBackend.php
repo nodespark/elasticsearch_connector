@@ -22,6 +22,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\elasticsearch\Entity\Cluster;
 use Drupal\Component\Utility\String;
 use Drupal\search_api\Item\FieldInterface;
+use Drupal\Core\Render\Element;
 
 /**
  * @SearchApiBackend(
@@ -173,16 +174,18 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   }
 
   /**
-   * Overrides configurationFormValidate().
+   * Overrides validConfigurationForm().
    */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state['values'];
     if (isset($values['port']) && (!is_numeric($values['port']) || $values['port'] < 0 || $values['port'] > 65535)) {
-      // @todo setError method does not exist in formbuilder. This will fail when called
-      $this->formBuilder->setError($form['port'], $form_state, $this->t('The port has to be an integer between 0 and 65535.'));
+      $form_state->setError($form['port'], $form_state, $this->t('The port has to be an integer between 0 and 65535.'));
     }
   }
 
+  /**
+   * Overrides submitConfigurationForm().
+   */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state['values'];
 
@@ -291,8 +294,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Helper function. Parse an option form element.
    */
   protected function parseOptionFormElement($element, $key) {
-    // @todo element_children is deprecated
-    $children_keys = element_children($element);
+    $children_keys = Element::children($element);
 
     if (!empty($children_keys)) {
       $children = array();
@@ -416,8 +418,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
             'index' => $index_name,
             'body' => array(
               'settings' => array(
-                'number_of_shards' => 5,//@TODO: Remove hard-coded value. $index->options['number_of_shards'],
-                'number_of_replicas' => 1,//@TODO: Remove hard-coded value. $index->options['number_of_replicas'],
+                'number_of_shards' => isset($index->options['number_of_shards']) ? $index->options['number_of_shards'] : 5 ,
+                'number_of_replicas' => isset($index->options['number_of_replicas']) ? $index->options['number_of_replicas'] : 1,
               )
             )
           );
@@ -447,6 +449,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     // Map index fields.
     /** @var \Drupal\search_api\Item\FieldInterface[] $field_data */
+    print_r(json_encode($index->getFields()));
     foreach ($index->getFields() as $field_id => $field_data) {
       $properties[$field_id] = $this->getFieldMapping($field_data);
     }
@@ -485,7 +488,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $params = array();
     $params['index'] = $index_name;
 
-    // @todo machine_name is not a valid field anymore afaik. Please check
     if ($with_type) {
       $params['type'] = $index->machine_name;
     }
@@ -514,7 +516,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   protected function getElasticsearchTypeExists(IndexInterface $index) {
     $params = $this->getIndexParam($index, TRUE);
-    //print_r($params);
     try {
       return $this->elasticsearchClient->indices()->existsType($params);
     }
@@ -529,7 +530,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function indexItems(IndexInterface $index, array $items) {
     $elastic_type_exists = $this->getElasticsearchTypeExists($index);
-    //print_r(json_encode($elastic_type_exists));
     /*
     if (empty($elastic_type_exists) || empty($items)) {
       return array();
@@ -539,7 +539,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       return array();
     }
 
-    //$index_id = $this->getIndexId($index->id());
     $params = $this->getIndexParam($index, TRUE);
 
     /** @var \Drupal\search_api\Item\ItemInterface[] $items */
@@ -972,47 +971,52 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Helper function. Get the elasticsearch mapping for a field.
    */
   public function getFieldMapping(FieldInterface $field) {
-    $type = \Drupal\search_api\Utility\Utility::isTextType($field['type']);
+    try{
+      $type = \Drupal\search_api\Utility\Utility::isTextType($field->type);
 
-    switch ($type) {
-      case 'text':
-        return array(
-        'type' => 'string',
-        'boost' => $field['boost'],
-        );
+      switch ($type) {
+        case 'text':
+          return array(
+          'type' => 'string',
+          'boost' => $field['boost'],
+          );
 
-      case 'uri':
-      case 'string':
-      case 'token':
-        return array(
-        'type' => 'string',
-        'index' => 'not_analyzed',
-        );
+        case 'uri':
+        case 'string':
+        case 'token':
+          return array(
+          'type' => 'string',
+          'index' => 'not_analyzed',
+          );
 
-      case 'integer':
-      case 'duration':
-        return array(
-        'type' => 'integer',
-        );
+        case 'integer':
+        case 'duration':
+          return array(
+          'type' => 'integer',
+          );
 
-      case 'boolean':
-        return array(
-        'type' => 'boolean',
-        );
+        case 'boolean':
+          return array(
+          'type' => 'boolean',
+          );
 
-      case 'decimal':
-        return array(
-        'type' => 'float',
-        );
+        case 'decimal':
+          return array(
+          'type' => 'float',
+          );
 
-      case 'date':
-        return array(
-        'type' => 'date',
-        'format' => 'date_time',
-        );
+        case 'date':
+          return array(
+          'type' => 'date',
+          'format' => 'date_time',
+          );
 
-      default:
-        return NULL;
+        default:
+          return NULL;
+      }
+    }
+    catch (\Exception $e) {
+      watchdog('Elasticsearch Backend', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
     }
   }
 
