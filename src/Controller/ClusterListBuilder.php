@@ -13,7 +13,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Provides a listing of Example.
+ * Provides a listing of Clusters along with their indices.
  */
 class ClusterListBuilder extends ConfigEntityListBuilder {
   /**
@@ -179,13 +179,12 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   public function render() {
     $entity_groups = $this->load();
     $list['#type'] = 'container';
-    // @todo: fix the deprecated generateFromPath
     $list['clusters'] = array(
       '#type' => 'table',
       '#header' => $this->buildHeader(),
       '#rows' => array(),
       '#empty' => $this->t('No clusters available. <a href="@link">Add new cluster</a>.', array(
-      '@link' => \Drupal::urlGenerator()->generateFromPath('admin/config/search/elasticsearch/clusters/add'),
+      '@link' => \Drupal::urlGenerator()->generate('elasticsearch.cluster_add'),
       )),
     );
     foreach ($entity_groups as $cluster_group) {
@@ -193,7 +192,6 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         $list['clusters']['#rows'][$entity->id()] = $this->buildRow($entity);
       }
     }
-
     return $list;
   }
 }

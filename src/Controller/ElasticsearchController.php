@@ -8,46 +8,45 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\elasticsearch\Entity\Cluster;
 
 /**
- * Example page controller.
+ * Provides route responses for elasticsearch clusters.
  */
 class ElasticSearchController extends ControllerBase {
 
   /**
-   * Displays information about a Search API index.
+   * Displays information about an Elasticsearch Cluster.
    *
    * @param \Drupal\elasticsearch\Entity\Cluster $cluster
-   *   An instance of IndexInterface.
+   *   An instance of Cluster.
    *
    * @return array
    *   An array suitable for drupal_render().
    */
   public function page(Cluster $elasticsearch_cluster) {
     // Build the Search API index information.
-    //print_r($elasticsearch_cluster);
     $render = array(
       'view' => array(
         '#theme' => 'elasticsearch_cluster',
         '#cluster' => $elasticsearch_cluster,
       ),
     );
-    // Check if the index is enabled and can be written to
-    // @todo: Remove debug statements here
+    // Check if the cluster is enabled and can be written to
     if ($elasticsearch_cluster->cluster_id) {
-      //debug
-      //print_r($elasticsearch_cluster);
       $render['form'] = $this->formBuilder()->getForm('Drupal\elasticsearch\Form\ClusterForm', $elasticsearch_cluster);
-      echo 'hi';
     }
     return $render;
   }
 
   /**
-   * @todo Missing documentation
+   * Page title callback for a cluster's "View" tab.
    *
-   * @param Cluster $elasticsearch_cluster
+   * @param \Drupal\elasticsearch\Entity\Cluster $elasticsearch_cluster
+   *   The cluster that is displayed.
+   *
    * @return string
+   *   The page title.
    */
   public function pageTitle(Cluster $elasticsearch_cluster) {
+    print_r($elasticsearch_cluster);
     if ($elasticsearch_cluster->cluster_id) {
       return String::checkPlain($elasticsearch_cluster->label());
     }
@@ -57,17 +56,15 @@ class ElasticSearchController extends ControllerBase {
   }
 
   /**
-   * @todo: Missing documentation
+   * Complete information about the Elasticsearch Client
    *
-   * @param ConfigEntityBase $elasticsearch_cluster
+   * @param Cluster $elasticsearch_cluster
    * @return mixed
    * @throws \Drupal\elasticsearch\Entity\Exception
    * @throws \Exception
    */
   public function getInfo(Cluster $elasticsearch_cluster) {
-    //print_r($elasticsearch_cluster);
     $cluster_status = Cluster::getClusterInfo($elasticsearch_cluster);
-    //print_r($cluster_status);
     $cluster_client = $cluster_status['client'];
 
     $node_rows = $cluster_statistics_rows = $cluster_health_rows = array();
@@ -158,63 +155,4 @@ class ElasticSearchController extends ControllerBase {
 
     return $output;
   }
-
-  /**
-   * Display all indices in cluster.
-   *
-   * @param object
-   * @return array
-   */
-  public function elasticsearchClusterIndices(Cluster $elasticsearch_cluster) {
-    $headers = array(
-      array('data' => t('Index name')),
-      array('data' => t('Docs')),
-      array('data' => t('Size')),
-      array('data' => t('Operations')),
-    );
-
-    $rows = array();
-    $cluster_info = Cluster::getClusterInfo($elasticsearch_cluster);
-
-    /** @var \Elasticsearch\Client $client */
-    $client = $cluster_info['client'];
-
-    if ($client && !empty($cluster_info['info']) && Cluster::checkClusterStatus($cluster_info['info'])) {
-      $indices = $client->indices()->stats();
-      foreach ($indices['indices'] as $index_name => $index_info) {
-        $row = array();
-
-        /*$operations = theme('links', array(
-          'links' => array(
-            array('title' => t('Aliases'), 'href' => 'admin/config/search/elasticsearch/clusters/' . $elasticsearch_cluster->cluster_id . '/indices/' . $index_name . '/aliases'),
-            array('title' => t('Delete'), 'href' => 'admin/config/search/elasticsearch/clusters/' . $elasticsearch_cluster->cluster_id . '/indices/' . $index_name . '/delete'),
-          ),
-          'attributes' => array(
-            'class' => array('links', 'inline'),
-          ),
-        ));
-        */
-
-        $row[] = $index_name;
-        $row[] = $index_info['total']['docs']['count'];
-        $row[] = format_size($index_info['total']['store']['size_in_bytes']);
-        //$row[] = $operations;
-
-        $rows[] = $row;
-      }
-    }
-    else {
-      drupal_set_message(t('The cluster cannot be connected for some reason.'), 'error');
-    }
-
-    $output['elasticsearch']['table'] = array(
-      '#theme' => 'table',
-      '#header' => $headers,
-      '#rows' => $rows,
-      //'#attributes' => array('class' => array('admin-elasticsearch-indices')),
-    );
-
-    return $output;
-  }
-
 }

@@ -27,6 +27,7 @@ elasticsearch.cluster_edit:
   defaults:
     _entity_form: 'elasticsearch_cluster.edit'
     _title: 'Cluster Edit'
+    _title_callback: '\Drupal\elasticsearch\Controller\ElasticsearchController::pageTitle'
   requirements:
     _entity_access: 'elasticsearch_cluster.edit'
 

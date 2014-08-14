@@ -171,7 +171,7 @@ class Cluster extends ConfigEntityBase {
   }
 
   /**
-   * @todo missing documentation
+   * Load a cluster object
    *
    * @param $cluster_id
    * @return \Drupal\elasticsearch\Entity\Cluster
@@ -181,7 +181,7 @@ class Cluster extends ConfigEntityBase {
   }
 
   /**
-   * @todo missing documentation
+   * Load all clusters
    *
    * @param bool $include_inactive
    * @return \Drupal\elasticsearch\Entity\Cluster[]
@@ -211,12 +211,12 @@ class Cluster extends ConfigEntityBase {
     return new Client($options);
   }
 
-  /**
-   * @todo missing documentation
-   *
-   * @param $response
-   * @return bool
-   */
+/**
+ * Check if the REST response is successful and with status code 200.
+ * @param array $response
+ *
+ * @return boolean
+ */
   public static function elasticsearchCheckResponseAck($response) {
     if (is_array($response) && !empty($response['acknowledged'])) {
       return TRUE;
@@ -227,7 +227,7 @@ class Cluster extends ConfigEntityBase {
   }
 
   /**
-   * Check if the status is OK.
+   * Check if the cluster status is OK.
    *
    * @param array $status
    * @return bool
