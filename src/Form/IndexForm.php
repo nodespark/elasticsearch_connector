@@ -61,6 +61,16 @@ class IndexForm extends EntityForm {
   }
 
   /**
+   * Get the index storage controller.
+   *
+   * @return \Drupal\Core\Entity\EntityStorageInterface
+   *   An instance of EntityStorageInterface.
+   */
+  protected function getIndexStorage() {
+    return $this->getEntityManager()->getStorage('elasticsearch_cluster_index');
+  }
+
+  /**
    * Get all clusters.
    *
    * @return array
@@ -170,7 +180,7 @@ class IndexForm extends EntityForm {
       '#maxlength' => 125,
       '#description' => t('Unique, machine-readable identifier for this Index'),
       '#machine_name' => array(
-        'exists' => '\Drupal\elasticsearch\Entity\Index::load',
+        'exists' => array($this->getIndexStorage(), 'load'),
         'source' => array('name'),
         'replace_pattern' => '[^a-z0-9_]+',
         'replace' => '_',
