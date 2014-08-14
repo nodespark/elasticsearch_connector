@@ -9,6 +9,7 @@ namespace Drupal\elasticsearch\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\elasticsearch\Entity\Cluster;
 
 /**
  * Defines a confirmation form for deletion of a custom menu.
@@ -26,9 +27,19 @@ class IndexDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function submit(array $form, FormStateInterface $form_state) {
-    $this->entity->delete();
-    drupal_set_message($this->t('The index %title has been deleted.', array('%title' => $this->entity->label())));
-    $form_state->setRedirect('elasticsearch.clusters');
+    $cluster = Cluster::loadCluster($this->entity->server);
+    $client = Cluster::getClusterByUrls(array($cluster->url));
+    if ($client) {
+      try {
+        $client->indices()->delete(array('index' => $this->entity->index_id));
+        $this->entity->delete();
+        drupal_set_message($this->t('The index %title has been deleted.', array('%title' => $this->entity->label())));
+        $form_state->setRedirect('elasticsearch.clusters');
+      }
+      catch (\Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
+    }
   }
 
   /**
