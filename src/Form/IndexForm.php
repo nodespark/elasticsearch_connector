@@ -136,15 +136,17 @@ class IndexForm extends EntityForm {
       '#type' => 'textfield',
       '#title' => t('Number of shards'),
       '#required' => TRUE,
-      '#default_value' => empty($index->num_of_shards) ? '' : $index->num_of_shards,
-      '#description' => t('Enter the number of shards for the index.')
+      '#default_value' => empty($index->num_of_shards) ? 5 : $index->num_of_shards,
+      '#description' => t('Enter the number of shards for the index.'),
+      '#disabled' => !empty($index->num_of_shards)
     );
 
     $form['num_of_replica'] = array(
       '#type' => 'textfield',
       '#title' => t('Number of replica'),
-      '#default_value' => empty($index->num_of_replica) ? '' : $index->num_of_replica,
-      '#description' => t('Enter the number of shards replicas.')
+      '#default_value' => empty($index->num_of_replica) ? 1 : $index->num_of_replica,
+      '#description' => t('Enter the number of shards replicas.'),
+      '#disabled' => !empty($index->num_of_replica)
     );
   }
 
