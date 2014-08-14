@@ -60,7 +60,7 @@ class ClusterForm extends EntityForm {
       '#machine_name' => array(
         'exists' => '\Drupal\elasticsearch\Entity\Cluster::load',
         'source' => array('name'),
-        'replace_pattern' => '[^a-z0-9-]+',
+        'replace_pattern' => '[^a-z0-9_]+',
         'replace' => '_',
       ),
       '#required' => TRUE,
