@@ -125,7 +125,7 @@ class IndexForm extends EntityForm {
     $form['server'] = array(
       '#type' => 'radios',
       '#title' => $this->t('Server'),
-      '#default_value' => empty($index->server) ? $index->server : '',
+      '#default_value' => !empty($index->server) ? $index->server : t('Disabled'),
       '#description' => $this->t('Select the server this index should reside on. Index can not be enabled without connection to valid server.'),
       '#options' => $this->getClusterField('cluster_id'),
       '#weight' => 9,
@@ -183,7 +183,7 @@ class IndexForm extends EntityForm {
         $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
         $index_params['body']['settings']['cluster_machine_name'] = $values['server'];
         $response = $client->indices()->create($index_params);
-        // @todo: the check response ack function does not exist
+
         if (Cluster::elasticsearchCheckResponseAck($response)) {
           drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['name'])));
         }
@@ -198,7 +198,6 @@ class IndexForm extends EntityForm {
     return parent::submit($form, $form_state);
   }
 
-  // @TODO
   public function save(array $form, FormStateInterface $form_state) {
     $index = $this->entity;
     

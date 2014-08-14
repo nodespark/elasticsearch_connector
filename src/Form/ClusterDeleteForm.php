@@ -9,6 +9,8 @@ namespace Drupal\elasticsearch\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
+use Drupal\elasticsearch\Entity\Cluster;
 
 /**
  * Defines a confirmation form for deletion of a custom menu.
@@ -26,8 +28,13 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function submit(array $form, FormStateInterface $form_state) {
-    $this->entity->delete();
-    drupal_set_message($this->t('The cluster %title has been deleted.', array('%title' => $this->entity->label())));
+    if ($this->entity->id() == Cluster::getDefaultCluster()) {
+      drupal_set_message($this->t('The cluster %title cannot be deleted as it is set as the default cluster.', array('%title' => $this->entity->label())), 'error');
+    }
+    else {
+      $this->entity->delete();
+      drupal_set_message($this->t('The cluster %title has been deleted.', array('%title' => $this->entity->label())));
+    }
     $form_state->setRedirect('elasticsearch.clusters');
   }
 
@@ -42,6 +49,6 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return $this->entity->urlInfo('canonical');
+    return new Url('elasticsearch.cluster_info', array('elasticsearch_cluster' => $this->entity->id()));
   }
 }

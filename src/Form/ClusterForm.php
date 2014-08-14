@@ -128,7 +128,6 @@ class ClusterForm extends EntityForm {
    * {@inheritdoc}
    */
   public function validate(array $form, FormStateInterface $form_state) {
-    // TODO: Handle the validation of the elements.
     parent::validate($form, $form_state);
 
     /** @var Cluster $cluster_from_form */
@@ -147,6 +146,12 @@ class ClusterForm extends EntityForm {
 
     // Complain if we are removing the default.
     $default = Cluster::getDefaultCluster();
+    if (empty($default) && !$form_state['values']['default']) {
+    	$default = Cluster::setDefaultCluster($form_state['values']['cluster_id']);
+    }
+    if ($form_state['values']['default']) {
+    	$default = Cluster::setDefaultCluster($form_state['values']['cluster_id']);	
+    }
     if ($form_state['values']['default'] == 0 && !empty($default) && $default == $form_state['values']['cluster_id']) {
       drupal_set_message(
         t('There must be a default connection. %name is still the default connection.'
@@ -168,8 +173,7 @@ class ClusterForm extends EntityForm {
       array('data' => t('Status')),
       array('data' => t('Number of nodes')),
     );
-    // @todo $rows is already overwritten below. no need to initialize it.
-    $rows = $element = array();
+    $element = array();
 
     if (isset($cluster_info['state'])) {
       $rows = array(array(
@@ -212,10 +216,7 @@ class ClusterForm extends EntityForm {
   }
 
   /**
-   * @todo Missing documentation
-   *
-   * @param array $form
-   * @param FormStateInterface $form_state
+   * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
     $cluster = $this->entity;
