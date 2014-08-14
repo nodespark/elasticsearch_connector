@@ -135,13 +135,11 @@ class ClusterForm extends EntityForm {
     try {
       $cluster_info = Cluster::getClusterInfo($cluster_from_form);
       if (!isset($cluster_info['info']) || !Cluster::checkClusterStatus($cluster_info['info'])) {
-        // @todo form_set_error is deprecated
-        form_set_error('url', $form_state, t('Cannot connect to the cluster!'));
+        $form_state->setErrorByName('url', t('Cannot connect to the cluster!'));
       }
     }
     catch (\Exception $e) {
-      // @todo form_set_error is deprecated
-      form_set_error('url', $form_state, t('Cannot connect to the cluster!'));
+      $form_state->setErrorByName('url', t('Cannot connect to the cluster!'));
     }
 
     // Complain if we are removing the default.

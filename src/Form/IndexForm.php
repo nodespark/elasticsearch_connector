@@ -19,23 +19,53 @@ use Drupal\elasticsearch\Entity\Cluster;
  */
 class IndexForm extends EntityForm {
 
-  // @todo: A lot of documentation is missing here!
-
+    /**
+   * The entity manager.
+   *
+   * This object members must be set to anything other than private in order for
+   * \Drupal\Core\DependencyInjection\DependencySerialization to be detected.
+   *
+   * @var \Drupal\Core\Entity\EntityManager
+   */
   protected $entityManager;
 
+  /**
+   * Constructs an IndexForm object.
+   *
+   * @param \Drupal\Core\Entity\EntityManager $entity_manager
+   *   The entity manager.
+   */
   public function __construct(EntityManager $entity_manager) {
     // Setup object members.
     $this->entityManager = $entity_manager;
   }
 
+  /**
+   * Get the entity manager.
+   *
+   * @return \Drupal\Core\Entity\EntityManager
+   *   An instance of EntityManager.
+   */
   protected function getEntityManager() {
     return $this->entityManager;
   }
 
+  /**
+   * Get the cluster storage controller.
+   *
+   * @return \Drupal\Core\Entity\EntityStorageInterface
+   *   An instance of EntityStorageInterface.
+   */
   protected function getClusterStorage() {
     return $this->getEntityManager()->getStorage('elasticsearch_cluster');
   }
 
+  /**
+   * Get all clusters.
+   *
+   * @return array
+   *   All clusters
+   */
   protected function getAllClusters() {
     $options = array();
     foreach ($this->getClusterStorage()->loadMultiple() as $cluster_machine_name) {
@@ -44,6 +74,15 @@ class IndexForm extends EntityForm {
     return $options;
   }
 
+  /**
+   * Get cluster field.
+   *
+   * @param string
+   *   field name
+   *  
+   * @return array
+   *   All clusters' fields.
+   */
   protected function getClusterField($field) {
     $clusters = $this->getAllClusters();
     $options = array();
@@ -53,6 +92,15 @@ class IndexForm extends EntityForm {
     return $options;
   }
 
+  /**
+   * Return url of the selected cluster.
+   *
+   * @param string
+   *   cluster id
+   *  
+   * @return string
+   *   cluster url
+   */
   protected function getSelectedClusterUrl($id) {
     $result = NULL;
     $clusters = $this->getAllClusters();
@@ -64,6 +112,9 @@ class IndexForm extends EntityForm {
     return $result;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity.manager')
@@ -71,6 +122,9 @@ class IndexForm extends EntityForm {
   }
 
 
+  /**
+   * {@inheritdoc}
+   */
   public function form(array $form, FormStateInterface $form_state) {
     if (!empty($form_state['rebuild'])) {
       // Rebuild the entity with the form state values.
@@ -92,6 +146,9 @@ class IndexForm extends EntityForm {
     return $form;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function buildEntityForm(array &$form, FormStateInterface $form_state, Index $index) {
     $form['index'] = array(
       '#type'  => 'value',
@@ -156,20 +213,22 @@ class IndexForm extends EntityForm {
   public function validate(array $form, FormStateInterface $form_state) {
     parent::validate($form, $form_state);
 
-    // @todo form_set_error is deprecated
     if (!preg_match('/^[a-z][a-z0-9_]*$/i', $form_state['values']['name'])) {
-      form_set_error('name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
+      $form_state->setErrorByName('name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
     }
 
     if (!is_numeric($form_state['values']['num_of_shards']) || $form_state['values']['num_of_shards'] < 1) {
-      form_set_error('num_of_shards', t('Invalid number of shards.'));
+      $form_state->setErrorByName('num_of_shards', t('Invalid number of shards.'));
     }
 
     if (!is_numeric($form_state['values']['num_of_replica'])) {
-      form_set_error('num_of_replica', t('Invalid number of replica.'));
+      $form_state->setErrorByName('num_of_replica', t('Invalid number of replica.'));
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function submit(array $form, FormStateInterface $form_state) {
     $values = $form_state['values'];
 
@@ -198,6 +257,9 @@ class IndexForm extends EntityForm {
     return parent::submit($form, $form_state);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function save(array $form, FormStateInterface $form_state) {
     $index = $this->entity;
     
