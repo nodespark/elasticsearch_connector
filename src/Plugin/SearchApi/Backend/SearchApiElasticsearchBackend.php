@@ -244,9 +244,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   public function preDelete() {
   }
 
-  public function deleteAllIndexItems(IndexInterface $index) {
-  }
-
   /**
    * Overrides viewSettings().
    */
@@ -499,6 +496,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Overrides removeIndex().
    */
   public function removeIndex($index) {
+    echo '3';
     $params = $this->getIndexParam($index);
 
     try {
@@ -610,19 +608,19 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function deleteAllIndexItems(IndexInterface $index) {
+    $this->removeIndex($index);
+    $this->addIndex($index);
+  }
+
+  /**
    * Overrides deleteItems().
    */
   public function deleteItems(IndexInterface $index = NULL, array $ids) {
-    if (empty($index)) {
-      // @todo getIndexes function does not exist. Did you test this?
-      foreach ($this->getIndexes() as $index) {
-        $this->deleteItems($index, 'all');
-      }
-    }
-    elseif ($ids === 'all') {
-      // Faster to delete the index and recreate it.
-      $this->removeIndex($index);
-      $this->addIndex($index);
+    if ($ids === 'all') {
+      $this->deleteAllIndexItems($index);
     }
     else {
       $this->deleteItemsIds($ids, $index);
