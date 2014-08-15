@@ -184,6 +184,7 @@ class IndexForm extends EntityForm {
       '#disabled' => !empty($index->index_id),
     );
 
+    //here server refers to the elasticsearch cluster
     $form['server'] = array(
       '#type' => 'radios',
       '#title' => $this->t('Server'),
@@ -237,23 +238,31 @@ class IndexForm extends EntityForm {
     $cluster_url = self::getSelectedClusterUrl($form_state['values']['server']);
 
     $client = Cluster::getClusterByUrls(array($cluster_url));
+    $response = $index_params = array();
     if ($client) {
       try {
-        $index_params['index'] = $values['name'];
+        $index_params['index'] = $values['index_id'];
         $index_params['body']['settings']['number_of_shards']   = $values['num_of_shards'];
         $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
         $index_params['body']['settings']['cluster_machine_name'] = $values['server'];
-        $response = $client->indices()->create($index_params);
 
+      }
+      catch (\Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
+      try {
+        $response = $client->indices()->create($index_params);
         if (Cluster::elasticsearchCheckResponseAck($response)) {
-          drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['name'])));
+          drupal_set_message(t('The index %index having id %index_id has been successfully created.',
+            array('%index' => $values['name'], '%index_id' => $values['index_id'])));
         }
         else {
-          drupal_set_message(t('Fail to create the index %index', array('%index' => $values['name'])), 'error');
+          drupal_set_message(t('Fail to create the index %index having id @index_id',
+            array('%index' => $values['name'], '@index_id' => $values['index_id'])), 'error');
         }
       }
       catch (\Exception $e) {
-        drupal_set_message($e->getMessage() . 'hello', 'error');
+        drupal_set_message($e->getMessage(), 'error');
       }
     }
     return parent::submit($form, $form_state);
