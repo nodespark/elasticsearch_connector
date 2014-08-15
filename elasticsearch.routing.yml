@@ -54,14 +54,6 @@ elasticsearch.clusterindex_add:
   requirements:
     _entity_create_access: 'elasticsearch_cluster_index'
 
-elasticsearch.clusterindex_edit:
-  path: '/admin/config/search/elasticsearch/indices/{elasticsearch_cluster_index}/edit'
-  defaults:
-    _entity_form: 'elasticsearch_cluster_index.edit'
-    _title: 'Index Edit'
-  requirements:
-    _entity_access: 'elasticsearch_cluster_index.edit'
-
 elasticsearch.clusterindex_delete:
   path: '/admin/config/search/elasticsearch/indices/{elasticsearch_cluster_index}/delete'
   defaults:

@@ -153,14 +153,6 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         ),
       );
     } elseif (isset($entity->index_id)) {
-      $operations['edit'] = array(
-        'title' => $this->t('Edit'),
-        'weight' => 20,
-        'route_name' => 'elasticsearch.clusterindex_edit',
-        'route_parameters' => array(
-          'elasticsearch_cluster_index' => $entity->id(),
-        ),
-      );
       $operations['delete'] = array(
         'title' => $this->t('Delete'),
         'weight' => 20,

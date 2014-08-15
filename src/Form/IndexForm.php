@@ -145,12 +145,7 @@ class IndexForm extends EntityForm {
 
     $index = $form_state['entity'] = $this->getEntity();
 
-    if ($this->operation == 'edit') {
-      $form['#title'] = $this->t('Edit Index @label', array('@label' => $index->label()));
-    }
-    else {
-      $form['#title'] = $this->t('Index');
-    } 
+    $form['#title'] = $this->t('Index');
     
     $this->buildEntityForm($form, $form_state, $index);
     return $form;
@@ -169,14 +164,14 @@ class IndexForm extends EntityForm {
       '#type' => 'textfield',
       '#title' => t('Index name'),
       '#required' => TRUE,
-      '#default_value' => empty($index->name) ? '' : $index->name,
+      '#default_value' => '',
       '#description' => t('Enter the index name.')
     );
 
     $form['index_id'] = array(
       '#type' => 'machine_name',
       '#title' => t('Index id'),
-      '#default_value' => !empty($index->index_id) ? $index->index_id : '',
+      '#default_value' => '',
       '#maxlength' => 125,
       '#description' => t('Unique, machine-readable identifier for this Index'),
       '#machine_name' => array(
@@ -203,17 +198,15 @@ class IndexForm extends EntityForm {
       '#type' => 'textfield',
       '#title' => t('Number of shards'),
       '#required' => TRUE,
-      '#default_value' => empty($index->num_of_shards) ? 5 : $index->num_of_shards,
+      '#default_value' => 5,
       '#description' => t('Enter the number of shards for the index.'),
-      '#disabled' => !empty($index->num_of_shards)
     );
 
     $form['num_of_replica'] = array(
       '#type' => 'textfield',
       '#title' => t('Number of replica'),
-      '#default_value' => empty($index->num_of_replica) ? 1 : $index->num_of_replica,
+      '#default_value' => 1,
       '#description' => t('Enter the number of shards replicas.'),
-      '#disabled' => !empty($index->num_of_replica)
     );
   }
 
@@ -222,7 +215,6 @@ class IndexForm extends EntityForm {
    */
   public function validate(array $form, FormStateInterface $form_state) {
     parent::validate($form, $form_state);
-
     if (!preg_match('/^[a-z][a-z0-9_]*$/i', $form_state['values']['name'])) {
       $form_state->setErrorByName('name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
     }
@@ -261,7 +253,7 @@ class IndexForm extends EntityForm {
         }
       }
       catch (\Exception $e) {
-        drupal_set_message($e->getMessage(), 'error');
+        drupal_set_message($e->getMessage() . 'hello', 'error');
       }
     }
     return parent::submit($form, $form_state);
@@ -275,12 +267,7 @@ class IndexForm extends EntityForm {
     
     $status = $index->save();
 
-    if ($status == SAVED_UPDATED) {
-      drupal_set_message(t('Index %label has been updated.', array('%label' => $index->label())));
-    }
-    else {
-      drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
-    }
+    drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
 
     $form_state->setRedirect('elasticsearch.clusters');
   }
