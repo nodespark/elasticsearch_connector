@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\elasticsearch\Entity\Cluster.
+ */
+
 namespace Drupal\elasticsearch\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;

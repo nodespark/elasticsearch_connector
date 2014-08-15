@@ -9,10 +9,10 @@ elasticsearch.index.*:
       type: string
       label: 'Index Name'
     num_of_shards:
-      type: string
+      type: integer
       label: 'Shards'
     num_of_replica:
-      type: string
+      type: integer
       label: 'Replica'
     server:
       type: string

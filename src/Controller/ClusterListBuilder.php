@@ -50,17 +50,22 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     $indices = $this->indexStorage->loadMultiple();
 
     $cluster_groups = array();
+    $lone_indices = array();
     foreach ($clusters as $cluster) {
       $cluster_group = array(
-        "cluster." . $cluster->cluster_id => $cluster,
+        'cluster.' . $cluster->cluster_id => $cluster,
       );
-
       foreach ($indices as $index) {
-        if ($index->server == $cluster->cluster_id)
-          $cluster_group["index." . $index->index_id] = $index;
+        if ($index->server == $cluster->cluster_id) {
+          $cluster_group['index.' . $index->index_id] = $index;
+        }
+        else if ($index->server == NULL) {
+          $lone_indices['index.' . $index->index_id] = $index;
+        }
       }
-      $cluster_groups["cluster." . $cluster->cluster_id] = $cluster_group;
+      $cluster_groups['cluster.' . $cluster->cluster_id] = $cluster_group;
     }
+    $cluster_groups['cluster.lone'] = $lone_indices;
 
     return $cluster_groups;
   }
@@ -72,8 +77,9 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
       return array(
         'type' => $this->t('Type'),
         'title' => $this->t('Name'),
+        'machine_name' => $this->t('Machine Name'),
         'status' => $this->t('Status'),
-        'clusterStatus' => $this->t('Cluster Status'),
+        'cluster_status' => $this->t('Cluster Status'),
       ) + parent::buildHeader();
   }
 
@@ -104,6 +110,9 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
               '#title' => $entity->label(),
             ) + $entity->urlInfo('info')->toRenderArray(),
           ),
+          'machine_name' => array(
+            'data' => $entity->id(),
+          ),
           'status' => array(
             'data' => $cluster->status,
           ),
@@ -122,6 +131,9 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
           ),
           'title' => array(
             'data' => $entity->label(),
+          ),
+          'machine_name' => array(
+            'data' => $entity->id(),
           ),
           'status' => array(
             'data' => '',

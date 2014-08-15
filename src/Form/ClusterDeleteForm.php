@@ -11,6 +11,7 @@ use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\elasticsearch\Entity\Cluster;
+use Drupal\elasticsearch\Entity\Index;
 
 /**
  * Defines a confirmation form for deletion of a custom menu.
@@ -21,7 +22,8 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return t('Are you sure you want to delete the cluster %title?', array('%title' => $this->entity->label()));
+    return t('Are you sure you want to delete the cluster %title? It will detach all indices on this cluster',
+      array('%title' => $this->entity->label()));
   }
 
   /**
@@ -32,6 +34,11 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
       drupal_set_message($this->t('The cluster %title cannot be deleted as it is set as the default cluster.', array('%title' => $this->entity->label())), 'error');
     }
     else {
+      foreach ($indices as $index) {
+        if($index->server == $this->entity->cluster_id) {
+          $index->server = Cluster::getDefaultCluster();
+        }
+      }
       $this->entity->delete();
       drupal_set_message($this->t('The cluster %title has been deleted.', array('%title' => $this->entity->label())));
     }
