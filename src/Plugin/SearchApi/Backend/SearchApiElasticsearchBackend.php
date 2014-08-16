@@ -96,14 +96,14 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     if (!$this->server->isNew()) {
+      $serverlink = $this->getServerLink();
       // Editing this server
       $form['server_description'] = array(
         '#type' => 'item',
         '#title' => $this->t('Elasticsearch Cluster'),
-        '#description' => $this->getServerLink(),
+        '#description' => l($serverlink, $serverlink),
       );
     }
-
     $form['cluster_settings'] = array(
       '#type' => 'fieldset',
       '#title' => t('Elasticsearch settings'),
@@ -117,7 +117,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       '#required' => TRUE,
       '#options' => $clusters,
       '#description' => t('Select the cluster you want to handle the connections.'),
-      '#parents' => array('options', 'form', 'cluster'),
     );
 
     $form['scheme'] = array(
@@ -187,7 +186,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Overrides submitConfigurationForm().
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-    $values = $form_state['values'];
+	$values = $form_state['values'];
 
     // For password fields, there is no default value, they're empty by default.
     // Therefore we ignore empty submissions if the user didn't change either.
@@ -496,7 +495,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Overrides removeIndex().
    */
   public function removeIndex($index) {
-    echo '3';
     $params = $this->getIndexParam($index);
 
     try {
