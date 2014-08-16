@@ -4,7 +4,6 @@
  * This module provide an interface to connecting to the elasticsearch
  * cluster and implementing the Elastica library.
  *
- * Created on Dec 21, 2013
  */
 
 define('ELASTICSEARCH_CLUSTER_STATUS_OK', '200');
@@ -64,16 +63,6 @@ function elasticsearch_theme() {
 function elasticsearch_menu() {
   $items = array();
 
-  $items[$settings_path] = array(
-    'title'              => 'Elasticsearch',
-    'description'        => 'Administer Elasticsearch module',
-    'position'           => 'left',
-    'access arguments'   => array('administer elasticsearch'),
-    'page callback'      => 'system_admin_menu_block_page',
-    'file'               => 'system.admin.inc',
-    'file path'          => drupal_get_path('module', 'system'),
-  );
-
   $items['elasticsearch/clusters'] = array(
     'title'             => 'Elasticsearch Clusters',
     'description'       => 'Showing all available clusters',
@@ -98,10 +87,10 @@ function elasticsearch_menu() {
     'route_name'         => 'elasticsearch.cluster_edit'
    );
 
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/indices'] = array(
-    'title'              => 'Elasticsearch cluster indices',
-    'description'        => 'Elasticsearch cluster indices',
-    'route_name'         => 'elasticsearch.clusterindex_view'
+  $items[$settings_path . '/clusters/%elasticsearch_cluster/delete'] = array(
+    'title'              => 'Elasticsearch cluster delete',
+    'description'        => 'Elasticsearch cluster delete',
+    'route_name'         => 'elasticsearch.cluster_delete'
    );
 
   $items[$settings_path . '/indices/add'] = array(
@@ -110,37 +99,10 @@ function elasticsearch_menu() {
     'route_name'         => 'elasticsearch.clusterindex_add'
   );
 
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/indices/%elasticsearch_index_valid/aliases'] = array(
-    'title'              => 'Elasticsearch cluster indices',
-    'description'        => 'Elasticsearch cluster indices',
-    'page callback'      => 'elasticsearch_cluster_indices_aliases',
-    'page arguments'     => array(4, 6),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-  );
-
   $items[$settings_path . '/indices/%elasticsearch_cluster_index/delete'] = array(
-    'title'              => 'Elasticsearch cluster indices',
-    'description'        => 'Elasticsearch cluster indices',
-    'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_cluster_indices_delete', 4, 6),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-  );
-
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/delete'] = array(
-    'title'              => 'Delete cluster',
-    'description'        => 'Delete cluster settings',
-    'page callback'      => 'drupal_get_form',
-    'page arguments'     => array('elasticsearch_delete_cluster', 4),
-    'access arguments'   => array('administer elasticsearch'),
-    'file'               => 'elasticsearch.admin.inc',
-  );
-
-  $items['elasticsearch-dialog/redirect/%elasticsearch_cluster/%elasticsearch_index_valid'] = array(
-    'page callback' => 'elasticsearch_redirect_page',
-    'page arguments' => array(2, 3),
-    'access arguments' => array('administer elasticsearch'),
+    'title'              => 'Delete index',
+    'description'        => 'Delete index',
+    'route_name'         => 'elasticsearch.clusterindex_delete'
   );
 
   return $items;
