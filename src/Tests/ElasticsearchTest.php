@@ -159,7 +159,7 @@ class ElasticsearchTest extends SearchApiDbTest {
     $server = Server::load($this->serverId);
     /** @var \Drupal\search_api\Entity\Index $index */
     $index = Index::load($this->indexId);
-    $server->deleteAllItems($index);
+    $server->getBackend()->removeIndex($index);
 
     $query = $this->buildSearch();
     $results = $query->execute();
