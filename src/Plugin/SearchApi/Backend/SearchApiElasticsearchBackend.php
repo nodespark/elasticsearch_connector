@@ -335,13 +335,12 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   public function ping() {
     $serverConfig = array($this->configuration);
     foreach ($serverConfig as $field) {
-      $url = array($field['host'] . ':' . $field['port']);
+      $url = array($field['scheme'] . '://' . $field['host'] . ':' . $field['port'] . $field['path']);
     }
     try {
       $client = Cluster::getClusterByUrls($url);
       if (!empty($client)) {
         $this->elasticsearchClient = $client;
-        return $client;
         $info = $client->info();
         if (Cluster::checkClusterStatus($info)) {
           return $client;
