@@ -444,7 +444,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     // Map index fields.
     /** @var \Drupal\search_api\Item\FieldInterface[] $field_data */
-    print_r(json_encode($index->getFields()));
     foreach ($index->getFields() as $field_id => $field_data) {
       $properties[$field_id] = $this->getFieldMapping($field_data);
     }
@@ -1062,7 +1061,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   protected function buildSearchQuery(QueryInterface $query) {
     // Query options.
     $query_options = $this->getSearchQueryOptions($query);
-
     // Main query.
     $params = $query->getOption('ElasticParams');
     $body = &$params['body'];
@@ -1179,10 +1177,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     }
 
     // Filters.
-    //$parsed_query_filters = $this->parseFilter($query->getFilter(), $index_fields);
-    //if (!empty($parsed_query_filters)) {
-    //  $query_search_filter = $parsed_query_filters[0];
-    //}
+    $parsed_query_filters = $this->parseFilter($query->getFilter(), $index_fields);
+    if (!empty($parsed_query_filters)) {
+      $query_search_filter = $parsed_query_filters[0];
+    }
 
     // More Like This
     $mlt = array();
@@ -1194,6 +1192,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       'query_offset' => $query_offset,
       'query_limit' => $query_limit,
       'query_search_string' => $query_search_string,
+      'query_search_filter' => $query_search_filter,
       'sort' => $sort,
       'mlt' => $mlt,
     );

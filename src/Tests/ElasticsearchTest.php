@@ -127,6 +127,14 @@ class ElasticsearchTest extends SearchApiDbTest {
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
+    $prepareSearch = $this->buildSearch('foo', array('type,item'))->sort($this->getFieldId('id'), 'ASC');
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 2, 'Search for »foo« returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2)), 'Search for »foo« returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
+
     $keys = array(
       '#conjunction' => 'AND',
       'test',
