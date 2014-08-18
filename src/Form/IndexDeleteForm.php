@@ -28,7 +28,7 @@ class IndexDeleteForm extends EntityConfirmFormBase {
    */
   public function submit(array $form, FormStateInterface $form_state) {
     $cluster = Cluster::loadCluster($this->entity->server);
-    $client = Cluster::getClusterByUrls(array($cluster->url));
+    $client = Cluster::getClientByUrls(array($cluster->url));
     if ($client) {
       try {
         $client->indices()->delete(array('index' => $this->entity->index_id));

@@ -237,7 +237,7 @@ class IndexForm extends EntityForm {
 
     $cluster_url = self::getSelectedClusterUrl($form_state['values']['server']);
 
-    $client = Cluster::getClusterByUrls(array($cluster_url));
+    $client = Cluster::getClientByUrls(array($cluster_url));
     $response = $index_params = array();
     if ($client) {
       try {

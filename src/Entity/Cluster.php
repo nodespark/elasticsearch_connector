@@ -125,7 +125,7 @@ class Cluster extends ConfigEntityBase {
   public static function getClusterInfo($cluster) {
     $result = FALSE;
     try {
-      $client = self::getClusterByUrls(array($cluster->url));
+      $client = self::getClientByUrls(array($cluster->url));
       if (!empty($client)) {
         try {
           $info = $client->info();
@@ -156,7 +156,7 @@ class Cluster extends ConfigEntityBase {
    * @param string $cluster_id
    * @return \Elasticsearch\Client
    */
-  protected function getClusterById($cluster_id) {
+  protected function getClientById($cluster_id) {
     $client = NULL;
 
     $default_cluster = $this::getDefaultCluster();
@@ -168,7 +168,7 @@ class Cluster extends ConfigEntityBase {
       $client = FALSE;
       $cluster = $this::loadCluster($cluster_id);
       if ($cluster) {
-        $client = $this::getClusterByUrls($cluster->url);
+        $client = $this::getClientByUrls($cluster->url);
       }
     }
 
@@ -207,7 +207,7 @@ class Cluster extends ConfigEntityBase {
    * @param string $url
    * @return Client
    */
-  public static function getClusterByUrls($urls) {
+  public static function getClientByUrls($urls) {
     $options = array(
       'hosts' => $urls,
     );

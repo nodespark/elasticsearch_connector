@@ -49,7 +49,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     if ($this->configuration) {
       $url = array($this->getServerLink());  
       try {
-        $this->elasticsearchClient = Cluster::getClusterByUrls($url);
+        $this->elasticsearchClient = Cluster::getClientByUrls($url);
       }
       catch (\Exception $e) {
         throw $e;
@@ -338,7 +338,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $url = array($field['scheme'] . '://' . $field['host'] . ':' . $field['port'] . $field['path']);
     }
     try {
-      $client = Cluster::getClusterByUrls($url);
+      $client = Cluster::getClientByUrls($url);
       if (!empty($client)) {
         $this->elasticsearchClient = $client;
         $info = $client->info();
