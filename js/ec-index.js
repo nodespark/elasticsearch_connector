@@ -46,7 +46,7 @@
       // @todo Add settings for this so that users can configure this by themselves.
       var window_width = $(window).width() / 100*75;
       var window_height = $(window).height() / 100*90;
-      this.open_dialog = $('<iframe class="elasticsearch-connector-dialog-iframe" src="' + href + '"></iframe>').dialog({
+      this.open_dialog = $('<iframe class="elasticsearch-dialog-iframe" src="' + href + '"></iframe>').dialog({
         width: window_width,
         height: window_height,
         modal: true,

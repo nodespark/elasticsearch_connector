@@ -274,7 +274,7 @@ function _elasticsearch_ec_index_process($element, &$form_state, $form) {
     }
     $links[] = array(
       'title' => t('Add index'),
-      'href' => 'admin/config/elasticsearch-connector/clusters/' . $element['#value']['cluster_id'] . '/indices/add',
+      'href' => 'admin/config/elasticsearch/clusters/' . $element['#value']['cluster_id'] . '/indices/add',
       'attributes' => array('target' => '_blank', 'class' => 'ec-index-dialog'),
       'query' => array(
         'render' => 'elasticsearch-dialog',
@@ -406,7 +406,7 @@ function _elasticsearch_ec_index_ajax($form, $form_state) {
  * @return string
  */
 function elasticsearch_main_settings_path() {
-  $settings_path = 'admin/config/elasticsearch-connector';
+  $settings_path = 'admin/config/elasticsearch';
   return $settings_path;
 }
 
@@ -429,45 +429,6 @@ function elasticsearch_set_breadcrumb($links = array()) {
   }
 
   drupal_set_breadcrumb($breadcrumb);
-}
-
-/**
- * Save a cluster configuration object.
- *
- * @param stdclass $cluster
- *   The ElasticSearch cluster configuration object. This object should be
- *   loaded with elasticsearch_cluster_load() or
- *   elasticsearch_cluster_load_all()--otherwise, it is assumed to be
- *   a new configuration.
- */
-// TODO in src/
-function elasticsearch_cluster_save($cluster) {
-  //ctools_include('export');
-
-  $cluster = (object) $cluster;
-  $cluster->options = serialize($cluster->options);
-
-  if (isset($cluster->export_type) && $cluster->export_type & EXPORT_IN_DATABASE) {
-    // Record exists in the database.
-    $result = drupal_write_record('elasticsearch_cluster', $cluster, 'cluster_id');
-  }
-  else {
-    // Record is new, or exists only in code.
-    $result = drupal_write_record('elasticsearch_cluster', $cluster);
-  }
-}
-
-/**
- * Delete an ElasticSearch cluster.
- *
- * @param stdclass $cluster
- *   A cluster configuration object.
- */
-// TODO in src/
-function elasticsearch_cluster_delete($cluster) {
-  db_delete('elasticsearch_cluster')
-    ->condition('cluster_id', $cluster->cluster_id)
-    ->execute();
 }
 
 /**
@@ -495,26 +456,6 @@ function elasticsearch_get_indices_options($cluster_id, $empty_option = FALSE) {
   }
 
   return $result;
-}
-
-/**
- * Load a cluster object from the database.
- *
- * @see ctools_export_load_object().
- *
- * @param string $cluster_id
- * @return object $cluster
- */
-// Removed. Called from src/Entity/Cluster::loadCluser
-function elasticsearch_cluster_load($cluster_id) {
-  //ctools_include('export');
-  //$result = ctools_export_load_object('elasticsearch_cluster', 'names', array($cluster_id));
-  if (isset($result[$cluster_id])) {
-    if (isset($result[$cluster_id]->options) && !is_array($result[$cluster_id]->options)) {
-      $result[$cluster_id]->options = unserialize($result[$cluster_id]->options);
-    }
-    return $result[$cluster_id];
-  }
 }
 
 /**
@@ -613,12 +554,6 @@ function _elasticsearch_validate_ttl_field($element, &$form_state, $form) {
   if (!empty($element['#value']) && !preg_match('/^([\d]+)(d|m|h|ms|w)$/', $element['#value'])) {
     form_error($element, t('Invalid elasticsearch TTL value. Please use the proper syntax e.g. 1d (d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks)).'));
   }
-}
-
-function elasticsearch_clusters() {
-  $cluster_ids = \Drupal::entityQuery('search_api_index')
-    ->execute();
-  return array();
 }
 
 /**

@@ -116,5 +116,5 @@ function elasticsearch_schema() {
  * Delete Search Api elasticsearch servers.
  */
 function elasticsearch_uninstall() {
-  \Drupal::state()->delete('elasticsearch_get_default_connector');
+  \Drupal::state()->delete('elasticsearch_get_default');
 }
