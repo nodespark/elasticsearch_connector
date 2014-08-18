@@ -11,6 +11,9 @@ use Drupal\search_api\Entity\Index;
 use Drupal\search_api\Entity\Server;
 use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api_db\Tests\SearchApiDbTest;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\field\Entity\FieldInstanceConfig;
 
 /**
  * Tests index and search capabilities using the elasticsearch backend.
@@ -179,12 +182,118 @@ class ElasticsearchTest extends SearchApiDbTest {
   }
 
   protected function searchSuccess2() {
+/*
+    $prepareSearch = $this->buildSearch('test')->range(1, 2);
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 4, 'Search for »test« returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(4, 1)), 'Search for »test« returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
+
+    $prepareSearch = $this->buildSearch(NULL, array('body,test foobar'));
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 1, 'Search with multi-term fulltext filter returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3)), 'Search with multi-term fulltext filter returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
+
+    $prepareSearch = $this->buildSearch('test foo');
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 4, 'Search for »test foo« returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(2, 4, 1, 3)), 'Search for »test foo« returned correct result.');
+    $this->assertIgnored($results, array('foo'), 'Short key was ignored.');
+    $this->assertWarnings($results);
+
+    $prepareSearch = $this->buildSearch('foo', array('type,item'));
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 3, 'Search for »foo« returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 3)), 'Search for »foo« returned correct result.');
+    $this->assertIgnored($results, array('foo'), 'Short key was ignored.');
+    $this->assertWarnings($results, array($this->t('No valid search keys were present in the query.')), 'No warnings were displayed.');
+
+    $keys = array(
+      '#conjunction' => 'AND',
+      'test',
+      array(
+        '#conjunction' => 'OR',
+        'baz',
+        'foobar',
+      ),
+      array(
+        '#conjunction' => 'OR',
+        '#negation' => TRUE,
+        'bar',
+        'fooblob',
+      ),
+    );
+    $prepareSearch = $this->buildSearch($keys);
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 1, 'Complex search 1 returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3)), 'Complex search 1 returned correct result.');
+    $this->assertIgnored($results, array('baz', 'bar'), 'Correct keys were ignored.');
+    $this->assertWarnings($results);
+
+    $keys = array(
+      '#conjunction' => 'AND',
+      'test',
+      array(
+        '#conjunction' => 'OR',
+        'baz',
+        'foobar',
+      ),
+      array(
+        '#conjunction' => 'OR',
+        '#negation' => TRUE,
+        'bar',
+        'fooblob',
+      ),
+    );
+    $prepareSearch = $this->buildSearch($keys);
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 1, 'Complex search 2 returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3)), 'Complex search 2 returned correct result.');
+    $this->assertIgnored($results, array('baz', 'bar'), 'Correct keys were ignored.');
+    $this->assertWarnings($results);
+
+    $prepareSearch = $this->buildSearch(NULL, array('keywords,orange'));
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 3, 'Filter query 1 on multi-valued field returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 5)), 'Filter query 1 on multi-valued field returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
+
+    $filters = array(
+      'keywords,orange',
+      'keywords,apple',
+    );
+    $prepareSearch = $this->buildSearch(NULL, $filters);
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 1, 'Filter query 2 on multi-valued field returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(2)), 'Filter query 2 on multi-valued field returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
+
+    $prepareSearch = $this->buildSearch()->condition($this->getFieldId('keywords'), NULL);
+    sleep(1);
+    $results = $prepareSearch->execute();
+    $this->assertEqual($results->getResultCount(), 1, 'Query with NULL filter returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3)), 'Query with NULL filter returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
+*/
   }
 
   protected function regressionTests() {
     // Regression tests for #2007872.
     $prepareSearch = $this->buildSearch('test')->sort($this->getFieldId('id'), 'ASC')->sort($this->getFieldId('type'), 'ASC');
-    sleep(1);
     $results = $prepareSearch->execute();
     $this->assertEqual($results->getResultCount(), 4, 'Sorting on field with NULLs returned correct number of results.');
     $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 3, 4)), 'Sorting on field with NULLs returned correct result.');
@@ -249,40 +358,6 @@ class ElasticsearchTest extends SearchApiDbTest {
     $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(2, 4, 5)), 'Complex nested filters on multi-valued field returned correct result.');
     $this->assertIgnored($results);
     $this->assertWarnings($results);
-
-    // Regression tests for #2040543.
-    // @todo Fix facets.
-//    $query = $this->buildSearch();
-//    $facets['type'] = array(
-//      'field' => $this->getFieldId('type'),
-//      'limit' => 0,
-//      'min_count' => 1,
-//      'missing' => TRUE,
-//    );
-//    $query->setOption('search_api_facets', $facets);
-//    $query->range(0, 0);
-//    $results = $query->execute();
-//    $expected = array(
-//      array('count' => 2, 'filter' => '"article"'),
-//      array('count' => 2, 'filter' => '"item"'),
-//      array('count' => 1, 'filter' => '!'),
-//    );
-//    $type_facets = $results->getExtraData('search_api_facets')['type'];
-//    usort($type_facets, array($this, 'facetCompare'));
-//    $this->assertEqual($type_facets, $expected, 'Correct facets were returned');
-//
-//    $query = $this->buildSearch();
-//    $facets['type']['missing'] = FALSE;
-//    $query->setOption('search_api_facets', $facets);
-//    $query->range(0, 0);
-//    $results = $query->execute();
-//    $expected = array(
-//      array('count' => 2, 'filter' => '"article"'),
-//      array('count' => 2, 'filter' => '"item"'),
-//    );
-//    $type_facets = $results->getExtraData('search_api_facets')['type'];
-//    usort($type_facets, array($this, 'facetCompare'));
-//    $this->assertEqual($type_facets, $expected, 'Correct facets were returned');
 
     // Regression tests for #2111753.
     $keys = array(
@@ -354,7 +429,7 @@ class ElasticsearchTest extends SearchApiDbTest {
     );
     $results = $this->buildSearch($keys)->sort('search_api_id', 'ASC')->execute();
     $this->assertEqual($results->getResultCount(), 2, 'Negated AND fulltext search returned correct number of results.');
-    //$this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3, 4)), 'Negated AND fulltext search returned correct result.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3, 4)), 'Negated AND fulltext search returned correct result.');
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -370,10 +445,75 @@ class ElasticsearchTest extends SearchApiDbTest {
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
+    $keys = array(
+      '#conjunction' => 'AND',
+      'test',
+      array(
+        '#conjunction' => 'AND',
+        '#negation' => TRUE,
+        'foo',
+        'bar',
+      ),
+    );
+    $results = $this->buildSearch($keys)->sort('search_api_id', 'ASC')->execute();
+    $this->assertEqual($results->getResultCount(), 2, 'Nested NOT AND fulltext search returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3, 4)), 'Nested NOT AND fulltext search returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
+
   }
 
   protected function regressionTests2() {
+    // Create a "keywords" field on the test entity type.
+    FieldStorageConfig::create(array(
+      'name' => 'prices',
+      'entity_type' => 'entity_test',
+      'type' => 'decimal',
+      'cardinality' => FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED,
+    ))->save();
+    FieldInstanceConfig::create(array(
+      'field_name' => 'prices',
+      'entity_type' => 'entity_test',
+      'bundle' => 'item',
+      'label' => 'Prices',
+    ))->save();
+
+    // Regression test for #1916474.
+    /** @var \Drupal\search_api\Index\IndexInterface $index */
+    $index = Index::load($this->indexId);
+    $index->getFields(FALSE)[$this->getFieldId('prices')]->setType('decimal')->setIndexed(TRUE, TRUE);
+    $success = $index->save();
+    $this->assertTrue($success, 'The index field settings were successfully changed.');
+
+    // Reset the static cache so the new values will be available.
+    \Drupal::entityManager()->getStorage('search_api_server')->resetCache(array($this->serverId));
+    \Drupal::entityManager()->getStorage('search_api_index')->resetCache(array($this->serverId));
+
+    entity_create('entity_test', array(
+      'id' => 6,
+      'prices' => array('3.5', '3.25', '3.75', '3.5'),
+      'type' => 'item',
+    ))->save();
+
+    $this->indexItems($this->indexId);
+
+    $query = $this->buildSearch(NULL, array('prices,3.25'));
+    sleep(1);
+    $results = $query->execute();
+    $this->assertEqual($results->getResultCount(), 1, 'Filter on decimal field returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(6)), 'Filter on decimal field returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
+
+    $query = $this->buildSearch(NULL, array('prices,3.50'));
+    sleep(1);
+    $results = $query->execute();
+    $this->assertEqual($results->getResultCount(), 1, 'Filter on decimal field returned correct number of results.');
+    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(6)), 'Filter on decimal field returned correct result.');
+    $this->assertIgnored($results);
+    $this->assertWarnings($results);
   }
+
 
   protected function updateIndex() {
   }
