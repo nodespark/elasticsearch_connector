@@ -1211,6 +1211,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       if ($field_id === 'search_api_relevance') {
         $sort['_score'] = $direction;
       }
+      elseif ($field_id === 'search_api_id') {
+        $sort['id'] = $direction;
+      }
       elseif (isset($index_fields[$field_id])) {
         $sort[$field_id] = $direction;
       }
