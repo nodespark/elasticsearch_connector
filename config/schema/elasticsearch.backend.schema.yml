@@ -2,6 +2,13 @@ elasticsearch.backend.plugin.elasticsearch:
   type: mapping
   label: 'Search API Elasticsearch settings'
   mapping:
+    cluster_settings:
+      type: mapping
+      label: 'Elasticsearch settings'
+      mapping:
+        cluster:
+          type: string
+          label: 'The cluster that handles the connection'
     scheme:
       type: string
       label: 'The HTTP protocol to use for sending queries'
@@ -29,12 +36,6 @@ elasticsearch.backend.plugin.elasticsearch:
     highlight_data:
       type: boolean
       label: 'Highlight retrieved data'
-    skip_schema_check:
-      type: boolean
-      label: 'Skip schema verification'
-    solr_version:
-      type: string
-      label: 'Elasticsearch version override'
     http_method:
       type: string
       label: 'The HTTP method to use for sending queries'

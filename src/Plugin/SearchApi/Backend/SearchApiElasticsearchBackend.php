@@ -33,28 +33,18 @@ use Drupal\Core\Render\Element;
  */
 class SearchApiElasticsearchBackend extends BackendPluginBase {
 
-  protected $elasticSearchSettings = NULL;
+  protected $elasticsearchSettings = NULL;
   protected $clusterId = NULL;
 
   /** @var Client $elasticsearchClient  */
   protected $elasticsearchClient = NULL;
 
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, FormBuilderInterface $form_builder, ModuleHandlerInterface $module_handler, Config $elastic_search_settings) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, FormBuilderInterface $form_builder, ModuleHandlerInterface $module_handler, Config $elasticsearch_settings) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->formBuilder = $form_builder;
     $this->moduleHandler = $module_handler;
-    $this->elasticSearchSettings = $elastic_search_settings;
-
-    if ($this->configuration) {
-      $url = array($this->getServerLink());  
-      try {
-        $this->elasticsearchClient = Cluster::getClientByUrls($url);
-      }
-      catch (\Exception $e) {
-        throw $e;
-      }
-    }
+    $this->elasticsearchSettings = $elasticsearch_settings;
   }
 
   /**
@@ -76,12 +66,13 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function defaultConfiguration() {
     return array(
+      'cluster_settings' => array (
+          'cluster' => ''
+        ),
       'scheme' => 'http',
       'host' => 'localhost',
       'port' => '9200',
       'path' => '',
-      'http_user' => '',
-      'http_pass' => '',
       'excerpt' => FALSE,
       'retrieve_data' => FALSE,
       'highlight_data' => FALSE,
@@ -110,65 +101,21 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       '#tree' => FALSE,
     );
 
-    $clusters = array('' => t('Default cluster')) + array(Cluster::loadAllClusters(FALSE));
+    //We are not displaying disabled clusters
+    $clusters = Cluster::loadAllClusters(FALSE);
+    $options = array();
+    foreach ($clusters as $key => $cluster) {
+      $options[$key] = $cluster->cluster_id;
+    }
+    $options[Cluster::getDefaultCluster()] = t('Default cluster: ' . Cluster::getDefaultCluster());
     $form['cluster_settings']['cluster'] = array(
       '#type' => 'select',
       '#title' => t('Cluster'),
       '#required' => TRUE,
-      '#options' => $clusters,
+      '#options' => $options,
+      '#default_value' => $this->configuration['cluster_settings']['cluster'] ? $this->configuration['cluster_settings']['cluster'] : '',
       '#description' => t('Select the cluster you want to handle the connections.'),
     );
-
-    $form['scheme'] = array(
-      '#type' => 'select',
-      '#title' => $this->t('HTTP protocol'),
-      '#description' => $this->t('The HTTP protocol to use for sending queries.'),
-      '#default_value' => $this->configuration['scheme'],
-      '#options' => array(
-        'http' => 'http',
-        'https' => 'https',
-      ),
-    );
-
-    $form['host'] = array(
-      '#type' => 'textfield',
-      '#title' => $this->t('Solr host'),
-      '#description' => $this->t('The host name or IP of your Solr server, e.g. <code>localhost</code> or <code>www.example.com</code>.'),
-      '#default_value' => $this->configuration['host'],
-      '#required' => TRUE,
-    );
-    $form['port'] = array(
-      '#type' => 'textfield',
-      '#title' => $this->t('Solr port'),
-      '#description' => $this->t('The Jetty example server is at port 8983, while Tomcat uses 8080 by default.'),
-      '#default_value' => $this->configuration['port'],
-      '#required' => TRUE,
-    );
-    $form['path'] = array(
-      '#type' => 'textfield',
-      '#title' => $this->t('Solr path'),
-      '#description' => $this->t('The path that identifies the Solr instance to use on the server.'),
-      '#default_value' => $this->configuration['path'],
-    );
-
-    $form['http'] = array(
-      '#type' => 'fieldset',
-      '#title' => $this->t('Basic HTTP authentication'),
-      '#description' => $this->t('If your Solr server is protected by basic HTTP authentication, enter the login data here.'),
-      '#collapsible' => TRUE,
-      '#collapsed' => empty($this->configuration['http_user']),
-    );
-    $form['http']['http_user'] = array(
-      '#type' => 'textfield',
-      '#title' => $this->t('Username'),
-      '#default_value' => $this->configuration['http_user'],
-    );
-    $form['http']['http_pass'] = array(
-      '#type' => 'password',
-      '#title' => $this->t('Password'),
-      '#description' => $this->t('If this field is left blank and the HTTP username is filled out, the current password will not be changed.'),
-    );
-
     return $form;
   }
 
@@ -176,28 +123,12 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Overrides validConfigurationForm().
    */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
-    $values = $form_state['values'];
-    if (isset($values['port']) && (!is_numeric($values['port']) || $values['port'] < 0 || $values['port'] > 65535)) {
-      $form_state->setError($form['port'], $form_state, $this->t('The port has to be an integer between 0 and 65535.'));
-    }
   }
 
   /**
    * Overrides submitConfigurationForm().
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-	$values = $form_state['values'];
-
-    // For password fields, there is no default value, they're empty by default.
-    // Therefore we ignore empty submissions if the user didn't change either.
-    if ($values['http']['http_pass'] === ''
-        && isset($this->configuration['http_user'])
-        && $values['http']['http_user'] === $this->configuration['http_user']) {
-      $values['http']['http_pass'] = $this->configuration['http_pass'];
-    }
-
-    $form_state['values'] = $values;
-
     parent::submitConfigurationForm($form, $form_state);
   }
 
@@ -221,6 +152,16 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $supported = array_combine($supported, $supported);
     if (isset($supported[$feature])) {
       return TRUE;
+    }
+  }
+
+  /**
+   * Creates a connection to the Elasticsearch server as configured in $this->configuration.
+   */
+  protected function connect() {
+    if (!$this->elasticsearchClient && $this->configuration) {
+      $url = array($this->getServerLink());
+      $this->elasticsearchClient = new Client(array('hosts' => $url));
     }
   }
 
@@ -256,18 +197,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       'info' => l($serverlink, $serverlink),
     );
 
-    if ($this->configuration['http_user']) {
-      $vars = array(
-        '@user' => $this->configuration['http_user'],
-        '@pass' => str_repeat('*', strlen($this->configuration['http_pass'])),
-      );
-      $http = $this->t('Username: @user; Password: @pass', $vars);
-      $info[] = array(
-        'label' => $this->t('Basic HTTP authentication'),
-        'info' => $http,
-      );
-    }
-
     if ($this->server->status()) {
       // If the server is enabled, check whether Elasticsearch can be reached.
       $ping = $this->ping();
@@ -283,6 +212,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         'status' => $ping ? 'ok' : 'error',
       );
     }
+
     return $info;
   }
 
@@ -332,18 +262,17 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     return $url;
   }
 
+  /**
+   * Ping the Elasticsearch server to tell whether it can be accessed.
+   */
   public function ping() {
-    $serverConfig = array($this->configuration);
-    foreach ($serverConfig as $field) {
-      $url = array($field['scheme'] . '://' . $field['host'] . ':' . $field['port'] . $field['path']);
-    }
+    $this->connect();
     try {
-      $client = Cluster::getClientByUrls($url);
-      if (!empty($client)) {
-        $this->elasticsearchClient = $client;
-        $info = $client->info();
+      $result = $this->elasticsearchClient->ping();
+      if ($result) {
+        $info = $this->elasticsearchClient->info();
         if (Cluster::checkClusterStatus($info)) {
-          return $client;
+          return TRUE;
         }
       }
     }
@@ -404,6 +333,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Overrides addIndex().
    */
   public function addIndex(IndexInterface $index) {
+    $this->connect();
     $index_name = $this->getIndexName($index);
     if (!empty($index_name)) {
       try {
@@ -437,6 +367,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Overrides fieldsUpdated().
    */
   public function fieldsUpdated(IndexInterface $index) {
+    $this->connect();
     $params = $this->getIndexParam($index, TRUE);
     $properties = array(
       'id' => array('type' => 'integer', 'include_in_all' => FALSE),
@@ -493,6 +424,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Overrides removeIndex().
    */
   public function removeIndex($index) {
+    $this->connect();
     $params = $this->getIndexParam($index);
 
     try {
@@ -509,6 +441,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * @return boolean
    */
   protected function getElasticsearchTypeExists(IndexInterface $index) {
+    $this->connect();
     $params = $this->getIndexParam($index, TRUE);
     try {
       return $this->elasticsearchClient->indices()->existsType($params);
@@ -523,6 +456,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Overrides indexItems().
    */
   public function indexItems(IndexInterface $index, array $items) {
+    $this->connect();
     $elastic_type_exists = $this->getElasticsearchTypeExists($index);
     /*
     if (empty($elastic_type_exists) || empty($items)) {
@@ -584,9 +518,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   protected function getIndexId($machine_name) {
     // Prepend per-index prefix.
-    $id = $this->elasticSearchSettings->get('index_prefix_' . $machine_name) . $machine_name;
+    $id = $this->elasticsearchSettings->get('index_prefix_' . $machine_name) . $machine_name;
     // Prepend environment prefix.
-    $id = $this->elasticSearchSettings->get('index_prefix') . $id;
+    $id = $this->elasticsearchSettings->get('index_prefix') . $id;
     return $id;
   }
 
@@ -633,6 +567,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    *
    */
   private function deleteItemsIds($ids, IndexInterface $index = NULL) {
+    $this->connect();
     $params = $this->getIndexParam($index, TRUE);
     foreach ($ids as $id) {
       $params['body'][] = array(
@@ -666,6 +601,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $params = $this->getIndexParam($index, TRUE);
 
     // Check elasticsearch index.
+    $this->connect();
     if (!$this->elasticsearchClient->indices()->existsType($params)) {
       return $search_result;
     }
