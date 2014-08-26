@@ -47,7 +47,7 @@ function elasticsearch_connector_views_views_data() {
               $name = format_string('@cluster (@index_name:@type)', array('@cluster' => $cluster->name, '@index_name' => $index_name, '@type' => $type_name));
               $base_table = 'elsv__' . $cluster->cluster_id . '__' . $index_name . '__' . $type_name;
 
-              $data[$base_table]['table']['group'] = t('Elasticsearch Connector');
+              $data[$base_table]['table']['group'] = t('ES');
               $data[$base_table]['table']['base'] = array(
                 'query class' => 'elasticsearch_connector_views_query',
                 'title' => t('Cluster !name', array('!name' => $name)),
