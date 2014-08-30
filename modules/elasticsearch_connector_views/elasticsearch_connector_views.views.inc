@@ -135,7 +135,13 @@ function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fiel
           break;
         case 'text':
         case 'string':
-          $filter_handler = 'elasticsearch_connector_views_handler_filter_string';
+          case 'string':
+          if(module_exists('views_autocomplete_filters')) {
+            $filter_handler = 'elasticsearch_connector_views_handler_filter_string_autocomplete';
+          }
+          else {
+            $filter_handler = 'elasticsearch_connector_views_handler_filter_string';
+          }
           break;
 
           // Handle numeric filter type.
