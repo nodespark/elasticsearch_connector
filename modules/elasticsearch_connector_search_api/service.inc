@@ -283,13 +283,14 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
                 )
               )
             );
+            drupal_alter('elasticsearch_connector_search_api_add_index', $index, $params);
             $response = $client->indices()->create($params);
             if (!elasticsearch_connector_check_response_ack($response)) {
               drupal_set_message(t('The elasticsearch client wasn\'t able to create index'), 'error');
             }
           }
           else {
-            throw new SearchApiElasticsearchConnectorException(t('The index you have selected, does not exsits.'));
+            throw new SearchApiElasticsearchConnectorException(t('The index you have selected, does not exist.'));
           }
         }
 
