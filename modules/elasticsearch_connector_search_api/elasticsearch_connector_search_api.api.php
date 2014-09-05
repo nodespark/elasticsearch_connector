@@ -31,3 +31,13 @@ function hook_elasticsearch_connector_search_api_query_alter($query, &$params) {
 function hook_elasticsearch_connector_search_api_results_alter(&$results, $query, $response) {
 
 }
+
+/**
+ * Lets modules alter the forced index creation from SearchApi integration.
+ *
+ * @param SearchApiIndex $index
+ * @param array $params
+ */
+function hook_elasticsearch_connector_search_api_add_index($index, &$params) {
+
+}

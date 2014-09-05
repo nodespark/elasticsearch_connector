@@ -595,6 +595,7 @@ function elasticsearch_connector_cluster_indices_add_submit($form, &$form_state)
         $index_params['index'] = $values['index_name'];
         $index_params['body']['settings']['number_of_shards']   = $values['num_of_shards'];
         $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
+        drupal_alter('elasticsearch_connector_add_index', $index_params, $cluster, $client);
         $response = $client->indices()->create($index_params);
         if (elasticsearch_connector_check_response_ack($response)) {
           drupal_set_message(t('The index %index has been successfully created.', array('%index' => $values['index_name'])));
@@ -617,6 +618,7 @@ function elasticsearch_connector_cluster_indices_add_submit($form, &$form_state)
       try {
         $index_params['index'] = $values['index_name'];
         $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
+        drupal_alter('elasticsearch_connector_update_index', $index_params, $cluster, $client);
         $response = $client->indices()->putSettings($index_params);
         if (elasticsearch_connector_check_response_ack($response)) {
           drupal_set_message(t('The index %index has been successfully updated.', array('%index' => $values['index_name'])));
