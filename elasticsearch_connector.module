@@ -23,12 +23,7 @@ function elasticsearch_connector_help($path, $arg) {
       return '<p>' . t('Abstraction of making connection to the elasticsearch
         server. This module is API for a whole bunch of functionalities connected
         with this module.
-        If you don\'t have installed server, you can use a hosted solution.
-        The are some solutions on the market but we offer you to use the solution from <a href="https://utilis.io" target="_blank">Utilis.io</a>,
-        because <a href="https://utilis.io" target="_blank">Utilis.io\'s</a> sponsoring the development of the module.
-        Using this solution you are helping to make this module better and better.
-        <br/><a href="https://www.youtube.com/channel/UCFrZSWe9rc1UcM5FCY2KmMA" target="_blank">See the youtube channel of Utilis.io for more videos.</a>
-        Video tutorial to start with Utilis.io:') . '<br/><br/><iframe width="100%" height="400" frameborder="0" src="//www.youtube.com/embed/rOCU6qlLRPI"></iframe></p>';
+        If you don\'t have installed server, you can use a hosted solution.');
   }
 }
 

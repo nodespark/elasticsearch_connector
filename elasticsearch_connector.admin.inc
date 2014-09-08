@@ -320,11 +320,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#type' => 'textfield',
     '#title' => t('Server URL'),
     '#default_value' => !empty($cluster->url) ? $cluster->url : '',
-    '#description' => t('Enter the URL of a node in the cluster.'
-       . ' Example: http://localhost:9200.'
-       . ' <a class="free-hosting" href="#hosting-iframe-container">Don\'t have installed server? Get a hosted solution with free 3 month trial from'
-       . ' <img weight="50" height="20" src="' . base_path() . drupal_get_path('module', 'elasticsearch_connector') . '/img/utilis-logo.png" /></a>'
-    ),
+    '#description' => t('Enter the URL of a node in the cluster. Example: http://localhost:9200.'),
     '#required' => TRUE,
     //'#limit_validation_errors' => array(array('url')),
     '#ajax' => array(
@@ -468,24 +464,6 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#validate' => array('elasticsearch_connector_edit_cluster_validate'),
     '#submit' => array('elasticsearch_connector_edit_cluster_submit'),
     '#value' => t('Save')
-  );
-
-  $js_settings['hosting_domain'] = variable_get('hosting_domain', 'https://utilis.io');
-  $js_settings['hosting_url'] = url(variable_get('hosting_url', 'https://utilis.io/user/register'), array(
-    'query' => array(
-      'iframe' => TRUE,
-      'time'  => time(),
-      'iframe-source' => url('<front>', array('absolute' => TRUE))
-    )
-  ));
-
-  $form['#attached']['js'] = array(
-    drupal_get_path('module', 'elasticsearch_connector') . '/js/postmessage/jquery.ba-postmessage.min.js',
-    drupal_get_path('module', 'elasticsearch_connector') . '/js/elasticsearch_connector_admin.js',
-    array(
-      'data' => array('elasticsearch_connector' => $js_settings),
-      'type' => 'setting'
-    ),
   );
 
   return $form;
