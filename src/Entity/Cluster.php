@@ -16,7 +16,7 @@ use Elasticsearch\Client;
  * @ConfigEntityType(
  *   id = "elasticsearch_cluster",
  *   label = @Translation("Elasticsearch Cluster"),
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
  *     "list_builder" = "Drupal\elasticsearch\Controller\ClusterListBuilder",
  *     "form" = {

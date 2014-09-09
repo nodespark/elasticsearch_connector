@@ -15,7 +15,7 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  * @ConfigEntityType(
  *   id = "elasticsearch_cluster_index",
  *   label = @Translation("Elasticsearch Cluster Indices"),
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
  *     "list_builder" = "Drupal\elasticsearch\Controller\IndexListBuilder",
  *     "form" = {
