@@ -34,12 +34,12 @@ function drush_elasticsearch_connector_search_api_reset_elasticsearch($search_ap
     return drush_set_error('elasticsearch_connector_search_api', t("Search API index '@index_name' not found.", array('@index_name' => $search_api_index_name)));
   }
 
-  if (!is_int($number_of_shards) || $number_of_shards < 1) {
-    return drush_set_error('elasticsearch_connector_search_api', t("Invalid number of shards. The params should be integer and bigger than or equal to 1."));
+  if ($number_of_shards != (int) $number_of_shards || $number_of_shards < 1) {
+    return drush_set_error('elasticsearch_connector_search_api', t("Invalid number of shards. The param should be an integer greater than or equal to 1."));
   }
 
-  if (!is_int($number_of_replicas) || $number_of_replicas < 0) {
-    return drush_set_error('elasticsearch_connector_search_api', t("Invalid number of replica. The params should be integer and bigger than or equal to 0."));
+  if ($number_of_replicas != (int) $number_of_replicas || $number_of_replicas < 0) {
+    return drush_set_error('elasticsearch_connector_search_api', t("Invalid number of replicas. The param should be an integer greater than or equal to 0."));
   }
 
   $es_index = $index->options['index_name']['index'];
