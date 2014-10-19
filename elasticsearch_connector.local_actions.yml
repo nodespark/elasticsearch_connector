@@ -1,5 +1,0 @@
-elasticsearch_connector.add:
-  route_name: elasticsearch_connector.add
-  title: 'Add cluster'
-  appears_on:
-    - elasticsearch_connector.clusters
