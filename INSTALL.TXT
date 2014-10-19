@@ -1,0 +1,7 @@
+This module requires to install the following modules, otherwise it will 
+not work correctly.:
+
+ * Install the "Search API 8.x" module. (https://www.drupal.org/sandbox/daeron/2091893)
+ * Install the "Composer Manager 8.x" module for installing the elasticsearch PHP library. (https://www.drupal.org/project/composer_manager)
+
+---------------------------------------------------------------------------------------------

@@ -1,0 +1,4 @@
+elasticsearch.cluster_view:
+  route_name: elasticsearch.cluster_view
+  base_route: elasticsearch.cluster_view
+  title: 'View'

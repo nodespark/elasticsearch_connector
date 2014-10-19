@@ -1,0 +1,62 @@
+elasticsearch.clusters:
+  path: '/admin/config/search/elasticsearch/clusters'
+  defaults:
+    _title: 'Elasticsearch Clusters'
+    _entity_list: 'elasticsearch_cluster'
+  requirements:
+    _permission: 'administer elasticsearch'
+
+elasticsearch.cluster_view:
+  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}'
+  defaults:
+    _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::page'
+    _title: 'View'
+  requirements:
+    _permission: 'administer elasticsearch'
+
+elasticsearch.cluster_add:
+  path: '/admin/config/search/elasticsearch/clusters/add'
+  defaults:
+    _entity_form: 'elasticsearch_cluster.default'
+    _title: 'Cluster'
+  requirements:
+    _entity_create_access: 'elasticsearch_cluster'
+
+elasticsearch.cluster_edit:
+  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/edit'
+  defaults:
+    _entity_form: 'elasticsearch_cluster.edit'
+    _title: 'Cluster Edit'
+    _title_callback: '\Drupal\elasticsearch\Controller\ElasticsearchController::pageTitle'
+  requirements:
+    _entity_access: 'elasticsearch_cluster.edit'
+
+elasticsearch.cluster_info:
+  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/info'
+  defaults:
+    _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::getInfo'
+    _title: 'Cluster Info'
+  requirements:
+    _permission: 'administer elasticsearch'
+
+elasticsearch.cluster_delete:
+  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/delete'
+  defaults:
+    _entity_form: 'elasticsearch_cluster.delete'
+  requirements:
+    _entity_access: 'elasticsearch_cluster.delete'
+
+elasticsearch.clusterindex_add:
+  path: '/admin/config/search/elasticsearch/indices/add'
+  defaults:
+    _entity_form: 'elasticsearch_cluster_index.default'
+    _title: 'Index'
+  requirements:
+    _entity_create_access: 'elasticsearch_cluster_index'
+
+elasticsearch.clusterindex_delete:
+  path: '/admin/config/search/elasticsearch/indices/{elasticsearch_cluster_index}/delete'
+  defaults:
+    _entity_form: 'elasticsearch_cluster_index.delete'
+  requirements:
+    _entity_access: 'elasticsearch_cluster_index.delete'

@@ -1,0 +1,20 @@
+machine_name: elasticsearch_server
+name: 'Elasticsearch server'
+description: 'Testing Elasticsearch backend.'
+backend: elasticsearch
+backend_config:
+  scheme: http
+  host: localhost
+  port: '9200'
+  path: ''
+  http_user: ''
+  http_pass: ''
+  excerpt: 0
+  retrieve_data: 0
+  highlight_data: 0
+  http_method: AUTO
+status: true
+langcode: en
+dependencies:
+  module:
+    - elasticsearch

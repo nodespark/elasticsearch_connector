@@ -1,0 +1,5 @@
+elasticsearch.clusters:
+  title: 'Elastic Search Clusters'
+  description: 'Administer Elasticsearch clusters and settings.'
+  route_name: elasticsearch.clusters
+  parent: system.admin_config_search
