@@ -297,9 +297,9 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
 
   $form['name'] = array(
     '#type' => 'textfield',
-    '#title' => t('Cluster name'),
+    '#title' => t('Administrative cluster name'),
     '#default_value' => empty($cluster->name) ? '' : $cluster->name,
-    '#description' => t('Example: ElasticaCluster'),
+    '#description' => t('Enter the administrative cluster name that will uniquely define your Elasticsearch cluster'),
     '#required' => TRUE,
   );
 
@@ -320,7 +320,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#type' => 'textfield',
     '#title' => t('Server URL'),
     '#default_value' => !empty($cluster->url) ? $cluster->url : '',
-    '#description' => t('Enter the URL of a node in the cluster. Example: http://localhost:9200.'),
+    '#description' => t('Enter the URL of a server (node) in the cluster. Example: http://localhost:9200.'),
     '#required' => TRUE,
     //'#limit_validation_errors' => array(array('url')),
     '#ajax' => array(
@@ -451,7 +451,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#size'  => 20,
     '#required' => TRUE,
     '#element_validate' => array('element_validate_number'),
-    '#description' => t('Set the connection timeout in seconds.'),
+    '#description' => t('The seconds in which the connection will timeout if no connection with Elasticsearch.'),
     '#default_value' => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT),
   );
 
