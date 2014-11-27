@@ -216,10 +216,9 @@ function elasticsearch_connector_search_api_return_form_options(&$form, &$form_s
     watchdog('elasticsearch_connector_search_api', 'System cannot load the server.');
     return;
   }
-
-  $cluster_id = $server->options['cluster'];
-  if (empty($cluster_id)) {
-    $cluster_id = elasticsearch_connector_get_default_connector();
+  $cluster_id = elasticsearch_connector_get_default_connector();
+  if (!empty($server->options['cluster'])) {
+    $cluster_id = $server->options['cluster'];
   }
 
   $form['options']['index_name'] = array(
