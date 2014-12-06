@@ -10,15 +10,15 @@ namespace Drupal\elasticsearch\Tests;
 use Drupal\search_api\Entity\Index;
 use Drupal\search_api\Entity\Server;
 use Drupal\search_api\Query\ResultSetInterface;
-use Drupal\search_api_db\Tests\SearchApiDbTest;
+use Drupal\search_api_db\Tests\BackendTest;
+use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
-use Drupal\field\Entity\FieldInstanceConfig;
 
 /**
  * Tests index and search capabilities using the elasticsearch backend.
  */
-class ElasticsearchTest extends SearchApiDbTest {
+class ElasticsearchTest extends BackendTest {
 
   /**
    * A Search API server ID.
@@ -165,10 +165,10 @@ class ElasticsearchTest extends SearchApiDbTest {
   /**
    * {@inheritdoc}
    */
-  protected function uninstallModule() {
-    /** @var \Drupal\search_api\Entity\Server $server */
+  protected function checkModuleUninstall() {
+    // See whether clearing the server works.
+    // Regression test for #2156151.
     $server = Server::load($this->serverId);
-    /** @var \Drupal\search_api\Entity\Index $index */
     $index = Index::load($this->indexId);
     $server->getBackend()->removeIndex($index);
 
@@ -466,12 +466,12 @@ class ElasticsearchTest extends SearchApiDbTest {
   protected function regressionTests2() {
     // Create a "keywords" field on the test entity type.
     FieldStorageConfig::create(array(
-      'name' => 'prices',
+      'field_name' => 'prices',
       'entity_type' => 'entity_test',
       'type' => 'decimal',
       'cardinality' => FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED,
     ))->save();
-    FieldInstanceConfig::create(array(
+    FieldConfig::create(array(
       'field_name' => 'prices',
       'entity_type' => 'entity_test',
       'bundle' => 'item',

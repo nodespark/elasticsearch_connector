@@ -1,4 +1,4 @@
-machine_name: elasticsearch_server
+id: elasticsearch_server
 name: 'Elasticsearch server'
 description: 'Testing Elasticsearch backend.'
 backend: elasticsearch
@@ -13,7 +13,7 @@ backend_config:
   retrieve_data: 0
   highlight_data: 0
   http_method: AUTO
-status: true
+status: 1
 langcode: en
 dependencies:
   module:

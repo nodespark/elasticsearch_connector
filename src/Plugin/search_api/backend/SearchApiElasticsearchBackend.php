@@ -7,6 +7,8 @@
 
 namespace Drupal\elasticsearch\Plugin\search_api\backend;
 
+use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Config;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
@@ -20,7 +22,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\elasticsearch\Entity\Cluster;
-use Drupal\Component\Utility\String;
 use Drupal\search_api\Item\FieldInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
@@ -1143,7 +1144,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $index_fields = $this->getIndexFields($query);
     $sort = array();
     foreach ($query->getSorts() as $field_id => $direction) {
-      $direction = drupal_strtolower($direction);
+      $direction = Unicode::strtolower($direction);
 
       if ($field_id === 'search_api_relevance') {
         $sort['_score'] = $direction;
@@ -1237,7 +1238,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $index_fields = $this->getIndexFields($query);
     $facet_search_filter = '';
 
-    if (isset($facet_info['operator']) && drupal_strtolower($facet_info['operator']) == 'or') {
+    if (isset($facet_info['operator']) && \Unicode::strtolower($facet_info['operator']) == 'or') {
       $facet_search_filter = $this->parseFilter($query->getFilter(), $index_fields, $facet_info['field']);
       if (!empty($facet_search_filter)) {
         $facet_search_filter = $facet_search_filter[0];
@@ -1447,7 +1448,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   public function getAutocompleteSuggestions(QueryInterface $query, SearchApiAutocompleteSearch $search, $incomplete_key, $user_input) {
     $suggestions = array();
     // Turn inputs to lower case, otherwise we get case sensivity problems.
-    $incomp = drupal_strtolower($incomplete_key);
+    $incomp = \Unicode::strtolower($incomplete_key);
 
     $index = $query->getIndex();
     $index_fields = $this->getIndexFields($query);
