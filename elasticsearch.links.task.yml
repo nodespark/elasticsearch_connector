@@ -1,4 +1,4 @@
-elasticsearch.cluster_view:
-  route_name: elasticsearch.cluster_view
-  base_route: elasticsearch.cluster_view
+elasticsearch.canonical:
+  route_name: elasticsearch.canonical
+  base_route: elasticsearch.canonical
   title: 'View'

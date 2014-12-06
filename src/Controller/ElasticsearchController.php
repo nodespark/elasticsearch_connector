@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\elasticsearch\Controller\ElasticsearchController.
+ */
+
 namespace Drupal\elasticsearch\Controller;
 
 use Drupal\Component\Utility\String;
@@ -10,7 +15,7 @@ use Drupal\elasticsearch\Entity\Cluster;
 /**
  * Provides route responses for elasticsearch clusters.
  */
-class ElasticSearchController extends ControllerBase {
+class ElasticsearchController extends ControllerBase {
 
   /**
    * Displays information about an Elasticsearch Cluster.
@@ -112,11 +117,13 @@ class ElasticSearchController extends ControllerBase {
       }
     }
 
+
     $output['cluster_statistics_wrapper'] = array(
       '#type' => 'fieldset',
       '#title'  => t('Cluster statistics'),
       '#collapsible' => TRUE,
-      '#collapsed' => FALSE
+      '#collapsed' => FALSE,
+      '#attributes' => array(),
     );
 
     $output['cluster_statistics_wrapper']['nodes'] = array(
@@ -127,6 +134,7 @@ class ElasticSearchController extends ControllerBase {
         array('data' => t('Size')),
       ),
       '#rows' => $node_rows,
+      '#attributes' => array(),
     );
 
     $output['cluster_statistics_wrapper']['cluster_statistics'] = array(
