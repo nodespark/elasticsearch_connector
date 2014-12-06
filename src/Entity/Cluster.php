@@ -34,7 +34,7 @@ use Elasticsearch\Client;
  *     "status" = "status"
  *   },
  *   links = {
- *     "canonical" = "elasticsearch.clusters",
+ *     "canonical" = "elasticsearch.canonical",
  *     "info" = "elasticsearch.cluster_info",
  *     "add-form" = "elasticsearch.cluster_add",
  *     "edit-form" = "elasticsearch.cluster_edit",
@@ -124,6 +124,7 @@ class Cluster extends ConfigEntityBase {
    */
   public static function getClusterInfo($cluster) {
     $result = FALSE;
+
     try {
       $client = self::getClientByUrls(array($cluster->url));
       if (!empty($client)) {

@@ -136,14 +136,13 @@ class IndexForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    if (!empty($form_state['rebuild'])) {
-      // Rebuild the entity with the form state values.
+    if ($form_state->isRebuilding()) {
       $this->entity = $this->buildEntity($form, $form_state);
     }
 
     $form = parent::form($form, $form_state);
 
-    $index = $form_state['entity'] = $this->getEntity();
+    $index = $this->getEntity();
 
     $form['#title'] = $this->t('Index');
     
@@ -216,15 +215,18 @@ class IndexForm extends EntityForm {
    */
   public function validate(array $form, FormStateInterface $form_state) {
     parent::validate($form, $form_state);
-    if (!preg_match('/^[a-z][a-z0-9_]*$/i', $form_state['values']['name'])) {
+
+    $values = $form_state->getValues();
+
+    if (!preg_match('/^[a-z][a-z0-9_]*$/i', $values['name'])) {
       $form_state->setErrorByName('name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
     }
 
-    if (!is_numeric($form_state['values']['num_of_shards']) || $form_state['values']['num_of_shards'] < 1) {
+    if (!is_numeric($values['num_of_shards']) || $values['num_of_shards'] < 1) {
       $form_state->setErrorByName('num_of_shards', t('Invalid number of shards.'));
     }
 
-    if (!is_numeric($form_state['values']['num_of_replica'])) {
+    if (!is_numeric($values['num_of_replica'])) {
       $form_state->setErrorByName('num_of_replica', t('Invalid number of replica.'));
     }
   }
@@ -233,9 +235,9 @@ class IndexForm extends EntityForm {
    * {@inheritdoc}
    */
   public function submit(array $form, FormStateInterface $form_state) {
-    $values = $form_state['values'];
+    $values = $values;
 
-    $cluster_url = self::getSelectedClusterUrl($form_state['values']['server']);
+    $cluster_url = self::getSelectedClusterUrl($values['server']);
 
     $client = Cluster::getClientByUrls(array($cluster_url));
     $response = $index_params = array();

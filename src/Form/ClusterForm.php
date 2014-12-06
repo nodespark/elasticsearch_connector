@@ -15,13 +15,12 @@ class ClusterForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    if (!empty($form_state['rebuild'])) {
-      // Rebuild the entity with the form state values.
+    if ($form_state->isRebuilding()) {
       $this->entity = $this->buildEntity($form, $form_state);
     }
     $form = parent::form($form, $form_state);
     // Get the entity and attach to the form state.
-    $cluster = $form_state['entity'] = $this->getEntity();
+    $cluster = $this->getEntity();
 
     if ($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Elasticsearch Cluster @label', array('@label' => $cluster->label()));
@@ -130,8 +129,10 @@ class ClusterForm extends EntityForm {
   public function validate(array $form, FormStateInterface $form_state) {
     parent::validate($form, $form_state);
 
+    $values = $form_state->getValues();
+
     /** @var Cluster $cluster_from_form */
-    $cluster_from_form = entity_create('elasticsearch_cluster', $form_state['values']);
+    $cluster_from_form = entity_create('elasticsearch_cluster', $values);
     try {
       $cluster_info = Cluster::getClusterInfo($cluster_from_form);
       if (!isset($cluster_info['info']) || !Cluster::checkClusterStatus($cluster_info['info'])) {
@@ -144,18 +145,18 @@ class ClusterForm extends EntityForm {
 
     // Complain if we are removing the default.
     $default = Cluster::getDefaultCluster();
-    if (empty($default) && !$form_state['values']['default']) {
-    	$default = Cluster::setDefaultCluster($form_state['values']['cluster_id']);
+    if (empty($default) && !$values['default']) {
+      $default = Cluster::setDefaultCluster($values['cluster_id']);
     }
-    if ($form_state['values']['default']) {
-    	$default = Cluster::setDefaultCluster($form_state['values']['cluster_id']);	
+    if ($values['default']) {
+      $default = Cluster::setDefaultCluster($values['cluster_id']);
     }
-    if ($form_state['values']['default'] == 0 && !empty($default) && $default == $form_state['values']['cluster_id']) {
+    if ($values['default'] == 0 && !empty($default) && $default == $values['cluster_id']) {
       drupal_set_message(
         t('There must be a default connection. %name is still the default connection.'
             . 'Please change the default setting on the cluster you wish to set as default.',
             array(
-            '%name' => $form_state['values']['name'])
+            '%name' => $values['name'])
         ),
         'warning'
       );

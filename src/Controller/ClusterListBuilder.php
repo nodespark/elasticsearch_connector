@@ -11,6 +11,7 @@ use Drupal\elasticsearch\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Url;
 
 /**
  * Provides a listing of Clusters along with their indices.
@@ -108,13 +109,13 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
             'data' => array(
               '#type' => 'link',
               '#title' => $entity->label(),
-            ) + $entity->urlInfo('info')->toRenderArray(),
+            ) + $entity->urlInfo('canonical')->toRenderArray(),
           ),
           'machine_name' => array(
             'data' => $entity->id(),
           ),
           'status' => array(
-            'data' => $cluster->status,
+            'data' => $cluster->status ? 'Active' : 'Inactive',
           ),
           'clusterStatus' => array(
             'data' => $status,
@@ -156,22 +157,18 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     $operations = parent::getDefaultOperations($entity);
 
     if (isset($entity->cluster_id)) {
+      $route_parameters['elasticsearch_cluster'] = $entity->id();
       $operations['info'] = array(
         'title' => $this->t('Info'),
         'weight' => 20,
-        'route_name' => 'elasticsearch.cluster_info',
-        'route_parameters' => array(
-          'elasticsearch_cluster' => $entity->id(),
-        ),
+        'url' => new Url('elasticsearch.canonical', $route_parameters),
       );
     } elseif (isset($entity->index_id)) {
+      $route_parameters['elasticsearch_cluster_index'] = $entity->id();
       $operations['delete'] = array(
         'title' => $this->t('Delete'),
         'weight' => 20,
-        'route_name' => 'elasticsearch.clusterindex_delete',
-        'route_parameters' => array(
-          'elasticsearch_cluster_index' => $entity->id(),
-        ),
+        'url' => new Url('elasticsearch.clusterindex_delete', $route_parameters),
       );
     }
     return $operations;

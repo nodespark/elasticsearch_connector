@@ -31,10 +31,11 @@ elasticsearch.cluster_edit:
   requirements:
     _entity_access: 'elasticsearch_cluster.edit'
 
-elasticsearch.cluster_info:
-  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/info'
+elasticsearch.canonical:
+  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}'
   defaults:
-    _content: '\Drupal\elasticsearch\Controller\ElasticsearchController::getInfo'
+    _controller: '\Drupal\elasticsearch\Controller\ElasticsearchController::getInfo'
+    _title_callback: '\Drupal\elasticsearch\Controller\ElasticsearchController::pageTitle'
     _title: 'Cluster Info'
   requirements:
     _permission: 'administer elasticsearch'

@@ -5,16 +5,16 @@
  * Contains \Drupal\elasticsearch\Plugin\SearchApi\Backend\SearchApiElasticsearchBackend
  */
 
-namespace Drupal\elasticsearch\Plugin\SearchApi\Backend;
+namespace Drupal\elasticsearch\Plugin\search_api\backend;
 
 use Drupal\Core\Config\Config;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\elasticsearch\Entity\Index;
 use Drupal\search_api\Backend\BackendPluginBase;
-use Drupal\search_api\Index\IndexInterface;
+use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\FilterInterface;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\Utility as SearchApiUtility;
 use Elasticsearch\Client;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\search_api\Query\QueryInterface;
@@ -23,6 +23,7 @@ use Drupal\elasticsearch\Entity\Cluster;
 use Drupal\Component\Utility\String;
 use Drupal\search_api\Item\FieldInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Url;
 
 /**
  * @SearchApiBackend(
@@ -92,7 +93,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $form['server_description'] = array(
         '#type' => 'item',
         '#title' => $this->t('Elasticsearch Cluster'),
-        '#description' => l($serverlink, $serverlink),
+        '#description' => \Drupal::l($serverlink, Url::fromUri($serverlink)),
       );
     }
     $form['cluster_settings'] = array(
@@ -194,7 +195,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $serverlink = $this->getServerLink();
     $info[] = array(
       'label' => $this->t('Elasticsearch server URI'),
-      'info' => l($serverlink, $serverlink),
+      'info' => \Drupal::l($serverlink, Url::fromUri($serverlink)),
     );
 
     if ($this->server->status()) {
@@ -332,7 +333,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /**
    * Overrides addIndex().
    */
-  public function addIndex(IndexInterface $index) {
+  public function aaddIndex(IndexInterface $index) {
     $this->connect();
     $index_name = $this->getIndexName($index);
     if (!empty($index_name)) {
@@ -414,7 +415,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $params['index'] = $index_name;
 
     if ($with_type) {
-      $params['type'] = $index->machine_name;
+      $params['type'] = $index->id();
     }
 
     return $params;
@@ -593,7 +594,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function search(QueryInterface $query) {
     // Results.
-    $search_result = \Drupal\search_api\Utility\Utility::createSearchResultSet($query);
+    $search_result = SearchApiUtility::createSearchResultSet($query);
 
     // Get index
     $index = $query->getIndex();
@@ -883,7 +884,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     $site_database = $databases['default']['default']['database'];
 
-    $index_machine_name = is_string($index) ? $index : $index->machine_name;
+    $index_machine_name = is_string($index) ? $index : $index->id();
 
     return self::escapeName('elasticsearch_index_' . $site_database . '_' . $index_machine_name);
   }
@@ -902,7 +903,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function getFieldMapping(FieldInterface $field) {
     try{
-      $type = \Drupal\search_api\Utility\Utility::isTextType($field->type);
+      $type = SearchApiUtility::isTextType($field->type);
 
       switch ($type) {
         case 'text':
@@ -1108,7 +1109,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $sort = $this->getSortSearchQuery($query);
     }
     catch (\Exception $e) {
-      watchdog('Elasticsearch Search API', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
+      //watchdog_exception('Elasticsearch Search API', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
       drupal_set_message($e->getMessage(), 'error');
     }
 
@@ -1141,7 +1142,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     $index_fields = $this->getIndexFields($query);
     $sort = array();
-    foreach ($query->getSort() as $field_id => $direction) {
+    foreach ($query->getSorts() as $field_id => $direction) {
       $direction = drupal_strtolower($direction);
 
       if ($field_id === 'search_api_relevance') {
@@ -1360,14 +1361,14 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $index = $query->getIndex();
 
     // Set up the results array.
-    $results = Utility::createSearchResultSet($query);
+    $results = SearchApiUtility::createSearchResultSet($query);
     $results->setExtraData('elasticsearch_response', $response);
     $results->setResultCount($response['hits']['total']);
 
     // Add each search result to the results array.
     if (!empty($response['hits']['hits'])) {
       foreach ($response['hits']['hits'] as $result) {
-        $result_item = Utility::createItem($index, $result['_id']);
+        $result_item = SearchApiUtility::createItem($index, $result['_id']);
         $result_item->setScore($result['_score']);
 
         // Set each item in _source as a field in Search API
@@ -1376,7 +1377,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
           if (!is_array($elasticsearch_property)) {
             $elasticsearch_property = array($elasticsearch_property);
           }
-          $field = Utility::createField($index, $elasticsearch_property_id);
+          $field = SearchApiUtility::createField($index, $elasticsearch_property_id);
           $field->setValues($elasticsearch_property);
           $result_item->setField($elasticsearch_property_id, $field);
         }

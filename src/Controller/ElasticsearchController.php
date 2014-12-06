@@ -46,13 +46,7 @@ class ElasticSearchController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(Cluster $elasticsearch_cluster) {
-    print_r($elasticsearch_cluster);
-    if ($elasticsearch_cluster->cluster_id) {
-      return String::checkPlain($elasticsearch_cluster->label());
-    }
-    else {
-      return String::checkPlain('Elasticsearch Cluster');      
-    }
+    return String::checkPlain($elasticsearch_cluster->label());
   }
 
   /**
