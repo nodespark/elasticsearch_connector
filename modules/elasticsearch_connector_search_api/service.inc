@@ -1501,7 +1501,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $mlt_query['more_like_this'] = array();
       $version = $this->getClusterVersion();
       if (version_compare($version, '1.3.0', '>=')) {
-        $mlt_query['more_like_this']['ids'] = $mlt['id'];
+        $mlt_query['more_like_this']['ids'] = array($mlt['id']);
         $mlt_query['more_like_this']['fields'] = array_values($mlt['fields']);
         $mlt_query['more_like_this']['max_query_terms']   = $mlt['max_query_terms'];
         $mlt_query['more_like_this']['min_doc_freq']      = $mlt['min_doc_freq'];
