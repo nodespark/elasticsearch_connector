@@ -370,11 +370,23 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     try {
       $this->elasticsearchClient->indices()->deleteMapping($params);
 
+      // Check if there are any other types in the index before deleting it.
+      $safe_delete = FALSE;
       $result = $this->elasticsearchClient->indices()->getMapping(array(
         'index' => $params['index'],
       ));
 
-      if (empty($result)) {
+      // The 'get mapping' API response changed in version 1.4.0.beta1
+      // @see http://www.elasticsearch.org/guide/en/elasticsearch/reference/1.4/indices-get-mapping.html
+      $version = $this->getClusterVersion();
+      if (version_compare($version, '1.4.0', '<')) {
+        $safe_delete = empty($result[$params['index']]);
+      }
+      else {
+        $safe_delete = empty($result[$params['index']]['mappings']);
+      }
+
+      if ($safe_delete) {
         $response = $this->elasticsearchClient->indices()->delete(array(
           'index' => $params['index'],
         ));
@@ -464,8 +476,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
       // The 'delete by query' API request changed in version 1.0.0RC1.
       // @see http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-delete-by-query.html
-      $info = $this->elasticsearchClient->info();
-      if ($info['version']['number'] < '1.0.0') {
+      $version = $this->getClusterVersion();
+      if (version_compare($version, '1.0.0', '<')) {
         $params['body'] = $params['body']['query'];
       }
 
@@ -1101,6 +1113,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
   }
 
+  /**
+   * Get the Elasticsearch server version.
+   * @return string
+   */
   protected function getClusterVersion() {
     static $version;
 
