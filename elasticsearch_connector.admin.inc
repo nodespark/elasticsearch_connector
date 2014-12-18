@@ -46,13 +46,16 @@ function elasticsearch_connector_status_page() {
 
     if (!empty($cluster_info['info']) && elasticsearch_connector_check_status($cluster_info['info'])) {
       $info = $cluster_info['health']['status'];
+      $version = $cluster_info['info']['version']['number'];
     }
     else {
       $info = t('Not available');
+      $version = '';
     }
 
+
     $row = array();
-    $row[] = $cluster->name;
+    $row[] = $cluster->name . ($version ? ' (' . t('server version: @ver', array('@ver' => $version)) . ')' : '');
     $row[] = (!empty($cluster->status) ? t('Active') : t('Inactive'));
     $row[] = $info;
     $row[] = $operations;
