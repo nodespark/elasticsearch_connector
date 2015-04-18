@@ -326,12 +326,6 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#description' => t('Enter the URL of a server (node) in the cluster. Example: http://localhost:9200.'),
     '#required' => TRUE,
     //'#limit_validation_errors' => array(array('url')),
-    '#ajax' => array(
-      'method' => 'replace',
-      'callback' => 'elasticsearch_connector_edit_cluster_ajax',
-      'effect' => 'fade',
-      'event'  => 'blur'
-    ),
   );
 
   $cluster_info = NULL;
@@ -404,12 +398,6 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
         ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
       ),
     ),
-    '#ajax' => array(
-      'method' => 'replace',
-      'callback' => 'elasticsearch_connector_edit_cluster_ajax',
-      'effect' => 'fade',
-      'event'  => 'blur'
-    ),
   );
 
   $form['options']['username'] = array(
@@ -422,12 +410,6 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
         ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
       ),
     ),
-    '#ajax' => array(
-      'method' => 'replace',
-      'callback' => 'elasticsearch_connector_edit_cluster_ajax',
-      'effect' => 'fade',
-      'event'  => 'blur'
-    ),
   );
 
   $form['options']['password'] = array(
@@ -439,12 +421,6 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
       'visible' => array(
         ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
       ),
-    ),
-    '#ajax' => array(
-      'method' => 'replace',
-      'callback' => 'elasticsearch_connector_edit_cluster_ajax',
-      'effect' => 'fade',
-      'event'  => 'blur'
     ),
   );
 
@@ -619,15 +595,6 @@ function elasticsearch_connector_cluster_indices_add_submit($form, &$form_state)
       }
     }
   }
-}
-
-function elasticsearch_connector_edit_cluster_ajax($form, $form_state) {
-  return array(
-    '#type' => 'ajax',
-    '#commands' => array(
-      ajax_command_replace("#cluster-info",  render($form['status_info'])),
-    )
-  );
 }
 
 /**
