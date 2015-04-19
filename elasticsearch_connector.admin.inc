@@ -323,21 +323,14 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#type' => 'textfield',
     '#title' => t('Server URL'),
     '#default_value' => !empty($cluster->url) ? $cluster->url : '',
-    '#description' => t('Enter the URL of a server (node) in the cluster. Example: http://localhost:9200.'),
+    '#description' => t('Enter the URL and the port of a server (node) in the cluster. Example: http://localhost:9200. Please enter the port also even it is the default one e.g. https://localhost:443'),
     '#required' => TRUE,
     //'#limit_validation_errors' => array(array('url')),
   );
 
   $cluster_info = NULL;
   $form_state_active = FALSE;
-  if (isset($form_state['values'])) {
-    $values = (object)$form_state['values'];
-    if (!empty($values->url)) {
-      $cluster_info = elasticsearch_connector_get_cluster_info($values);
-      $form_state_active = TRUE;
-    }
-  }
-  elseif (isset($cluster->url)) {
+  if (isset($cluster->url) && empty($form_state['input'])) {
     $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
     $form_state_active = TRUE;
   }
