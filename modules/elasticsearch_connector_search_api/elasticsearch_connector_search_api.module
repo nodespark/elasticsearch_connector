@@ -27,8 +27,14 @@ function elasticsearch_connector_search_api_search_api_service_info() {
   );
 
   // If the ElasticSearch library isn't available, use a dummy service class.
-  if (!class_exists('\Elasticsearch\Client')) {
-    $services['search_api_elasticsearch_connector']['class'] = 'SearchApiElasticsearchConnectorMissing';
+  if (!class_exists('\Elasticsearch\Client') && module_exists('composer_manager')) {
+    // When using search_api_autocomplete the composer manager doesn't handle the class loading.
+    // This can be an issue with composer manager and should be checked.
+    composer_manager_register_autoloader();
+
+    if (!class_exists('\Elasticsearch\Client')) {
+      $services['search_api_elasticsearch_connector']['class'] = 'SearchApiElasticsearchConnectorMissing';
+    }
   }
 
   return $services;
