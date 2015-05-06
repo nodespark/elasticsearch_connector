@@ -41,7 +41,7 @@ class Client
     public $transport;
 
     /**
-     * @var \Pimple
+     * @var \Pimple\Container
      */
     protected $params;
 
@@ -460,6 +460,7 @@ class Client
      *        ['preference']       = (string) Specify the node or shard the operation should be performed on (default: random) .Applies to all returned documents unless otherwise specified in body \"params\" or \"docs\".
      *        ['routing']          = (string) Specific routing value. Applies to all returned documents unless otherwise specified in body \"params\" or \"docs\".
      *        ['parent']           = (string) Parent id of documents. Applies to all returned documents unless otherwise specified in body \"params\" or \"docs\".
+     *        ['realtime']         = (boolean) Specifies if request is real-time as opposed to near-real-time (default: true).
      *
      * @param $params array Associative array of parameters
      *
@@ -500,6 +501,7 @@ class Client
      *        ['preference']       = (string) Specify the node or shard the operation should be performed on (default: random) .Applies to all returned documents unless otherwise specified in body \"params\" or \"docs\".
      *        ['routing']          = (string) Specific routing value. Applies to all returned documents unless otherwise specified in body \"params\" or \"docs\".
      *        ['parent']           = (string) Parent id of documents. Applies to all returned documents unless otherwise specified in body \"params\" or \"docs\".
+     *        ['realtime']         = (boolean) Specifies if request is real-time as opposed to near-real-time (default: true).
      *
      * @param $params array Associative array of parameters
      *
@@ -1183,6 +1185,150 @@ class Client
     }
 
 
+    /**
+     * $params['id']   = (string) The script ID (Required)
+     *        ['lang'] = (string) The script language (Required)
+     *
+     * @param $params array Associative array of parameters
+     *
+     * @return array
+     */
+    public function getScript($params)
+    {
+        $id = $this->extractArgument($params, 'id');
+        $lang = $this->extractArgument($params, 'lang');
+
+        /** @var callback $endpointBuilder */
+        $endpointBuilder = $this->dicEndpoints;
+
+        /** @var \Elasticsearch\Endpoints\Script\Get $endpoint */
+        $endpoint = $endpointBuilder('Script\Get');
+        $endpoint->setID($id)
+                 ->setLang($lang);
+        $endpoint->setParams($params);
+        $response = $endpoint->performRequest();
+        return $response['data'];
+    }
+
+    /**
+     * $params['id']   = (string) The script ID (Required)
+     *        ['lang'] = (string) The script language (Required)
+     *
+     * @param $params array Associative array of parameters
+     *
+     * @return array
+     */
+    public function deleteScript($params)
+    {
+        $id = $this->extractArgument($params, 'id');
+        $lang = $this->extractArgument($params, 'lang');
+
+        /** @var callback $endpointBuilder */
+        $endpointBuilder = $this->dicEndpoints;
+
+        /** @var \Elasticsearch\Endpoints\Script\Delete $endpoint */
+        $endpoint = $endpointBuilder('Script\Delete');
+        $endpoint->setID($id)
+                 ->setLang($lang);
+        $endpoint->setParams($params);
+        $response = $endpoint->performRequest();
+        return $response['data'];
+    }
+
+    /**
+     * $params['id']   = (string) The script ID (Required)
+     *        ['lang'] = (string) The script language (Required)
+     *
+     * @param $params array Associative array of parameters
+     *
+     * @return array
+     */
+    public function putScript($params)
+    {
+        $id   = $this->extractArgument($params, 'id');
+        $lang = $this->extractArgument($params, 'lang');
+        $body = $this->extractArgument($params, 'body');
+
+        /** @var callback $endpointBuilder */
+        $endpointBuilder = $this->dicEndpoints;
+
+        /** @var \Elasticsearch\Endpoints\Script\Put $endpoint */
+        $endpoint = $endpointBuilder('Script\Put');
+        $endpoint->setID($id)
+                 ->setLang($lang)
+                 ->setBody($body);
+        $endpoint->setParams($params);
+        $response = $endpoint->performRequest();
+        return $response['data'];
+    }
+
+    /**
+     * $params['id']   = (string) The search template ID (Required)
+     *
+     * @param $params array Associative array of parameters
+     *
+     * @return array
+     */
+    public function getTemplate($params)
+    {
+        $id = $this->extractArgument($params, 'id');
+
+        /** @var callback $endpointBuilder */
+        $endpointBuilder = $this->dicEndpoints;
+
+        /** @var \Elasticsearch\Endpoints\Template\Get $endpoint */
+        $endpoint = $endpointBuilder('Template\Get');
+        $endpoint->setID($id);
+        $endpoint->setParams($params);
+        $response = $endpoint->performRequest();
+        return $response['data'];
+    }
+
+    /**
+     * $params['id']   = (string) The search template ID (Required)
+     *
+     * @param $params array Associative array of parameters
+     *
+     * @return array
+     */
+    public function deleteTemplate($params)
+    {
+        $id = $this->extractArgument($params, 'id');
+
+        /** @var callback $endpointBuilder */
+        $endpointBuilder = $this->dicEndpoints;
+
+        /** @var \Elasticsearch\Endpoints\Template\Delete $endpoint */
+        $endpoint = $endpointBuilder('Template\Delete');
+        $endpoint->setID($id);
+        $endpoint->setParams($params);
+        $response = $endpoint->performRequest();
+        return $response['data'];
+    }
+
+    /**
+     * $params['id']   = (string) The search template ID (Required)
+     *
+     * @param $params array Associative array of parameters
+     *
+     * @return array
+     */
+    public function putTemplate($params)
+    {
+        $id   = $this->extractArgument($params, 'id');
+        $body = $this->extractArgument($params, 'body');
+
+        /** @var callback $endpointBuilder */
+        $endpointBuilder = $this->dicEndpoints;
+
+        /** @var \Elasticsearch\Endpoints\Template\Put $endpoint */
+        $endpoint = $endpointBuilder('Template\Put');
+        $endpoint->setID($id)
+                 ->setBody($body);
+        $endpoint->setParams($params);
+        $response = $endpoint->performRequest();
+        return $response['data'];
+    }
 
 
 
@@ -1233,7 +1379,7 @@ class Client
     /**
      * Operate on the Cat namespace of commands
      *
-     * @return SnapshotNamespace
+     * @return CatNamespace
      */
     public function cat()
     {
@@ -1310,7 +1456,9 @@ class Client
         $log       = new Logger('log');
         $handler   = new StreamHandler(
             $this->params['logPath'],
-            $this->params['logLevel']
+            $this->params['logLevel'],
+            $this->params['logBubble'],
+            $this->params['logPermission']
         );
         $processor = new IntrospectionProcessor();
 
@@ -1325,7 +1473,9 @@ class Client
         $trace        = new Logger('trace');
         $traceHandler = new StreamHandler(
             $this->params['tracePath'],
-            $this->params['traceLevel']
+            $this->params['traceLevel'],
+            $this->params['traceBubble'],
+            $this->params['tracePermission']
         );
 
         $trace->pushHandler($traceHandler);
