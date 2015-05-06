@@ -815,6 +815,11 @@ function elasticsearch_connector_load_library($cluster) {
           composer_manager_register_autoloader();
         }
 
+        if (!class_exists('\Elasticsearch\Client')) {
+          // No library available!
+          return FALSE;
+        }
+
         $clients[$cluster->cluster_id] = new \Elasticsearch\Client($options);
       }
       catch (Exception $e) {
