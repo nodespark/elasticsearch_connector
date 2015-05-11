@@ -229,7 +229,8 @@ function elasticsearch_connector_info_cluster($cluster) {
       'active_shards'         => t('Active shards'),
       'relocating_shards'     => t('Relocating shards'),
       'initializing_shards'   => t('Initializing shards'),
-      'unassigned_shards'     => t('Unassigned shards')
+      'unassigned_shards'     => t('Unassigned shards'),
+      'number_of_pending_tasks' => t('Number of pending tasks'),
     );
 
     foreach ($cluster_status['health'] as $health_key => $health_value) {
