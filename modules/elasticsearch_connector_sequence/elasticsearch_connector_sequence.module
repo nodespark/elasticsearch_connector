@@ -18,7 +18,7 @@ function elasticsearch_connector_sequence_menu() {
     'description'       => 'Setup the sequence module settings.',
     'page callback'      => 'drupal_get_form',
     'page arguments'     => array('elasticsearch_connector_sequence_settings'),
-    'access arguments'  => array('adminiser elasticsearch connector'),
+    'access arguments'  => array('administer elasticsearch connector'),
     'file'              => 'elasticsearch_connector_sequence.admin.inc',
   );
 

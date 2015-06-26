@@ -37,7 +37,7 @@ function elasticsearch_watchdog_menu() {
     'description'       => 'Showing all available clusters',
     'page callback'      => 'drupal_get_form',
     'page arguments'     => array('elasticsearch_watchdog_settings'),
-    'access arguments'  => array('adminiser elasticsearch connector'),
+    'access arguments'  => array('administer elasticsearch connector'),
     'file'              => 'elasticsearch_watchdog.admin.inc',
   );
 

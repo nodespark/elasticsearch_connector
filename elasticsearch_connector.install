@@ -119,3 +119,17 @@ function elasticsearch_connector_schema() {
 function elasticsearch_connector_uninstall() {
   variable_del('elasticsearch_connector_get_default_connector');
 }
+
+/**
+ * Implements hook_update_N().
+ *
+ * Update permissions.
+ */
+function elasticsearch_connector_update_7100(&$sandbox) {
+  db_update('role_permission')
+    ->fields(array(
+      'permission' => 'administer elasticsearch connector',
+    ))
+    ->condition('permission', 'adminiser elasticsearch connector')
+    ->execute();
+}
