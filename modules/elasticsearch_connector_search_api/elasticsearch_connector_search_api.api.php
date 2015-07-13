@@ -41,3 +41,18 @@ function hook_elasticsearch_connector_search_api_results_alter(&$results, $query
 function hook_elasticsearch_connector_search_api_add_index($index, &$params) {
 
 }
+
+/**
+ * Lets modules alter the items (documents) that will be send to
+ * Elasticsearch server for indexing.
+ *
+ * @param object $index
+ *   The Search API index object.
+ * @param array $params
+ *   The params that are going to be send to the Elasticsearch server.
+ * @param array $items
+ *   The original items used to build the params variable.
+ */
+function hook_elasticsearch_connector_search_api_index_items($index, &$params, $items) {
+
+}

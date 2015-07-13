@@ -440,6 +440,9 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $params['body'][] = $data;
     }
 
+    // Let other modules alter params before sending them to Elasticsearch.
+    drupal_alter('elasticsearch_connector_search_api_index_items', $index, $params, $items);
+
     try {
       $response = $this->elasticsearchClient->bulk($params);
       // If error throw the error we have.
