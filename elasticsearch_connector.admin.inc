@@ -774,7 +774,7 @@ function elasticsearch_connector_cluster_indices_delete_submit($form, &$form_sta
 }
 
 /**
- * Form constructor for the clluster deletion confirmation form.
+ * Form constructor for the cluster deletion confirmation form.
  *
  * @see elasticsearch_connector_delete_cluster_submit()
  */

@@ -808,7 +808,7 @@ function elasticsearch_connector_load_library($cluster) {
 
       try {
         if (!class_exists('\Elasticsearch\Client') && module_exists('composer_manager')) {
-          // If the class doesn't exists try to explicity load the classes!
+          // If the class doesn't exists try to explicitly load the classes!
           // The issues is in update.php where search api call this function, but the function
           // has not been invoked.
           composer_manager_register_autoloader();
@@ -913,7 +913,7 @@ function elasticsearch_connector_get_cluster_nodes_stat(\Elasticsearch\Client $c
  * Check if a specific plugin exists on all nodes.
  * TODO: This should be changed to check all data Nodes only but for now lets check all of them.
  *
- * Read more about pluggins system here:
+ * Read more about plugins system here:
  * http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-plugins.html
  *
  * @param \Elasticsearch\Client $client
