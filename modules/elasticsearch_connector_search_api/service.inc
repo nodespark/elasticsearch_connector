@@ -1215,12 +1215,18 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         // );
 
         // Geo Distance filter.
-        $query_options['query_search_filter'] = array(
+        $geo_distance_filter = array(
           'geo_distance' => array(
             'distance' => $radius . 'km',
             $spatial['field'] => $point,
           ),
         );
+        if (empty($query_options['query_search_filter']['and'])) {
+          $query_options['query_search_filter'] = $geo_distance_filter;
+        }
+        else {
+          $query_options['query_search_filter']['and'][] = $geo_distance_filter;
+        }
 
         // // Geo distance range filter.
         // $query_options['query_search_filter'] = array(
