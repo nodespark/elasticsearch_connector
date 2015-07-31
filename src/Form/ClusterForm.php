@@ -1,9 +1,9 @@
 <?php
 
-namespace Drupal\elasticsearch\Form;
+namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\elasticsearch\Entity\Cluster;
+use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -57,7 +57,7 @@ class ClusterForm extends EntityForm {
       '#maxlength' => 125,
       '#description' => t('Unique, machine-readable identifier for this Elasticsearch environment.'),
       '#machine_name' => array(
-        'exists' => '\Drupal\elasticsearch\Entity\Cluster::load',
+        'exists' => '\Drupal\elasticsearch_connector\Entity\Cluster::load',
         'source' => array('name'),
         'replace_pattern' => '[^a-z0-9_]+',
         'replace' => '_',

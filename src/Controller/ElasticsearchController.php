@@ -2,15 +2,15 @@
 
 /**
  * @file
- * Contains \Drupal\elasticsearch\Controller\ElasticsearchController.
+ * Contains \Drupal\elasticsearch_connector\Controller\ElasticsearchController.
  */
 
-namespace Drupal\elasticsearch\Controller;
+namespace Drupal\elasticsearch_connector\Controller;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\elasticsearch\Entity\Cluster;
+use Drupal\elasticsearch_connector\Entity\Cluster;
 
 /**
  * Provides route responses for elasticsearch clusters.
@@ -20,7 +20,7 @@ class ElasticsearchController extends ControllerBase {
   /**
    * Displays information about an Elasticsearch Cluster.
    *
-   * @param \Drupal\elasticsearch\Entity\Cluster $cluster
+   * @param \Drupal\elasticsearch_connector\Entity\Cluster $cluster
    *   An instance of Cluster.
    *
    * @return array
@@ -36,7 +36,7 @@ class ElasticsearchController extends ControllerBase {
     );
     // Check if the cluster is enabled and can be written to
     if ($elasticsearch_cluster->cluster_id) {
-      $render['form'] = $this->formBuilder()->getForm('Drupal\elasticsearch\Form\ClusterForm', $elasticsearch_cluster);
+      $render['form'] = $this->formBuilder()->getForm('Drupal\elasticsearch_connector\Form\ClusterForm', $elasticsearch_cluster);
     }
     return $render;
   }
@@ -44,7 +44,7 @@ class ElasticsearchController extends ControllerBase {
   /**
    * Page title callback for a cluster's "View" tab.
    *
-   * @param \Drupal\elasticsearch\Entity\Cluster $elasticsearch_cluster
+   * @param \Drupal\elasticsearch_connector\Entity\Cluster $elasticsearch_cluster
    *   The cluster that is displayed.
    *
    * @return string
@@ -59,7 +59,7 @@ class ElasticsearchController extends ControllerBase {
    *
    * @param Cluster $elasticsearch_cluster
    * @return mixed
-   * @throws \Drupal\elasticsearch\Entity\Exception
+   * @throws \Drupal\elasticsearch_connector\Entity\Exception
    * @throws \Exception
    */
   public function getInfo(Cluster $elasticsearch_cluster) {

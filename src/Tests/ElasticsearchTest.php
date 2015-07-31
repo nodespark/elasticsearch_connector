@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\elasticsearch\Tests\ElasticsearchTest.
+ * Contains \Drupal\elasticsearch_connector\Tests\ElasticsearchTest.
  */
 
-namespace Drupal\elasticsearch\Tests;
+namespace Drupal\elasticsearch_connector\Tests;
 
 use Drupal\search_api\Entity\Index;
 use Drupal\search_api\Entity\Server;

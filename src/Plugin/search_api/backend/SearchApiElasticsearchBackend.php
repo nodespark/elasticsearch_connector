@@ -2,17 +2,17 @@
 
 /**
  * @file
- * Contains \Drupal\elasticsearch\Plugin\SearchApi\Backend\SearchApiElasticsearchBackend
+ * Contains \Drupal\elasticsearch_connector\Plugin\SearchApi\Backend\SearchApiElasticsearchBackend
  */
 
-namespace Drupal\elasticsearch\Plugin\search_api\backend;
+namespace Drupal\elasticsearch_connector\Plugin\search_api\backend;
 
 use Drupal\Component\Utility\String;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Config;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
-use Drupal\elasticsearch\Entity\Index;
+use Drupal\elasticsearch_connector\Entity\Index;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\FilterInterface;
@@ -21,7 +21,7 @@ use Elasticsearch\Client;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\elasticsearch\Entity\Cluster;
+use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\search_api\Item\FieldInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;

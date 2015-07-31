@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * Contains \Drupal\elasticsearch\Controller\ClusterListBuilder.
+ * Contains \Drupal\elasticsearch_connector\Controller\ClusterListBuilder.
  */
-namespace Drupal\elasticsearch\Controller;
+namespace Drupal\elasticsearch_connector\Controller;
 
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\elasticsearch\Entity\Cluster;
+use Drupal\elasticsearch_connector\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityInterface;

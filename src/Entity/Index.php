@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\elasticsearch\Entity\Index.
+ * Contains \Drupal\elasticsearch_connector\Entity\Index.
  */
 
-namespace Drupal\elasticsearch\Entity;
+namespace Drupal\elasticsearch_connector\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 
@@ -17,10 +17,10 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *   label = @Translation("Elasticsearch Cluster Indices"),
  *   handlers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
- *     "list_builder" = "Drupal\elasticsearch\Controller\IndexListBuilder",
+ *     "list_builder" = "Drupal\elasticsearch_connector\Controller\IndexListBuilder",
  *     "form" = {
- *       "default" = "Drupal\elasticsearch\Form\IndexForm",
- *       "delete" = "Drupal\elasticsearch\Form\IndexDeleteForm",
+ *       "default" = "Drupal\elasticsearch_connector\Form\IndexForm",
+ *       "delete" = "Drupal\elasticsearch_connector\Form\IndexDeleteForm",
  *     },
  *   },
  *   admin_permission = "administer elasticsearch",
@@ -59,7 +59,7 @@ class Index extends ConfigEntityBase {
    * Load an index object
    *
    * @param $index_id
-   * @return \Drupal\elasticsearch\Entity\Index
+   * @return \Drupal\elasticsearch_connector\Entity\Index
    */
   public static function loadIndex($index_id) {
     return entity_load('elasticsearch_cluster_index', $index_id);
@@ -68,7 +68,7 @@ class Index extends ConfigEntityBase {
   /**
    * Load all indicess
    *
-   * @return \Drupal\elasticsearch\Entity\Index[]
+   * @return \Drupal\elasticsearch_connector\Entity\Index[]
    */
   public static function loadAllIndices() {
     return entity_load_multiple('elasticsearch_cluster_index');
