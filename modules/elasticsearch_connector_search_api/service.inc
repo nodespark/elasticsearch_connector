@@ -436,7 +436,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         $data[$field_id] = $field_data['value'];
       }
 
-      $params['body'][] = array('index' => array('_id' => $data['id']));
+      $params['body'][] = array('index' => array('_id' => $this->getSafeId($data['id'])));
       $params['body'][] = $data;
     }
 
@@ -474,8 +474,14 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       }
     }
     elseif ($ids === 'all') {
+      $site_id = $this->getSiteHash();
       $params = $this->getIndexParam($index, TRUE);
-      $params['body'] = array('query' => array('match_all' => array()));
+      if ($site_id) {
+        $params['body'] = array('query' => array('match' => array('search_api_site_hash' => $site_id)));
+      }
+      else {
+        $params['body'] = array('query' => array('match_all' => array()));
+      }
 
       // The 'delete by query' API request changed in version 1.0.0RC1.
       // @see http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-delete-by-query.html
@@ -518,7 +524,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       $params['body'][] = array(
         'delete' => array(
           '_type'   => $params['type'],
-          '_id'     => $id,
+          '_id'     => $this->getSafeId($id),
         )
       );
     }
@@ -2000,6 +2006,25 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
       return $matches;
     }
+  }
+
+  /**
+   * Provides support for search_api_site hashes to add to IDs.
+   * See https://www.drupal.org/files/1776534.patch for Solr version.
+   */
+  public function getSiteHash() {
+    if (function_exists('search_api_site_hash')) {
+      return search_api_site_hash();
+    }
+    return FALSE;
+  }
+
+  /**
+   * Create document ID using site hash, if available.
+   */
+  public function getSafeId($id) {
+    $site_id = $this->getSiteHash();
+    return $site_id ? "{$site_id}-{$id}" : $id;
   }
 
 }
