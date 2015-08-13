@@ -1627,11 +1627,29 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     $index_fields = $this->getIndexFields($query);
     $sort = array();
+
+    // Extract Search API Location fields.
+    $spatials = array();
+    foreach($query->getOption('search_api_location') as $spatial) {
+      $spatials[$spatial['field']] = $spatial;
+    }
+
     foreach ($query->getSort() as $field_id => $direction) {
       $direction = drupal_strtolower($direction);
 
       if ($field_id === 'search_api_relevance') {
         $sort['_score'] = $direction;
+      }
+      elseif (isset($spatials[$field_id])) {
+        $sort['_geo_distance'] = array(
+          $field_id => array(
+            'lat' => $spatials[$field_id]['lat'],
+            'lon' => $spatials[$field_id]['lon'],
+          ),
+          'order' => $direction,
+          'unit' => 'km',
+          'distance_type' => 'plane',
+        );
       }
       elseif (isset($index_fields[$field_id])) {
         $sort[$field_id] = $direction;
