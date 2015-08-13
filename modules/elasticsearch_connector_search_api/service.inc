@@ -1635,9 +1635,12 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $sort = array();
 
     // Extract Search API Location fields.
+    $search_api_location = $query->getOption('search_api_location');
     $spatials = array();
-    foreach($query->getOption('search_api_location') as $spatial) {
-      $spatials[$spatial['field']] = $spatial;
+    if ($search_api_location) {
+      foreach ($search_api_location as $spatial) {
+        $spatials[$spatial['field']] = $spatial;
+      }
     }
 
     foreach ($query->getSort() as $field_id => $direction) {
