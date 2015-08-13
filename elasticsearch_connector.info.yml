@@ -1,10 +1,11 @@
 name: 
-  'Elasticsearch'
+  'Elasticsearch Connector'
 description: 
   'Abstraction of making connection to the elasticsearch server. This module is API for a whole bunch of functionality connected with this module.'
-type: module
-package: Search
-version: VERSION
 core: 8.x
+package: Elasticsearch
+type: module
 dependencies:
   - composer_manager
+configure: admin/config/elasticsearch-connector
+version: VERSION

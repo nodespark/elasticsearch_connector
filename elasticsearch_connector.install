@@ -1,8 +1,8 @@
 <?php
+
 /**
  * @file
- *
- * The installtion file for elasticsearch module.
+ * The installation file for elasticsearch_connector module.
  */
 
 /**
@@ -10,11 +10,11 @@
  *
  * Check Elastica installation.
  */
-function elasticsearch_requirements($phase) {
+function elasticsearch_connector_requirements($phase) {
   if ($phase === 'install') {
     if (version_compare(phpversion(), '5.3.9', '<')) {
       return array(
-        'elasticsearch' => array(
+        'elasticsearch_connector' => array(
           'title' => t('The PHP version is not compatible with this module.'),
           'description' => t('The module requires PHP version bigger than or equal to version 5.3.9.'),
           'severity' => REQUIREMENT_ERROR,
@@ -27,7 +27,7 @@ function elasticsearch_requirements($phase) {
   if ($phase == 'runtime') {
     if (!class_exists('\Elasticsearch\Client')) {
       return array(
-        'elasticsearch' => array(
+        'elasticsearch_connector' => array(
           'title' => t('The Elasticsearch library is missing.'),
           'description' => t('The official library for Elasticsearch connection is missing.'),
           'severity' => REQUIREMENT_ERROR,
@@ -37,7 +37,7 @@ function elasticsearch_requirements($phase) {
     }
     else {
       return array(
-        'elasticsearch' => array(
+        'elasticsearch_connector' => array(
           'title' => t('Elasticsearch PHP library'),
           'description' => t('The official Elasticsearch library was correctly installed.'),
           'severity' => REQUIREMENT_OK,
@@ -53,8 +53,8 @@ function elasticsearch_requirements($phase) {
 /**
  * Implements hook_schema().
  */
-function elasticsearch_schema() {
-  $schema['elasticsearch'] = array(
+function elasticsearch_connector_schema() {
+  $schema['elasticsearch_connector_cluster'] = array(
     'description' => 'The base table for elasticsearch clusters.',
     'export' => array(
       'key' => 'cluster_id',
@@ -115,6 +115,6 @@ function elasticsearch_schema() {
  *
  * Delete Search Api elasticsearch servers.
  */
-function elasticsearch_uninstall() {
-  \Drupal::state()->delete('elasticsearch_get_default');
+function elasticsearch_connector_uninstall() {
+  //\Drupal::state()->delete('elasticsearch_connector_get_default_connector');
 }

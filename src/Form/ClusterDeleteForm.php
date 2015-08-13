@@ -2,16 +2,16 @@
 
 /**
  * @file
- * Contains \Drupal\elasticsearch\Form\ClusterDeleteForm.
+ * Contains \Drupal\elasticsearch_connector\Form\ClusterDeleteForm.
  */
 
-namespace Drupal\elasticsearch\Form;
+namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\elasticsearch\Entity\Cluster;
-use Drupal\elasticsearch\Entity\Index;
+use Drupal\elasticsearch_connector\Entity\Cluster;
+use Drupal\elasticsearch_connector\Entity\Index;
 
 /**
  * Defines a confirmation form for deletion of a custom menu.

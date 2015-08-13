@@ -2,17 +2,17 @@
 
 /**
  * @file
- * Contains \Drupal\elasticsearch\Form\IndexForm.
+ * Contains \Drupal\elasticsearch_connector\Form\IndexForm.
  */
 
-namespace Drupal\elasticsearch\Form;
+namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\elasticsearch\Entity\Index;
+use Drupal\elasticsearch_connector\Entity\Index;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityManager;
-use Drupal\elasticsearch\Entity\Cluster;
+use Drupal\elasticsearch_connector\Entity\Cluster;
 
 /**
  * Form controller for node type forms.

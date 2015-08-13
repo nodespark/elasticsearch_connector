@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\elasticsearch\Entity\Cluster.
+ * Contains \Drupal\elasticsearch_connector\Entity\Cluster.
  */
 
-namespace Drupal\elasticsearch\Entity;
+namespace Drupal\elasticsearch_connector\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Elasticsearch\Client;
@@ -18,11 +18,11 @@ use Elasticsearch\Client;
  *   label = @Translation("Elasticsearch Cluster"),
  *   handlers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
- *     "list_builder" = "Drupal\elasticsearch\Controller\ClusterListBuilder",
+ *     "list_builder" = "Drupal\elasticsearch_connector\Controller\ClusterListBuilder",
  *     "form" = {
- *       "default" = "Drupal\elasticsearch\Form\ClusterForm",
- *       "edit" = "Drupal\elasticsearch\Form\ClusterForm",
- *       "delete" = "Drupal\elasticsearch\Form\ClusterDeleteForm",
+ *       "default" = "Drupal\elasticsearch_connector\Form\ClusterForm",
+ *       "edit" = "Drupal\elasticsearch_connector\Form\ClusterForm",
+ *       "delete" = "Drupal\elasticsearch_connector\Form\ClusterDeleteForm",
  *     },
  *   },
  *   admin_permission = "administer elasticsearch",
@@ -106,7 +106,7 @@ class Cluster extends ConfigEntityBase {
  * @return string
  */
   public static function getDefaultCluster() {
-    return \Drupal::state()->get('elasticsearch_get_default', '');
+    return \Drupal::state()->get('elasticsearch_connector_get_default_connector', '');
   }
 
   /**
@@ -115,7 +115,7 @@ class Cluster extends ConfigEntityBase {
    * @return string
    */
   public static function setDefaultCluster($cluster_id) {
-    return \Drupal::state()->set('elasticsearch_get_default', $cluster_id); 
+    return \Drupal::state()->set('elasticsearch_connector_get_default_connector', $cluster_id);
   }
 
   /**
@@ -180,7 +180,7 @@ class Cluster extends ConfigEntityBase {
    * Load a cluster object
    *
    * @param $cluster_id
-   * @return \Drupal\elasticsearch\Entity\Cluster
+   * @return \Drupal\elasticsearch_connector\Entity\Cluster
    */
   public static function loadCluster($cluster_id) {
     return entity_load('elasticsearch_cluster', $cluster_id);
@@ -190,7 +190,7 @@ class Cluster extends ConfigEntityBase {
    * Load all clusters
    *
    * @param bool $include_inactive
-   * @return \Drupal\elasticsearch\Entity\Cluster[]
+   * @return \Drupal\elasticsearch_connector\Entity\Cluster[]
    */
   public static function loadAllClusters($include_inactive = TRUE) {
     $clusters = entity_load_multiple('elasticsearch_cluster');
@@ -213,7 +213,7 @@ class Cluster extends ConfigEntityBase {
       'hosts' => $urls,
     );
 
-    \Drupal::moduleHandler()->alter('elasticsearch_load_library_options', $options);
+    \Drupal::moduleHandler()->alter('elasticsearch_connector_load_library_options', $options);
     return new Client($options);
   }
 

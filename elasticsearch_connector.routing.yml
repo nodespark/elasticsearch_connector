@@ -1,13 +1,13 @@
 elasticsearch.clusters:
-  path: '/admin/config/search/elasticsearch/clusters'
+  path: '/admin/config/elasticsearch-connector/clusters'
   defaults:
     _title: 'Elasticsearch Clusters'
     _entity_list: 'elasticsearch_cluster'
   requirements:
-    _permission: 'administer elasticsearch'
+    _permission: 'administer elasticsearch connector'
 
 elasticsearch.cluster_add:
-  path: '/admin/config/search/elasticsearch/clusters/add'
+  path: '/admin/config/elasticsearch-connector/clusters/add'
   defaults:
     _entity_form: 'elasticsearch_cluster.default'
     _title: 'Cluster'
@@ -15,32 +15,32 @@ elasticsearch.cluster_add:
     _entity_create_access: 'elasticsearch_cluster'
 
 elasticsearch.canonical:
-  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}'
+  path: '/admin/config/elasticsearch-connector/clusters/{elasticsearch_cluster}'
   defaults:
-    _controller: '\Drupal\elasticsearch\Controller\ElasticsearchController::getInfo'
-    _title_callback: '\Drupal\elasticsearch\Controller\ElasticsearchController::pageTitle'
+    _controller: '\Drupal\elasticsearch_connector\Controller\ElasticsearchController::getInfo'
+    _title_callback: '\Drupal\elasticsearch_connector\Controller\ElasticsearchController::pageTitle'
     _title: 'Cluster Info'
   requirements:
-    _permission: 'administer elasticsearch'
+    _permission: 'administer elasticsearch connector'
 
 elasticsearch.cluster_edit:
-  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/edit'
+  path: '/admin/config/elasticsearch-connector/clusters/{elasticsearch_cluster}/edit'
   defaults:
     _entity_form: 'elasticsearch_cluster.edit'
     _title: 'Cluster Edit'
-    _title_callback: '\Drupal\elasticsearch\Controller\ElasticsearchController::pageTitle'
+    _title_callback: '\Drupal\elasticsearch_connector\Controller\ElasticsearchController::pageTitle'
   requirements:
     _entity_access: 'elasticsearch_cluster.edit'
 
 elasticsearch.cluster_delete:
-  path: '/admin/config/search/elasticsearch/clusters/{elasticsearch_cluster}/delete'
+  path: '/admin/config/elasticsearch-connector/clusters/{elasticsearch_cluster}/delete'
   defaults:
     _entity_form: 'elasticsearch_cluster.delete'
   requirements:
     _entity_access: 'elasticsearch_cluster.delete'
 
 elasticsearch.clusterindex_add:
-  path: '/admin/config/search/elasticsearch/indices/add'
+  path: '/admin/config/elasticsearch-connector/indices/add'
   defaults:
     _entity_form: 'elasticsearch_cluster_index.default'
     _title: 'Index'
@@ -48,7 +48,7 @@ elasticsearch.clusterindex_add:
     _entity_create_access: 'elasticsearch_cluster_index'
 
 elasticsearch.clusterindex_delete:
-  path: '/admin/config/search/elasticsearch/indices/{elasticsearch_cluster_index}/delete'
+  path: '/admin/config/elasticsearch-connector/indices/{elasticsearch_cluster_index}/delete'
   defaults:
     _entity_form: 'elasticsearch_cluster_index.delete'
   requirements:

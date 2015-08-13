@@ -2,14 +2,14 @@
 
 /**
  * @file
- * Contains \Drupal\elasticsearch\Form\IndexDeleteForm.
+ * Contains \Drupal\elasticsearch_connector\Form\IndexDeleteForm.
  */
 
-namespace Drupal\elasticsearch\Form;
+namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\elasticsearch\Entity\Cluster;
+use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\Core\Url;
 
 /**

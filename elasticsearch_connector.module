@@ -14,9 +14,9 @@ use Drupal\Component\Utility\Url;
 /**
  * Implements hook_help().
  */
-function elasticsearch_help($route_name) {
+function elasticsearch_connector_help($route_name) {
   switch ($route_name) {
-    case 'admin/help#elasticsearch':
+    case 'admin/help#elasticsearch_connector':
       return '<p>' . t('Abstraction of making connection to the elasticsearch
         server. This module is API for a whole bunch of functionality connected
         with this module."') . '</p>';
@@ -26,19 +26,19 @@ function elasticsearch_help($route_name) {
 /**
  * Implements hook_cron()
  */
-function elasticsearch_cron() {
+function elasticsearch_connector_cron() {
   // TODO: Check cluster node state and update cluster nodes if any changes.
   // Do this only if we have auto-node update configuration enabled.
-  // The default state of the auto mode will be activeated!
+  // The default state of the auto mode will be activated!
 }
 
 /**
  * Implements hook_permission().
  */
-function elasticsearch_permission() {
+function elasticsearch_connector_permission() {
   return array(
-    'administer elasticsearch' => array(
-      'title' => t('Administer elasticsearch'),
+    'administer elasticsearch connector' => array(
+      'title' => t('Administer elasticsearch connector'),
       'description' => t('Giving you access to administer elasticsearch clusters.'),
     ),
   );
@@ -47,11 +47,11 @@ function elasticsearch_permission() {
 /**
  * Implements hook_theme().
  */
-function elasticsearch_theme() {
+function elasticsearch_connector_theme() {
   return array(
-    'elasticsearch_page' => array(
+    'elasticsearch_connector_page' => array(
       'render element' => 'page',
-      'template' => 'elasticsearch-dialog-page',
+      'template' => 'elasticsearch-connector-dialog-page',
     ),
   );
 }
@@ -60,9 +60,7 @@ function elasticsearch_theme() {
  * Implements hook_menu().
  */
 // TODO
-function elasticsearch_menu() {
-  $items = array();
-
+function elasticsearch_connector_menu() {
   $items['elasticsearch/clusters'] = array(
     'title'             => 'Elasticsearch Clusters',
     'description'       => 'Showing all available clusters',
@@ -111,7 +109,7 @@ function elasticsearch_menu() {
 /**
  * Implements hook_element_info()
  */
-function elasticsearch_element_info() {
+function elasticsearch_connector_element_info() {
   return array(
     'ec_clusters' => array(
       '#input' => TRUE,
@@ -209,8 +207,8 @@ function _elasticsearch_check_if_index_locked($cluster, $index) {
 /**
  * Implements hook_elasticsearch_edit_lock().
  */
-function elasticsearch_elasticsearch_edit_lock($type, $cluster, $index = NULL) {
-  if ($type == 'cluster' && $cluster->cluster_id == elasticsearch_get_default()) {
+function elasticsearch_connector_elasticsearch_edit_lock($type, $cluster, $index = NULL) {
+  if ($type == 'cluster' && $cluster->cluster_id == elasticsearch_connector_get_default()) {
     return TRUE;
   }
 
@@ -316,7 +314,7 @@ function _elasticsearch_ec_index_process($element, &$form_state, $form) {
 /**
  * Implements hook_page_alter().
  */
-function elasticsearch_page_alter(&$page) {
+function elasticsearch_connector_page_alter(&$page) {
   if (elasticsearch_in_dialog()) {
     unset($page['page_top']);
     unset($page['page_bottom']);
@@ -329,14 +327,14 @@ function elasticsearch_page_alter(&$page) {
  * Check if we are in a references dialog.
  * @return boolean if we are in a dialog.
  */
-function elasticsearch_in_dialog() {
+function elasticsearch_connector_in_dialog() {
   return (isset($_GET['render']) && $_GET['render'] == 'elasticsearch-dialog');
 }
 
 /**
  * Check if we should close the dialog upon submition.
  */
-function elasticsearch_close_on_submit() {
+function elasticsearch_connector_close_on_submit() {
   return (!isset($_GET['closeonsubmit']) || $_GET['closeonsubmit']);
 }
 
@@ -344,7 +342,7 @@ function elasticsearch_close_on_submit() {
  * Sets our destination parameter so that the dialog will close itself after
  * redirect is completed.
  */
-function elasticsearch_close_on_redirect($cluster_id, $index_name) {
+function elasticsearch_connector_close_on_redirect($cluster_id, $index_name) {
   // We use $_GET['destination'] since that overrides anything that happens
   // in the form. It is a hack, but it is very effective, since we don't have
   // to be worried about getting overrun by other form submit handlers.
@@ -365,7 +363,7 @@ function elasticsearch_close_on_redirect($cluster_id, $index_name) {
 /**
  * Page callback for our redirect page.
  */
-function elasticsearch_redirect_page($cluster, $index_name) {
+function elasticsearch_connector_redirect_page($cluster, $index_name) {
   // Add appropriate javascript that will be used by the parent page to
   // fill in the required data.
   if (elasticsearch_in_dialog() && isset($_GET['elasticsearch-dialog-close'])) {
@@ -405,7 +403,7 @@ function _elasticsearch_ec_index_ajax($form, $form_state) {
  * Return the main path of the elasticsearch module.
  * @return string
  */
-function elasticsearch_main_settings_path() {
+function elasticsearch_connector_main_settings_path() {
   $settings_path = 'admin/config/elasticsearch';
   return $settings_path;
 }
@@ -414,7 +412,7 @@ function elasticsearch_main_settings_path() {
  * Return the basic breadcrumb for the module.
  * @param array $links
  */
-function elasticsearch_set_breadcrumb($links = array()) {
+function elasticsearch_connector_set_breadcrumb($links = array()) {
   $breadcrumb = array(
     l(t('Home'), '<front>'),
     l(t('Administration'), 'admin'),
@@ -437,7 +435,7 @@ function elasticsearch_set_breadcrumb($links = array()) {
  * @return array Indices
  */
 // TODO in src
-function elasticsearch_get_indices_options($cluster_id, $empty_option = FALSE) {
+function elasticsearch_connector_get_indices_options($cluster_id, $empty_option = FALSE) {
   $result = array();
 
   $client = elasticsearch_get_client_by_id($cluster_id);
@@ -465,7 +463,7 @@ function elasticsearch_get_indices_options($cluster_id, $empty_option = FALSE) {
  * @return string boolean
  */
 // TODO in src/
-function elasticsearch_index_valid_load($index_name) {
+function elasticsearch_connector_index_valid_load($index_name) {
   if (preg_match('/^[a-z][a-z0-9_]*$/i', $index_name)) {
     return $index_name;
   }
@@ -478,7 +476,7 @@ function elasticsearch_index_valid_load($index_name) {
  * @param \Elasticsearch\Client $client
  * @return array
  */
-function elasticsearch_get_cluster_nodes_stat(\Elasticsearch\Client $client) {
+function elasticsearch_connector_get_cluster_nodes_stat(\Elasticsearch\Client $client) {
   try {
     return $client->nodes()->stats();
   }
@@ -498,7 +496,7 @@ function elasticsearch_get_cluster_nodes_stat(\Elasticsearch\Client $client) {
  * @param string $plugin
  * @return boolean
  */
-function elasticsearch_check_plugin_exists(\Elasticsearch\Client $client, $plugin_name) {
+function elasticsearch_connector_check_plugin_exists(\Elasticsearch\Client $client, $plugin_name) {
   $nodes_plugins = array();
   $result = FALSE;
 
@@ -565,7 +563,7 @@ function _elasticsearch_validate_ttl_field($element, &$form_state, $form) {
  * @return string
  *   A unique site hash, containing only alphanumeric characters.
  */
-function elasticsearch_site_hash() {
+function elasticsearch_connector_site_hash() {
   // Copied from apachesolr_site_hash().
   if (!($hash = \Drupal::config('elasticsearch.settings')->get('site_hash'))) {
     global $base_url;

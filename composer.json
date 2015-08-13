@@ -1,4 +1,7 @@
 {
+    "name": "drupal/elasticsearch_connector",
+    "description": "elastic",
+    "type": "drupal-module",
     "require": {
         "elasticsearch/elasticsearch": "~1.0"
     }
