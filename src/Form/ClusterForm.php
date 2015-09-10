@@ -127,8 +127,8 @@ class ClusterForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function validate(array $form, FormStateInterface $form_state) {
-    parent::validate($form, $form_state);
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form, $form_state);
 
     $values = $form_state->getValues();
 
@@ -136,7 +136,6 @@ class ClusterForm extends EntityForm {
     $cluster_from_form = entity_create('elasticsearch_cluster', $values);
     try {
       $cluster_info = Cluster::getClusterInfo($cluster_from_form);
-      print_r($cluster_info);die();
       if (!isset($cluster_info['info']) || !Cluster::checkClusterStatus($cluster_info['info'])) {
         $form_state->setErrorByName('url', t('Cannot connect to the cluster!'));
       }
@@ -226,6 +225,7 @@ class ClusterForm extends EntityForm {
         $cluster = $this->getEntity();
         $cluster->save();
         drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
+        $form_state->setRedirect('entity.elasticsearch_cluster.canonical', array('elasticsearch_cluster' => $cluster->id()));
       }
       catch (SearchApiException $e) {
         $form_state->setRebuild();
@@ -233,6 +233,5 @@ class ClusterForm extends EntityForm {
         drupal_set_message($this->t('The cluster could not be saved.'), 'error');
       }
     }
-    $form_state->setRedirect('elasticsearch.clusters');
   }
 }

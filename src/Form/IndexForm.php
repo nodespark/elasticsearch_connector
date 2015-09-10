@@ -187,7 +187,7 @@ class IndexForm extends EntityForm {
     $form['server'] = array(
       '#type' => 'radios',
       '#title' => $this->t('Server'),
-      '#default_value' => !empty($index->server) ? $index->server : t('Disabled'),
+      '#default_value' => !empty($index->server) ? $index->server : Cluster::getDefaultCluster(),
       '#description' => $this->t('Select the server this index should reside on. Index can not be enabled without connection to valid server.'),
       '#options' => $this->getClusterField('cluster_id'),
       '#weight' => 9,
@@ -280,6 +280,6 @@ class IndexForm extends EntityForm {
 
     drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
 
-    $form_state->setRedirect('elasticsearch.clusters');
+    $form_state->setRedirect('elasticsearch_connector.clusters');
   }
 }

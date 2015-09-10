@@ -35,18 +35,24 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submit(array &$form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $storage = \Drupal::entityManager()->getStorage('elasticsearch_index');
+    $indices = $storage->loadByProperties(array('server' => $this->entity->cluster_id));
+
     if ($this->entity->id() == Cluster::getDefaultCluster()) {
       drupal_set_message($this->t('The cluster %title cannot be deleted as it is set as the default cluster.', array('%title' => $this->entity->label())), 'error');
     }
     else {
-      foreach ($indices as $index) {
-        if($index->server == $this->entity->cluster_id) {
-          $index->server = Cluster::getDefaultCluster();
-        }
+      /*
+      foreach ($indices as $key => $index) {
+        $indices[$key]->server = Cluster::getDefaultCluster();
+        print_r($index);
       }
+      */
+
       $this->entity->delete();
       drupal_set_message($this->t('The cluster %title has been deleted.', array('%title' => $this->entity->label())));
+      $form_state->setRedirect('elasticsearch_connector.clusters');
     }
   }
 
@@ -61,6 +67,6 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('entity.elasticsearch_cluster.canonical', array('elasticsearch_cluster' => $this->entity->id()));
+    return new Url('elasticsearch_connector.clusters', array('elasticsearch_cluster' => $this->entity->id()));
   }
 }

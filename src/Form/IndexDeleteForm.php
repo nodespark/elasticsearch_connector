@@ -27,7 +27,7 @@ class IndexDeleteForm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submit(array &$form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $cluster = Cluster::loadCluster($this->entity->server);
     $client = Cluster::getClientByUrls(array($cluster->url));
     if ($client) {
@@ -35,7 +35,7 @@ class IndexDeleteForm extends EntityConfirmFormBase {
         $client->indices()->delete(array('index' => $this->entity->index_id));
         $this->entity->delete();
         drupal_set_message($this->t('The index %title has been deleted.', array('%title' => $this->entity->label())));
-        $form_state->setRedirect('elasticsearch.clusters');
+        $form_state->setRedirect('elasticsearch_connector.clusters');
       }
       catch (\Exception $e) {
         drupal_set_message($e->getMessage(), 'error');
@@ -54,6 +54,6 @@ class IndexDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('elasticsearch.clusters');
+    return new Url('elasticsearch_connector.clusters');
   }
 }

@@ -2,9 +2,9 @@ entity.elasticsearch_cluster.add_form:
   route_name: entity.elasticsearch_cluster.add_form
   title: 'Add Cluster'
   appears_on:
-    - elasticsearch.clusters
+    - elasticsearch_connector.clusters
 entity.elasticsearch_index.add_form:
   route_name: entity.elasticsearch_index.add_form
   title: 'Add Index'
   appears_on:
-    - elasticsearch.clusters
+    - elasticsearch_connector.clusters

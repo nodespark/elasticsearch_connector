@@ -85,28 +85,30 @@ class ElasticsearchController extends ControllerBase {
 
       $cluster_statistics_rows = array(
         array(
-          array('data' => $cluster_status['health']['number_of_nodes'] . '<br/>' . t('Nodes')),
+          array('data' => $cluster_status['health']['number_of_nodes'] . ' ' . t('Nodes')),
           array('data' => $cluster_status['health']['active_shards'] + $cluster_status['health']['unassigned_shards']
-                . '<br/>' . t('Total Shards')),
-          array('data' => $cluster_status['health']['active_shards'] . '<br/>' . t('Successful Shards')),
-          array('data' => count($cluster_status['state']['metadata']['indices']) . '<br/>' . t('Indices')),
-          array('data' => $total_docs . '<br/>' . t('Total Documents')),
-          array('data' => format_size($total_size) . '<br/>' . t('Total Size')),
+                . ' ' . t('Total Shards')),
+          array('data' => $cluster_status['health']['active_shards'] . ' ' . t('Successful Shards')),
+          array('data' => count($cluster_status['state']['metadata']['indices']) . ' ' . t('Indices')),
+          array('data' => $total_docs . ' ' . t('Total Documents')),
+          array('data' => format_size($total_size) . ' ' . t('Total Size')),
         )
       );
 
       $cluster_health_rows = array();
       $cluster_health_mapping = array(
-        'cluster_name'  => t('Cluster name'),
-        'status'        => t('Status'),
-        'timed_out'     => t('Time out'),
-        'number_of_nodes' => t('Number of nodes'),
-        'number_of_data_nodes'  => t('Number of data nodes'),
-        'active_primary_shards' => t('Active primary shards'),
-        'active_shards'         => t('Active shards'),
-        'relocating_shards'     => t('Relocating shards'),
-        'initializing_shards'   => t('Initializing shards'),
-        'unassigned_shards'     => t('Unassigned shards')
+        'cluster_name'                => t('Cluster name'),
+        'status'                      => t('Status'),
+        'timed_out'                   => t('Time out'),
+        'number_of_nodes'             => t('Number of nodes'),
+        'number_of_data_nodes'        => t('Number of data nodes'),
+        'active_primary_shards'       => t('Active primary shards'),
+        'active_shards'               => t('Active shards'),
+        'relocating_shards'           => t('Relocating shards'),
+        'initializing_shards'         => t('Initializing shards'),
+        'unassigned_shards'           => t('Unassigned shards'),
+        'number_of_pending_tasks'     => t('Number of pending tasks'),
+        'number_of_in_flight_fetch'   => t('Number of in-flight fetch')
       );
 
       foreach ($cluster_status['health'] as $health_key => $health_value) {
