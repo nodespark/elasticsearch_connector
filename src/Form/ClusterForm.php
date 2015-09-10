@@ -22,14 +22,15 @@ class ClusterForm extends EntityForm {
     // Get the entity and attach to the form state.
     $cluster = $this->getEntity();
 
-    if ($this->operation == 'edit') {
-      $form['#title'] = $this->t('Edit Elasticsearch Cluster @label', array('@label' => $cluster->label()));
+    if ($cluster->isNew()) {
+      $form['#title'] = $this->t('Add Elasticsearch Cluster');
     }
     else {
-      $form['#title'] = $this->t('Add Elasticsearch Cluster');
+      $form['#title'] = $this->t('Edit Elasticsearch Cluster @label', array('@label' => $cluster->label()));
     } 
     
     $this->buildEntityForm($form, $form_state, $cluster);
+
     return $form;
   }
 
@@ -135,6 +136,7 @@ class ClusterForm extends EntityForm {
     $cluster_from_form = entity_create('elasticsearch_cluster', $values);
     try {
       $cluster_info = Cluster::getClusterInfo($cluster_from_form);
+      print_r($cluster_info);die();
       if (!isset($cluster_info['info']) || !Cluster::checkClusterStatus($cluster_info['info'])) {
         $form_state->setErrorByName('url', t('Cannot connect to the cluster!'));
       }
@@ -218,17 +220,19 @@ class ClusterForm extends EntityForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    $cluster = $this->entity;
-    
-    $status = $cluster->save();
-    
-    if ($status == SAVED_UPDATED) {
-      drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
+    // Only save the server if the form doesn't need to be rebuilt.
+    if (!$form_state->isRebuilding()) {
+      try {
+        $cluster = $this->getEntity();
+        $cluster->save();
+        drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
+      }
+      catch (SearchApiException $e) {
+        $form_state->setRebuild();
+        watchdog_exception('elasticsearch_connector', $e);
+        drupal_set_message($this->t('The cluster could not be saved.'), 'error');
+      }
     }
-    else {
-      drupal_set_message(t('Cluster %label has been added.', array('%label' => $cluster->label())));
-    }
-
     $form_state->setRedirect('elasticsearch.clusters');
   }
 }

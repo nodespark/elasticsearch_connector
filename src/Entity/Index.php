@@ -13,7 +13,7 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  * Defines the search server configuration entity.
  *
  * @ConfigEntityType(
- *   id = "elasticsearch_cluster_index",
+ *   id = "elasticsearch_index",
  *   label = @Translation("Elasticsearch Cluster Indices"),
  *   handlers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
@@ -30,9 +30,9 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *     "label" = "name",
  *   },
  *   links = {
- *     "canonical" = "elasticsearch.clusters",
- *     "add-form" = "elasticsearch.clusterindex_add",
- *     "delete-form" = "elasticsearch.clusterindex_delete",
+ *     "canonical" = "/admin/config/elasticsearch-connector/clusters",
+ *     "add-form" = "/admin/config/elasticsearch-connector/indices/add",
+ *     "delete-form" = "/admin/config/elasticsearch-connector/indices/{elasticsearch_index}/delete",
  *   }
  * )
  */
@@ -62,7 +62,7 @@ class Index extends ConfigEntityBase {
    * @return \Drupal\elasticsearch_connector\Entity\Index
    */
   public static function loadIndex($index_id) {
-    return entity_load('elasticsearch_cluster_index', $index_id);
+    return entity_load('elasticsearch_index', $index_id);
   }
 
   /**
@@ -71,7 +71,7 @@ class Index extends ConfigEntityBase {
    * @return \Drupal\elasticsearch_connector\Entity\Index[]
    */
   public static function loadAllIndices() {
-    return entity_load_multiple('elasticsearch_cluster_index');
+    return entity_load_multiple('elasticsearch_index');
   }
 
 }

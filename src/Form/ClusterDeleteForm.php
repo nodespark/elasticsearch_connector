@@ -61,6 +61,6 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('elasticsearch.canonical', array('elasticsearch_cluster' => $this->entity->id()));
+    return new Url('entity.elasticsearch_cluster.canonical', array('elasticsearch_cluster' => $this->entity->id()));
   }
 }

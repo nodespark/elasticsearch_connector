@@ -30,7 +30,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     return new static(
       $entity_type,
       $container->get('entity.manager')->getStorage($entity_type->id()),
-      $container->get('entity.manager')->getStorage('elasticsearch_cluster_index')
+      $container->get('entity.manager')->getStorage('elasticsearch_index')
     );
   }
 
@@ -157,18 +157,16 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     $operations = parent::getDefaultOperations($entity);
 
     if (isset($entity->cluster_id)) {
-      $route_parameters['elasticsearch_cluster'] = $entity->id();
       $operations['info'] = array(
         'title' => $this->t('Info'),
         'weight' => 20,
-        'url' => new Url('elasticsearch.canonical', $route_parameters),
+        'url' => new Url('entity.elasticsearch_cluster.canonical', array('elasticsearch_cluster' => $entity->id())),
       );
     } elseif (isset($entity->index_id)) {
-      $route_parameters['elasticsearch_cluster_index'] = $entity->id();
       $operations['delete'] = array(
         'title' => $this->t('Delete'),
         'weight' => 20,
-        'url' => new Url('elasticsearch.clusterindex_delete', $route_parameters),
+        'url' => new Url('entity.elasticsearch_index.delete_form', array('elasticsearch_index' => $entity->id())),
       );
     }
     return $operations;
@@ -185,7 +183,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
       '#header' => $this->buildHeader(),
       '#rows' => array(),
       '#empty' => $this->t('No clusters available. <a href="@link">Add new cluster</a>.', array(
-      '@link' => \Drupal::urlGenerator()->generate('elasticsearch.cluster_add'),
+      '@link' => \Drupal::urlGenerator()->generate('entity.elasticsearch_cluster.add_form'),
       )),
     );
     foreach ($entity_groups as $cluster_group) {

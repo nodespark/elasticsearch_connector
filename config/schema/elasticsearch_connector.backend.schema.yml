@@ -1,4 +1,4 @@
-elasticsearch.backend.plugin.elasticsearch:
+elasticsearch_connector.backend.plugin.elasticsearch:
   type: mapping
   label: 'Search API Elasticsearch settings'
   mapping:

@@ -57,56 +57,6 @@ function elasticsearch_connector_theme() {
 }
 
 /**
- * Implements hook_menu().
- */
-// TODO
-function elasticsearch_connector_menu() {
-  $items['elasticsearch/clusters'] = array(
-    'title'             => 'Elasticsearch Clusters',
-    'description'       => 'Showing all available clusters',
-    'route_name'        => 'elasticsearch.clusters',
-  );
-
-  $items[$settings_path . '/clusters/add'] = array(
-    'title'              => 'Add cluster',
-    'description'        => 'Add new elasticsearch cluster',
-    'route_name'         => 'elasticsearch.cluster_add'
-  );
-
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/info'] = array(
-    'title'              => 'Elasticsearch cluster info',
-    'description'        => 'Elasticsearch cluster info',
-    'route_name'         => 'elasticsearch.cluster_info'
-   );
-
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/edit'] = array(
-    'title'              => 'Elasticsearch cluster edit',
-    'description'        => 'Elasticsearch cluster edit',
-    'route_name'         => 'elasticsearch.cluster_edit'
-   );
-
-  $items[$settings_path . '/clusters/%elasticsearch_cluster/delete'] = array(
-    'title'              => 'Elasticsearch cluster delete',
-    'description'        => 'Elasticsearch cluster delete',
-    'route_name'         => 'elasticsearch.cluster_delete'
-   );
-
-  $items[$settings_path . '/indices/add'] = array(
-    'title'              => 'Add index',
-    'description'        => 'Add index',
-    'route_name'         => 'elasticsearch.clusterindex_add'
-  );
-
-  $items[$settings_path . '/indices/%elasticsearch_cluster_index/delete'] = array(
-    'title'              => 'Delete index',
-    'description'        => 'Delete index',
-    'route_name'         => 'elasticsearch.clusterindex_delete'
-  );
-
-  return $items;
-}
-
-/**
  * Implements hook_element_info()
  */
 function elasticsearch_connector_element_info() {

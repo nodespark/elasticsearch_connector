@@ -1,6 +1,6 @@
-elasticsearch.index.*:
+elasticsearch_connector.index.*:
   type: config_entity
-  label: 'Elasticsearch Cluster Indices'
+  label: 'Elasticsearch Indices'
   mapping:
     index_id:
       type: string

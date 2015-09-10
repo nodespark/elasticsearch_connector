@@ -1,4 +1,4 @@
-elasticsearch.cluster.*:
+elasticsearch_connector.cluster.*:
   type: config_entity
   label: 'Elasticsearch Cluster'
   mapping:
@@ -8,6 +8,9 @@ elasticsearch.cluster.*:
     name:
       type: string
       label: 'Cluster Name'
+    uuid:
+      type: string
+      label: 'UUID'
     status:
       type: string
       label: 'Cluster Status'

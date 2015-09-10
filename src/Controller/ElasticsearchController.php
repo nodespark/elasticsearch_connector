@@ -7,7 +7,7 @@
 
 namespace Drupal\elasticsearch_connector\Controller;
 
-use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\elasticsearch_connector\Entity\Cluster;
@@ -51,7 +51,7 @@ class ElasticsearchController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(Cluster $elasticsearch_cluster) {
-    return String::checkPlain($elasticsearch_cluster->label());
+    return SafeMarkup::checkPlain($elasticsearch_cluster->label());
   }
 
   /**

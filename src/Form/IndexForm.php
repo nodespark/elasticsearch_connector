@@ -67,7 +67,7 @@ class IndexForm extends EntityForm {
    *   An instance of EntityStorageInterface.
    */
   protected function getIndexStorage() {
-    return $this->getEntityManager()->getStorage('elasticsearch_cluster_index');
+    return $this->getEntityManager()->getStorage('elasticsearch_index');
   }
 
   /**
