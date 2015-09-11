@@ -320,24 +320,27 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     drupal_alter('elasticsearch_connector_search_api_field_update', $index, $properties);
 
-    try {
-      if ($this->elasticsearchClient->indices()->existsType($params)) {
-        $current_mapping = $this->elasticsearchClient->indices()->getMapping($params);
-        if (!empty($current_mapping)) {
-          // If the mapping exits, delete it to be able to re-create it.
-          $this->elasticsearchClient->indices()->deleteMapping($params);
+    // Not remapping for read only indexes as it removes all data
+    if (!isset($index->read_only) || !$index->read_only) {
+      try {
+        if ($this->elasticsearchClient->indices()->existsType($params)) {
+          $current_mapping = $this->elasticsearchClient->indices()->getMapping($params);
+          if (!empty($current_mapping)) {
+            // If the mapping exits, delete it to be able to re-create it.
+            $this->elasticsearchClient->indices()->deleteMapping($params);
+          }
+        }
+
+        $params['body'][$params['type']]['properties'] = $properties;
+        $results = $this->elasticsearchClient->indices()->putMapping($params);
+        if (!elasticsearch_connector_check_response_ack($results)) {
+          drupal_set_message(t('Cannot create the mapping of the fields!'), 'error');
         }
       }
-
-      $params['body'][$params['type']]['properties'] = $properties;
-      $results = $this->elasticsearchClient->indices()->putMapping($params);
-      if (!elasticsearch_connector_check_response_ack($results)) {
-        drupal_set_message(t('Cannot create the mapping of the fields!'), 'error');
+      catch (Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+        return FALSE;
       }
-    }
-    catch (Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
-      return FALSE;
     }
 
     return TRUE;
