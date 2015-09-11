@@ -1649,19 +1649,25 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       if ($field_id === 'search_api_relevance') {
         $sort['_score'] = $direction;
       }
-      elseif (isset($spatials[$field_id])) {
-        $sort['_geo_distance'] = array(
-          $field_id => array(
-            'lat' => $spatials[$field_id]['lat'],
-            'lon' => $spatials[$field_id]['lon'],
-          ),
-          'order' => $direction,
-          'unit' => 'km',
-          'distance_type' => 'plane',
-        );
-      }
       elseif (isset($index_fields[$field_id])) {
-        $sort[$field_id] = $direction;
+        // Check whether the field is a location field.
+        if (isset($index_fields[$field_id]['real_type']) && $index_fields[$field_id]['real_type'] == 'location') {
+          // Only set proximity sort if the point is set.
+          if (isset($spatials[$field_id])) {
+            $sort['_geo_distance'] = array(
+              $field_id => array(
+                'lat' => $spatials[$field_id]['lat'],
+                'lon' => $spatials[$field_id]['lon'],
+              ),
+              'order' => $direction,
+              'unit' => 'km',
+              'distance_type' => 'plane',
+            );
+          }
+        }
+        else {
+          $sort[$field_id] = $direction;
+        }
       }
       else {
         throw new Exception(t('Incorrect sorting!.'));
