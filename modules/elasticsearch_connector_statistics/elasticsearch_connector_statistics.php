@@ -20,11 +20,6 @@ if (preg_match('(/sites/.*/elasticsearch_connector/modules/elasticsearch_connect
   // Change the directory to the Drupal root.
   chdir(DRUPAL_ROOT);
 
-  // TODO: Lightweight bootstrap if possible.
-  require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
-  drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
-  elasticsearch_connector_statistics_log_statistics();
-
   $img_url = $current_path . '/img/pixel.gif';
   // TODO: Send no cache headers and change this to use Drupal functions.
   header("Content-Length:" . sprintf('%u', filesize($img_url)));
@@ -36,6 +31,14 @@ if (preg_match('(/sites/.*/elasticsearch_connector/modules/elasticsearch_connect
     }
     fclose($fd);
   }
+
+  if (function_exists('fastcgi_finish_request')) {
+    fastcgi_finish_request();
+  }
+  // TODO: Lightweight bootstrap if possible.
+  require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
+  drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+  elasticsearch_connector_statistics_log_statistics();
 }
 else {
   drupal_fast_404();
