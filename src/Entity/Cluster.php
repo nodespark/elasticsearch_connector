@@ -101,10 +101,10 @@ class Cluster extends ConfigEntityBase {
   }
 
   /**
- * Get the default (cluster) used for elasticsearch.
- *
- * @return string
- */
+   * Get the default (cluster) used for elasticsearch.
+   *
+   * @return string
+   */
   public static function getDefaultCluster() {
     return \Drupal::state()->get('elasticsearch_connector_get_default_connector', '');
   }

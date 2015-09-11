@@ -38,18 +38,12 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $storage = \Drupal::entityManager()->getStorage('elasticsearch_index');
     $indices = $storage->loadByProperties(array('server' => $this->entity->cluster_id));
+    //TODO: handle indices linked to the cluster being deleted
 
     if ($this->entity->id() == Cluster::getDefaultCluster()) {
       drupal_set_message($this->t('The cluster %title cannot be deleted as it is set as the default cluster.', array('%title' => $this->entity->label())), 'error');
     }
     else {
-      /*
-      foreach ($indices as $key => $index) {
-        $indices[$key]->server = Cluster::getDefaultCluster();
-        print_r($index);
-      }
-      */
-
       $this->entity->delete();
       drupal_set_message($this->t('The cluster %title has been deleted.', array('%title' => $this->entity->label())));
       $form_state->setRedirect('elasticsearch_connector.clusters');

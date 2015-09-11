@@ -28,6 +28,9 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *   entity_keys = {
  *     "id" = "index_id",
  *     "label" = "name",
+ *     "num_of_shards" = "num_of_shards",
+ *     "num_of_replica" = "num_of_replica",
+ *     "server" = "server"
  *   },
  *   links = {
  *     "canonical" = "/admin/config/elasticsearch-connector/clusters",
@@ -39,16 +42,37 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
 class Index extends ConfigEntityBase {
 
   /**
-  * {@inheritdoc}
+  * The index machine name.
+  *
+  * @var string
   */
-  public $name;
-
   public $index_id;
 
+  /**
+   * The human-readable name of the index entity.
+   *
+   * @var string
+   */
+  public $name;
+
+  /**
+   * Number of shards.
+   *
+   * @var string
+   */
   public $num_of_shards;
 
+  /**
+   * Number of replica.
+   *
+   * @var string
+   */
   public $num_of_replica;
 
+  /**
+   * Cluster the index is attached to.
+   * @var array
+   */
   public $server;
 
   public function id() {
