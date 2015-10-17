@@ -56,7 +56,7 @@ class elasticsearch_connector_views_query extends views_plugin_query {
 
         $params['query']['multi_match'] = array(
                                             'query' => $this->params['q'],
-                                            'fields' => $this->params['fulltext_fields']
+                                            'fields' => array_values($this->params['fulltext_fields'])
                                           );
       }
       else {
