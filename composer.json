@@ -4,5 +4,26 @@
     "type": "drupal-module",
     "require": {
         "elasticsearch/elasticsearch": "~2.0"
-    }
+    },
+    "license": "GPL-2.0+",
+    "authors": [
+        {
+            "name": "Nikolay Ignatov",
+            "email": "nignatov@nodespark.com",
+            "homepage": "http://www.nodespark.com",
+            "role": "Maintainer"
+        },
+        {
+            "name": "Prateek Sachan",
+            "email": "ps@prateeksachan.com",
+            "homepage": "http://prateek.sachan.co",
+            "role": "Maintainer"
+        },
+        {
+            "name": "Lachezar Valchev",
+            "email": "lachezar.valchev@gmail.com",
+            "homepage": "https://drupal.org/u/lachezar.valchev",
+            "role": "Maintainer"
+        }
+    ]
 }
