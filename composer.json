@@ -1,8 +1,8 @@
 {
     "name": "drupal/elasticsearch_connector",
-    "description": "elastic",
+    "description": "Elasticsearch Connector module for Drupal.",
     "type": "drupal-module",
     "require": {
-        "elasticsearch/elasticsearch": "~1.0"
+        "elasticsearch/elasticsearch": "~2.0"
     }
 }
