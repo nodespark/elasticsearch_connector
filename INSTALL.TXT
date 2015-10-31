@@ -1,7 +1,24 @@
-This module requires to install the following modules, otherwise it will 
-not work correctly.:
+This module requires to install the official Elasticsearch PHP library in order to function correctly.
+Read more about the library: https://github.com/elastic/elasticsearch-php
 
- * Install the "Search API 8.x" module. (https://www.drupal.org/sandbox/daeron/2091893)
- * Install the "Composer Manager 8.x" module for installing the elasticsearch PHP library. (https://www.drupal.org/project/composer_manager)
+In order to install the library you can use 2 ways:
+
+1. Install it using the Composer manager module (https://www.drupal.org/project/composer_manager).
+
+2. Manually edit root composer.json and put into the "merge-plugin" section the path to the module json file.
+
+Example:
+
+....
+     "merge-plugin": {
+       "include": [
+         "core/composer.json",
+         "modules/elasticsearch_connector/composer.json"
+       ],
+       "recurse": false,
+       "replace": false,
+       "merge-extra": false
+     }
+....
 
 ---------------------------------------------------------------------------------------------
