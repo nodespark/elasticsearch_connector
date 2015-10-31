@@ -8,7 +8,7 @@
 namespace Drupal\elasticsearch_connector\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Elasticsearch\Client;
+use Drupal\Core\Entity\Entity;
 
 /**
  * Defines the search server configuration entity.
@@ -94,6 +94,12 @@ class Cluster extends ConfigEntityBase {
   protected $locked = FALSE;
 
   /**
+   * The connector class.
+   * @var string
+   */
+  protected $connector = 'Drupal\elasticsearch_connector\DESConnector\DESConnector';
+
+  /**
    * {@inheritdoc}
    */
   public function id() {
@@ -119,30 +125,36 @@ class Cluster extends ConfigEntityBase {
   }
 
   /**
+   * Get the Elasticsearch client.
+   *
+   * @param object $cluster
+   *   The cluster object.
+   *
+   * @return object
+   *   The Elasticsearch object.
+   */
+  public static function getClientInstance($cluster) {
+    $client = call_user_func($cluster->connector . '::getInstance', array($cluster->url));
+    return $client;
+  }
+
+  /**
    * Return cluster info.
+   *
+   * @param object $cluster
+   *   The cluster to get the info for.
+   *
    * @return array
+   *   Info array.
+   *
+   * @throws \Exception
    */
   public static function getClusterInfo($cluster) {
     $result = FALSE;
 
     try {
-      $client = self::getClientByUrls(array($cluster->url));
-      if (!empty($client)) {
-        try {
-          $info = $client->info();
-          $result['client'] = $client;
-          $result['info'] = $result['state'] = $result['health'] = $result['stats'] = array();
-          if (self::checkClusterStatus($info)) {
-            $result['info'] = $info;
-            $result['state'] = $client->cluster()->state();
-            $result['health'] = $client->cluster()->health();
-            $result['stats'] = $client->nodes()->stats();
-          }
-        }
-        catch (\Exception $e) {
-          drupal_set_message($e->getMessage(), 'error');
-        }
-      }
+      $client = self::getClientInstance($cluster);
+      $result = $client->getClusterInfo();
     }
     catch (\Exception $e) {
       throw $e;
@@ -167,23 +179,13 @@ class Cluster extends ConfigEntityBase {
 
     if (!empty($cluster_id)) {
       $client = FALSE;
-      $cluster = $this::loadCluster($cluster_id);
+      $cluster = $this::load($cluster_id);
       if ($cluster) {
-        $client = $this::getClientByUrls($cluster->url);
+        $client = call_user_func($cluster->connector . '::getInstance', array($cluster->url));
       }
     }
 
     return $client;
-  }
-
-  /**
-   * Load a cluster object
-   *
-   * @param $cluster_id
-   * @return \Drupal\elasticsearch_connector\Entity\Cluster
-   */
-  public static function loadCluster($cluster_id) {
-    return entity_load('elasticsearch_cluster', $cluster_id);
   }
 
   /**
@@ -193,28 +195,13 @@ class Cluster extends ConfigEntityBase {
    * @return \Drupal\elasticsearch_connector\Entity\Cluster[]
    */
   public static function loadAllClusters($include_inactive = TRUE) {
-    $clusters = entity_load_multiple('elasticsearch_cluster');
+    $clusters = Entity::loadMultiple('elasticsearch_cluster');
     foreach ($clusters as $cluster) {
       if (!$include_inactive && !$cluster->status) {
         unset($clusters[$cluster->cluster_id]);
       }
     }
     return $clusters;
-  }
-
-  /**
-   * We need to handle the case where url is and array of urls
-   *
-   * @param string $url
-   * @return Client
-   */
-  public static function getClientByUrls($urls) {
-    $options = array(
-      'hosts' => $urls,
-    );
-
-    \Drupal::moduleHandler()->alter('elasticsearch_connector_load_library_options', $options);
-    return new Client($options);
   }
 
 /**
@@ -235,16 +222,12 @@ class Cluster extends ConfigEntityBase {
   /**
    * Check if the cluster status is OK.
    *
-   * @param array $status
    * @return bool
    */
-    public static function checkClusterStatus($status) {
-    if (is_array($status) && $status['status'] == ELASTICSEARCH_CLUSTER_STATUS_OK) {
-      return TRUE;
+    public function checkClusterStatus() {
+      // TODO: Check if we can initialize the client in __construct().
+      $client = self::getClientInstance($this);
+      return $client->clusterIsOk();
     }
-    else {
-      return FALSE;
-    }
-  }
 
 }
