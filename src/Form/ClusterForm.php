@@ -129,29 +129,19 @@ class ClusterForm extends EntityForm {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
-
     $values = $form_state->getValues();
 
-    /** @var Cluster $cluster_from_form */
-    $cluster_from_form = entity_create('elasticsearch_cluster', $values);
-    try {
-      $cluster_info = Cluster::getClusterInfo($cluster_from_form);
-      if (!isset($cluster_info['info']) || !Cluster::checkClusterStatus($cluster_info['info'])) {
-        $form_state->setErrorByName('url', t('Cannot connect to the cluster!'));
-      }
-    }
-    catch (\Exception $e) {
-      $form_state->setErrorByName('url', t('Cannot connect to the cluster!'));
-    }
+    // TODO: Check for valid URL when we are submitting the form.
 
-    // Complain if we are removing the default.
+    // Set default cluster.
     $default = Cluster::getDefaultCluster();
     if (empty($default) && !$values['default']) {
       $default = Cluster::setDefaultCluster($values['cluster_id']);
     }
-    if ($values['default']) {
+    elseif ($values['default']) {
       $default = Cluster::setDefaultCluster($values['cluster_id']);
     }
+
     if ($values['default'] == 0 && !empty($default) && $default == $values['cluster_id']) {
       drupal_set_message(
         t('There must be a default connection. %name is still the default connection.'
