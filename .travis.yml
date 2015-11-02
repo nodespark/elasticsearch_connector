@@ -8,7 +8,7 @@
 
 language: php
 
-sudo: true
+sudo: false
 
 php:
   - 5.3
@@ -103,13 +103,17 @@ before_install:
   - composer self-update
   #- cd ./tests
   #- composer global require "lionsad/drupal_ti:1.*"
-  #- drupal-ti before_install
+  - drupal-ti before_install
 
 install:
   - drupal-ti install
 
 before_script:
-  #- drupal-ti before_script
+  - wget https://github.com/LionsAd/drupal_ti/archive/1.4.2.tar.gz -O /tmp/drupal_ti.tar.gz
+  - tar -xvf /tmp/drupal_ti.tar.gz
+  - export PATH=$PATH:$PWD/drupal_ti/
+  - which drupal-ti
+  - drupal-ti before_script
 
 script:
   #- drupal-ti script
