@@ -101,8 +101,8 @@ mysql:
 
 before_install:
   - composer self-update
-  #- cd ./tests
   - composer global require "lionsad/drupal_ti:1.*"
+  - cd ./tests
   - drupal-ti before_install
 
 install:
