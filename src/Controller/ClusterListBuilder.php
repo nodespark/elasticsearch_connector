@@ -93,9 +93,9 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     $status = NULL;
     if (isset($entity->cluster_id)) {
       $cluster = Cluster::load($entity->cluster_id);
-      $client_info = Cluster::getClusterInfo($cluster);
+      $client_info = $cluster->getClusterInfo();
 
-      if (!empty($client_info['health']) && $cluster->checkClusterStatus($cluster)) {
+      if (!empty($client_info['health']) && $cluster->checkClusterStatus()) {
         $status = $client_info['health']['status'];
       }
       else {

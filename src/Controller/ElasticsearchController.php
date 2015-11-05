@@ -51,7 +51,8 @@ class ElasticsearchController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(Cluster $elasticsearch_cluster) {
-    return SafeMarkup::checkPlain($elasticsearch_cluster->label());
+    // TODO: Check if we need string escaping.
+    return $elasticsearch_cluster->label();
   }
 
   /**
@@ -59,19 +60,20 @@ class ElasticsearchController extends ControllerBase {
    *
    * @param Cluster $elasticsearch_cluster
    * @return mixed
-   * @throws \Drupal\elasticsearch_connector\Entity\Exception
    * @throws \Exception
    */
   public function getInfo(Cluster $elasticsearch_cluster) {
-    $cluster_status = Cluster::getClusterInfo($elasticsearch_cluster);
-    $cluster_client = $cluster_status['client'];
+
+    // TODO: Get the statistics differently.
+    $cluster_status = $elasticsearch_cluster->getClusterInfo();
 
     $node_rows = $cluster_statistics_rows = $cluster_health_rows = array();
-
-    if (isset($cluster_client) && !empty($cluster_status['info']) && Cluster::checkClusterStatus($cluster_status['info'])) {
+    if ($elasticsearch_cluster->checkClusterStatus()) {
       $node_stats = $cluster_status['stats'];
       $total_docs = $total_size = 0;
       if (isset($node_stats)) {
+        // TODO: Better format the results in order to build the
+        // correct output.
         foreach ($node_stats['nodes'] as $node_key => $node_values) {
           $row = array();
           $row[] = array('data' => $node_values['name']);

@@ -141,19 +141,14 @@ class Cluster extends ConfigEntityBase {
   /**
    * Return cluster info.
    *
-   * @param object $cluster
-   *   The cluster to get the info for.
-   *
    * @return array
    *   Info array.
    *
    * @throws \Exception
    */
-  public static function getClusterInfo($cluster) {
-    $result = FALSE;
-
+  public function getClusterInfo() {
     try {
-      $client = self::getClientInstance($cluster);
+      $client = self::getClientInstance($this);
       $result = $client->getClusterInfo();
     }
     catch (\Exception $e) {
@@ -195,7 +190,7 @@ class Cluster extends ConfigEntityBase {
    * @return \Drupal\elasticsearch_connector\Entity\Cluster[]
    */
   public static function loadAllClusters($include_inactive = TRUE) {
-    $clusters = Entity::loadMultiple('elasticsearch_cluster');
+    $clusters = self::loadMultiple();
     foreach ($clusters as $cluster) {
       if (!$include_inactive && !$cluster->status) {
         unset($clusters[$cluster->cluster_id]);

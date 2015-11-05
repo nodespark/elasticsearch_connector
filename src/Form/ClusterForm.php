@@ -82,7 +82,7 @@ class ClusterForm extends EntityForm {
 
     if (isset($cluster->url)) {
       try {
-        $cluster_info = $cluster->getClusterInfo($cluster);
+        $cluster_info = $cluster->getClusterInfo();
         $form_state_active = TRUE;
       }
       catch (\Exception $e) {

@@ -6,6 +6,9 @@
 
 // TODO: Move all public methods from DESConnector to DESConnectorInterface.
 
+// TODO: We need to implement __call() method to directly call Elasticsearch
+// client if missing.
+
 namespace Drupal\elasticsearch_connector\DESConnector;
 
 use Elasticsearch\ClientBuilder;
@@ -88,6 +91,10 @@ class DESConnector implements DESConnectorInterface {
    */
   public function getCluster() {
     return $this->client->cluster();
+  }
+
+  protected function getClient() {
+    return $this->client;
   }
 
   /**
@@ -184,5 +191,23 @@ class DESConnector implements DESConnectorInterface {
     }
 
     return $result;
+  }
+
+  /**
+   * Elasticsearch info function.
+   *
+   * @return array
+   */
+  public function info() {
+    return $this->getClient()->info();
+  }
+
+  /**
+   * Elasticsearch ping function.
+   *
+   * @return array
+   */
+  public function ping() {
+    return $this->getClient()->ping();
   }
 }

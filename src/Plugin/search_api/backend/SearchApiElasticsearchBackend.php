@@ -3,6 +3,9 @@
 /**
  * @file
  * Contains \Drupal\elasticsearch_connector\Plugin\SearchApi\Backend\SearchApiElasticsearchBackend
+ *
+ * TODO: Check for dependencies and remove them in order to properly test the code.
+ *
  */
 
 namespace Drupal\elasticsearch_connector\Plugin\search_api\backend;
@@ -12,12 +15,10 @@ use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Config;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
-use Drupal\elasticsearch_connector\Entity\Index;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\FilterInterface;
 use Drupal\search_api\Utility as SearchApiUtility;
-use Elasticsearch\Client;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -38,7 +39,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   protected $elasticsearchSettings = NULL;
   protected $clusterId = NULL;
 
-  /** @var Client $elasticsearchClient  */
+  /** @var Cluster $clusterEntity  */
+  protected $clusterEntity;
+
+  /** @var DESConnector $elasticsearchClient  */
   protected $elasticsearchClient = NULL;
 
   public function __construct(array $configuration, $plugin_id, array $plugin_definition, FormBuilderInterface $form_builder, ModuleHandlerInterface $module_handler, Config $elasticsearch_settings) {
@@ -162,8 +166,15 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   protected function connect() {
     if (!$this->elasticsearchClient && $this->configuration) {
-      $url = array($this->getServerLink());
-      $this->elasticsearchClient = new Client(array('hosts' => $url));
+      if (empty($this->configuration['cluster_settings']['cluster'])) {
+        $cluster = Cluster::getDefaultCluster();
+      }
+      else {
+        $cluster = $this->configuration['cluster_settings']['cluster'];
+      }
+
+      $this->clusterEntity = Cluster::load($cluster);
+      $this->elasticsearchClient = Cluster::getClientInstance($this->clusterEntity);
     }
   }
 
@@ -270,12 +281,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   public function ping() {
     $this->connect();
     try {
-      $result = $this->elasticsearchClient->ping();
-      if ($result) {
-        $info = $this->elasticsearchClient->info();
-        if (Cluster::checkClusterStatus($info)) {
-          return TRUE;
-        }
+      if ($this->clusterEntity->checkClusterStatus()) {
+        return TRUE;
       }
     }
     catch (\Exception $e) {
