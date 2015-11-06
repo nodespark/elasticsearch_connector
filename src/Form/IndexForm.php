@@ -183,7 +183,7 @@ class IndexForm extends EntityForm {
       '#disabled' => !empty($index->index_id),
     );
 
-    //here server refers to the elasticsearch cluster
+    // Here server refers to the elasticsearch cluster.
     $form['server'] = array(
       '#type' => 'radios',
       '#title' => $this->t('Server'),
@@ -240,7 +240,7 @@ class IndexForm extends EntityForm {
     $cluster_url = self::getSelectedClusterUrl($values['server']);
 
     $client = Cluster::getClientByUrls(array($cluster_url));
-    $response = $index_params = array();
+    $index_params = array();
     if ($client) {
       try {
         $index_params['index'] = $values['index_id'];
@@ -275,8 +275,7 @@ class IndexForm extends EntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $index = $this->entity;
-    
-    $status = $index->save();
+    $index->save();
 
     drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
 

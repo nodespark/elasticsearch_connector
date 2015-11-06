@@ -5,10 +5,8 @@
  */
 
 // TODO: Move all public methods from DESConnector to DESConnectorInterface.
-
 // TODO: We need to implement __call() method to directly call Elasticsearch
 // client if missing.
-
 namespace Drupal\elasticsearch_connector\DESConnector;
 
 use Elasticsearch\ClientBuilder;
@@ -66,33 +64,31 @@ class DESConnector implements DESConnectorInterface {
    * @return Client
    */
   public static function getInstance(array $hosts) {
-    $hash = md5(implode(':', $hosts));
-
-    if (!isset($instances[$hash])) {
-      $options = array(
-        'hosts' => $hosts,
-      );
-
-      // TODO: Remove this from the abstraction!
-      // It should be passed via parameter.
-      \Drupal::moduleHandler()
-        ->alter('elasticsearch_connector_load_library_options', $options);
-
-      $builder = ClientBuilder::create();
-      $builder->setHosts($options['hosts']);
-      $instances[$hash] = new DESConnector($builder->build());
+    if (ELASTICSEARCH_CONNECTOR_VERSION < 2) {
+      return DESConnector81::getInstance($hosts);
     }
-
-    return $instances[$hash];
+    else {
+      return DESConnector82::getInstance($hosts);
+    }
   }
 
   /**
    * @return mixed
    */
   public function getCluster() {
-    return $this->client->cluster();
+    return $this->getClient()->cluster();
   }
 
+  /**
+   * @return mixed
+   */
+  public function getNodes() {
+    return $this->getClient()->nodes();
+  }
+
+  /**
+   * @return mixed
+   */
   protected function getClient() {
     return $this->client;
   }
@@ -164,15 +160,13 @@ class DESConnector implements DESConnectorInterface {
   /**
    * Return cluster info.
    *
-   * @param object $cluster
-   *   The cluster to get the info for.
-   *
    * @return array
    *   Info array.
    *
    * @throws \Exception
+   *   Exception().
    */
-  public function getClusterInfo($cluster) {
+  public function getClusterInfo() {
     $result = FALSE;
 
     try {
@@ -180,6 +174,53 @@ class DESConnector implements DESConnectorInterface {
         $result['state'] = $this->getClusterState();
         $result['health'] = $this->getClusterHealth();
         $result['stats'] = $this->getClusterStats();
+      }
+      catch (\Exception $e) {
+        // TODO: Do not set messages or log messages into the abstraction.
+        drupal_set_message($e->getMessage(), 'error');
+      }
+    }
+    catch (\Exception $e) {
+      throw $e;
+    }
+
+    return $result;
+  }
+
+  /**
+   * Get nodes stats.
+   *
+   * @return array
+   */
+  public function getNodesStats() {
+    return $this->getNodes()->stats();
+  }
+
+  /**
+   * Get nodes info.
+   *
+   * @return array
+   */
+  public function getNodesInfo() {
+    return $this->getNodes()->info();
+  }
+
+  /**
+   * Return nodes info.
+   *
+   * @return array
+   *   Info array.
+   *
+   * @throws \Exception
+   *   Exception().
+   */
+  public function getNodesProperties() {
+    $result = FALSE;
+
+    try {
+      try {
+        $result['stats'] = $this->getNodesStats();
+        $result['info'] = $this->getNodesInfo();
       }
       catch (\Exception $e) {
         // TODO: Do not set messages or log messages into the abstraction.

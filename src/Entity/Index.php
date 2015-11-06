@@ -8,6 +8,7 @@
 namespace Drupal\elasticsearch_connector\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\node\Entity\Node;
 
 /**
  * Defines the search server configuration entity.
@@ -86,7 +87,7 @@ class Index extends ConfigEntityBase {
    * @return \Drupal\elasticsearch_connector\Entity\Index
    */
   public static function loadIndex($index_id) {
-    return entity_load('elasticsearch_index', $index_id);
+    return Entity::load('elasticsearch_index', $index_id);
   }
 
   /**
@@ -95,7 +96,7 @@ class Index extends ConfigEntityBase {
    * @return \Drupal\elasticsearch_connector\Entity\Index[]
    */
   public static function loadAllIndices() {
-    return entity_load_multiple('elasticsearch_index');
+    return Node::loadMultiple('elasticsearch_index');
   }
 
 }
