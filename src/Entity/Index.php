@@ -87,7 +87,7 @@ class Index extends ConfigEntityBase {
    * @return \Drupal\elasticsearch_connector\Entity\Index
    */
   public static function loadIndex($index_id) {
-    return Entity::load('elasticsearch_index', $index_id);
+    return Index::load($index_id);
   }
 
   /**
@@ -96,7 +96,7 @@ class Index extends ConfigEntityBase {
    * @return \Drupal\elasticsearch_connector\Entity\Index[]
    */
   public static function loadAllIndices() {
-    return Node::loadMultiple('elasticsearch_index');
+    return Index::loadMultiple();
   }
 
 }
