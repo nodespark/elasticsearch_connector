@@ -42,7 +42,6 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     $this->indexStorage = $index_storage;
   }
 
-
   /**
    * {@inheritdoc}
    */
