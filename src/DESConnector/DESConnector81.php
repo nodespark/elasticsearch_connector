@@ -9,7 +9,7 @@
 // client if missing.
 namespace Drupal\elasticsearch_connector\DESConnector;
 
-use Elasticsearch\ClientBuilder;
+use Elasticsearch\Client;
 use Masterminds\HTML5\Exception;
 
 /**
