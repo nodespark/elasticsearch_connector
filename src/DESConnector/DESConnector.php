@@ -53,6 +53,13 @@ class DESConnector implements DESConnectorInterface {
   private function __sleep() {}
 
   /**
+   * Magic method call.
+   */
+  public function __call($name, $arguments) {
+    return call_user_func_array(array($this->getClient(), $name), $arguments);
+  }
+
+  /**
    * Initializes the needed client.
    *
    * TODO: We need to check the available options for the ClientBuilder
