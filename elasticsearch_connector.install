@@ -58,3 +58,11 @@ function elasticsearch_connector_requirements($phase) {
 function elasticsearch_connector_uninstall() {
   //\Drupal::state()->delete('elasticsearch_connector_get_default_connector');
 }
+
+/**
+ * Drop the config table as Drupal8 handle this out of the box.
+ */
+function elasticsearch_connector_update_8001() {
+  $schema = Drupal\Core\Database\Database::getConnection()->schema();
+  $schema->dropTable('elasticsearch_connector_cluster');
+}
