@@ -804,8 +804,6 @@ function elasticsearch_connector_load_library($cluster) {
         );
       }
 
-      drupal_alter('elasticsearch_connector_load_library_options', $options, $cluster);
-
       try {
         if (!class_exists('\Elasticsearch\Client') && module_exists('composer_manager')) {
           // If the class doesn't exists try to explicitly load the classes!
@@ -818,6 +816,8 @@ function elasticsearch_connector_load_library($cluster) {
           // No library available!
           return FALSE;
         }
+
+        drupal_alter('elasticsearch_connector_load_library_options', $options, $cluster);
 
         $clients[$cluster->cluster_id] = new \Elasticsearch\Client($options);
       }
