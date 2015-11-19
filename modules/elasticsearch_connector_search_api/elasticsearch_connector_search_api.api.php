@@ -56,3 +56,15 @@ function hook_elasticsearch_connector_search_api_add_index($index, &$params) {
 function hook_elasticsearch_connector_search_api_index_items($index, &$params, $items) {
 
 }
+
+/**
+ * Lets modules alter the full mapping that will be created.
+ *
+ * @param object $index
+ *   The Search API index object.
+ * @param array $type_mapping
+ *   The full mapping under the type section, includes the properties section.
+ */
+function hook_elasticsearch_connector_search_api_mapping_update_alter($index, &$type_mapping) {
+
+}

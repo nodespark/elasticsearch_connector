@@ -332,6 +332,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         }
 
         $params['body'][$params['type']]['properties'] = $properties;
+        drupal_alter('elasticsearch_connector_search_api_mapping_update', $index, $params['body'][$params['type']]);
+
         $results = $this->elasticsearchClient->indices()->putMapping($params);
         if (!elasticsearch_connector_check_response_ack($results)) {
           drupal_set_message(t('Cannot create the mapping of the fields!'), 'error');
