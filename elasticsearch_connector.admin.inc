@@ -655,7 +655,13 @@ function elasticsearch_connector_edit_cluster_form_info($cluster_info = NULL, $a
 function elasticsearch_connector_edit_cluster_validate($form, &$form_state) {
   $values = (object)$form_state['values'];
   $cluster_info = elasticsearch_connector_get_cluster_info($values);
-  if (!isset($cluster_info['info']) || !elasticsearch_connector_check_status($cluster_info['info'])) {
+
+  // If the new cluster inaccessible from the environment, but isn't set to
+  // active, warn only.
+  if ((!isset($cluster_info['info']) || !elasticsearch_connector_check_status($cluster_info['info'])) && $values->status == 0) {
+    drupal_set_message(t('Cannot connect to the cluster!'),'warning');
+  }
+  elseif (!isset($cluster_info['info']) || !elasticsearch_connector_check_status($cluster_info['info'])) {
     form_set_error('url', t('Cannot connect to the cluster!'));
   }
 
