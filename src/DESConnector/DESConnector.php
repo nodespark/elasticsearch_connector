@@ -5,7 +5,6 @@
  */
 
 // TODO: Move all public methods from DESConnector to DESConnectorInterface.
-// TODO: We need to implement __call() method to directly call Elasticsearch
 // client if missing.
 namespace Drupal\elasticsearch_connector\DESConnector;
 
@@ -56,7 +55,9 @@ class DESConnector implements DESConnectorInterface {
    * Magic method call.
    */
   public function __call($name, $arguments) {
-    return call_user_func_array(array($this->getClient(), $name), $arguments);
+    if (method_exists($this->getClient(), $name)) {
+      return call_user_func_array(array($this->getClient(), $name), $arguments);
+    }
   }
 
   /**
