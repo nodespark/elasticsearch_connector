@@ -97,6 +97,20 @@ class DESConnector implements DESConnectorInterface {
   /**
    * @return mixed
    */
+  public function getIndices() {
+    return $this->getClient()->indices();
+  }
+
+  /**
+   * @return mixed
+   */
+  public function bulk() {
+    return $this->getClient()->bulk();
+  }
+
+  /**
+   * @return mixed
+   */
   protected function getClient() {
     return $this->client;
   }

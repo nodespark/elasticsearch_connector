@@ -389,16 +389,16 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     }
 
     try {
-      if ($this->elasticsearchClient->indices()->existsType($params)) {
-        $current_mapping = $this->elasticsearchClient->indices()->getMapping($params);
+      if ($this->elasticsearchClient->getIndices()->existsType($params)) {
+        $current_mapping = $this->elasticsearchClient->getIndices()->getMapping($params);
         if (!empty($current_mapping)) {
           // If the mapping exits, delete it to be able to re-create it.
-          $this->elasticsearchClient->indices()->deleteMapping($params);
+          $this->elasticsearchClient->getIndices()->deleteMapping($params);
         }
       }
 
       $params['body'][$params['type']]['properties'] = $properties;
-      $results = $this->elasticsearchClient->indices()->putMapping($params);
+      $results = $this->elasticsearchClient->getIndices()->putMapping($params);
       if (empty($results['ok'])) {
         drupal_set_message(t('Cannot create the matting of the fields!'), 'error');
       }
@@ -437,7 +437,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $params = $this->getIndexParam($index);
 
     try {
-      $response = $this->elasticsearchClient->indices()->delete($params);
+      $response = $this->elasticsearchClient->getIndices()->delete($params);
     }
     catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
@@ -453,7 +453,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $this->connect();
     $params = $this->getIndexParam($index, TRUE);
     try {
-      return $this->elasticsearchClient->indices()->existsType($params);
+      return $this->elasticsearchClient->getIndices()->existsType($params);
     }
     catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
@@ -611,7 +611,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     // Check elasticsearch index.
     $this->connect();
-    if (!$this->elasticsearchClient->indices()->existsType($params)) {
+    if (!$this->elasticsearchClient->getIndices()->existsType($params)) {
       return $search_result;
     }
     
