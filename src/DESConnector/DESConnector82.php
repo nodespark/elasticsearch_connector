@@ -63,12 +63,15 @@ class DESConnector82 extends DESConnector implements DESConnectorInterface {
    *
    * @return Client
    */
-  public static function getInstance(array $hosts) {
+  public static function getInstance($cluster) {
     $hash = md5(implode(':', $hosts));
 
     if (!isset($instances[$hash])) {
+      $cluster_url = DESConnector82::buildClusterUrl($cluster);
       $options = array(
-        'hosts' => $hosts,
+        'hosts' => array(
+          $cluster_url,
+        ),
       );
 
       // TODO: Remove this from the abstraction!
@@ -83,6 +86,28 @@ class DESConnector82 extends DESConnector implements DESConnectorInterface {
     }
 
     return $instances[$hash];
+  }
+
+  /**
+   * Builds the proper cluster URL based on the provided options.
+   *
+   * @param $cluster
+   *
+   * @return string
+   */
+  public static function buildClusterUrl($cluster) {
+    if (isset($cluster->options['use_authentication'])) {
+      if (isset($cluster->options['username']) && isset($cluster->options['password'])) {
+        $schema = file_uri_scheme($cluster->url);
+        $host = file_uri_target($cluster->url);
+        $user = $cluster->options['username'];
+        $pass = $cluster->options['password'];
+
+        return $schema . '://' . $user . ':' . $pass . '@' . $host;
+      }
+    }
+
+    return $cluster->url;
   }
 
 }

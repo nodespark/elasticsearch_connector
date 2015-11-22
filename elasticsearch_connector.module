@@ -6,7 +6,6 @@
  *
  */
 
-define('ELASTICSEARCH_CLUSTER_STATUS_OK', '200');
 define('ELASTICSEARCH_CONNECTOR_VERSION', '2.0');
 
 use Symfony\Component\HttpFoundation\Request;

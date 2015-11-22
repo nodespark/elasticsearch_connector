@@ -63,12 +63,15 @@ class DESConnector81 extends DESConnector implements DESConnectorInterface {
    *
    * @return Client
    */
-  public static function getInstance(array $hosts) {
+  public static function getInstance($cluster) {
     $hash = md5(implode(':', $hosts));
 
     if (!isset($instances[$hash])) {
+      $cluster_url = DESConnector81::buildClusterUrl($cluster);
       $options = array(
-        'hosts' => $hosts,
+        'hosts' => array(
+          $cluster_url,
+        ),
       );
 
       // TODO: Remove this from the abstraction!
@@ -89,6 +92,17 @@ class DESConnector81 extends DESConnector implements DESConnectorInterface {
     }
 
     return $instances[$hash];
+  }
+
+  /**
+   * Builds the proper cluster URL based on the provided options.
+   *
+   * @param $cluster
+   *
+   * @return string
+   */
+  public static function buildClusterUrl($cluster) {
+    return $cluster->url;
   }
 
 }
