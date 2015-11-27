@@ -63,16 +63,14 @@ class DESConnector82 extends DESConnector implements DESConnectorInterface {
    *
    * @return Client
    */
-  public static function getInstance($cluster) {
+  public static function getInstance(array $hosts) {
     $hash = md5(implode(':', $hosts));
 
     if (!isset($instances[$hash])) {
-      $cluster_url = DESConnector82::buildClusterUrl($cluster);
-      $options = array(
-        'hosts' => array(
-          $cluster_url,
-        ),
-      );
+      foreach ($hosts as $host) {
+        $cluster_url = DESConnector82::buildClusterUrl($host['url'], $host['options']);
+        $options['hosts'][] = $cluster_url;
+      }
 
       // TODO: Remove this from the abstraction!
       // It should be passed via parameter.
@@ -95,19 +93,19 @@ class DESConnector82 extends DESConnector implements DESConnectorInterface {
    *
    * @return string
    */
-  public static function buildClusterUrl($cluster) {
-    if (isset($cluster->options['use_authentication'])) {
-      if (isset($cluster->options['username']) && isset($cluster->options['password'])) {
-        $schema = file_uri_scheme($cluster->url);
-        $host = file_uri_target($cluster->url);
-        $user = $cluster->options['username'];
-        $pass = $cluster->options['password'];
+  public static function buildClusterUrl($cluster_url, $options) {
+    if (isset($options['use_authentication'])) {
+      if (isset($options['username']) && isset($options['password'])) {
+        $schema = file_uri_scheme($cluster_url);
+        $host = file_uri_target($cluster_url);
+        $user = $options['username'];
+        $pass = $options['password'];
 
         return $schema . '://' . $user . ':' . $pass . '@' . $host;
       }
     }
 
-    return $cluster->url;
+    return $cluster_url;
   }
 
 }

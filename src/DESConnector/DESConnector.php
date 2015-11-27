@@ -71,12 +71,12 @@ class DESConnector implements DESConnectorInterface {
    *
    * @return Client
    */
-  public static function getInstance($cluster) {
+  public static function getInstance(array $hosts) {
     if (ELASTICSEARCH_CONNECTOR_VERSION < 2) {
-      return DESConnector81::getInstance($cluster);
+      return DESConnector81::getInstance($hosts);
     }
     else {
-      return DESConnector82::getInstance($cluster);
+      return DESConnector82::getInstance($hosts);
     }
   }
 

@@ -133,7 +133,14 @@ class Cluster extends ConfigEntityBase {
    *   The Elasticsearch object.
    */
   public static function getClientInstance($cluster) {
-    $client = call_user_func($cluster->connector . '::getInstance', $cluster);
+    $hosts = array(
+      array(
+        'url' => $cluster->url,
+        'options' => $cluster->options,
+      ),
+    );
+
+    $client = call_user_func($cluster->connector . '::getInstance', $hosts);
     return $client;
   }
 
