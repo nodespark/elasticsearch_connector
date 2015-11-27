@@ -104,8 +104,8 @@ class DESConnector implements DESConnectorInterface {
   /**
    * @return mixed
    */
-  public function bulk() {
-    return $this->getClient()->bulk();
+  public function bulk(array $params) {
+    return $this->getClient()->bulk($params);
   }
 
   /**
