@@ -64,7 +64,13 @@ class DESConnector82 extends DESConnector implements DESConnectorInterface {
    * @return Client
    */
   public static function getInstance(array $hosts) {
-    $hash = md5(implode(':', $hosts));
+    $hash_hosts = array();
+
+    foreach ($hosts as $host) {
+      $hash_hosts[] = $host['url'];
+    }
+
+    $hash = md5(implode(':', $hash_hosts));
 
     if (!isset($instances[$hash])) {
       foreach ($hosts as $host) {
