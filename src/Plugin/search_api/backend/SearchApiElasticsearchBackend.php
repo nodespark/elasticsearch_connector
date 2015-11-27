@@ -10,6 +10,7 @@
 
 namespace Drupal\elasticsearch_connector\Plugin\search_api\backend;
 
+use Drupal\search_api\SearchApiException;
 use Drupal\Component\Utility\String;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Config;
@@ -341,7 +342,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /**
    * Overrides addIndex().
    */
-  public function aaddIndex(IndexInterface $index) {
+  public function addIndex(IndexInterface $index) {
     $this->connect();
     $index_name = $this->getIndexName($index);
     if (!empty($index_name)) {
@@ -349,6 +350,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         $client = $this->elasticsearchClient;
         if (!$client->indices()->exists(array('index' => $index_name))) {
           $params = array(
+            // TODO: Add the timeout option.
             'index' => $index_name,
             'body' => array(
               'settings' => array(
@@ -363,8 +365,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
           }
         }
 
-        // Update mapping.
-        //$this->fieldsUpdated($index);
+         // Update mapping.
+        $this->fieldsUpdated($index);
       }
       catch (\Exception $e) {
         drupal_set_message($e->getMessage(), 'error');
@@ -379,7 +381,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $this->connect();
     $params = $this->getIndexParam($index, TRUE);
     $properties = array(
-      'id' => array('type' => 'integer', 'include_in_all' => FALSE),
+      'id' => array('type' => 'string', 'index' => 'not_analyzed', 'include_in_all' => FALSE),
     );
 
     // Map index fields.
@@ -397,10 +399,14 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         }
       }
 
+      // TODO: We need also:
+      // $params['index'] - (Required)
+      // ['type'] - The name of the document type
+      // ['timeout'] - (time) Explicit operation timeout
       $params['body'][$params['type']]['properties'] = $properties;
-      $results = $this->elasticsearchClient->getIndices()->putMapping($params);
-      if (empty($results['ok'])) {
-        drupal_set_message(t('Cannot create the matting of the fields!'), 'error');
+      $response = $this->elasticsearchClient->getIndices()->putMapping($params);
+      if (!Cluster::elasticsearchCheckResponseAck($response)) {
+        drupal_set_message(t('Cannot create the mapping of the fields!'), 'error');
       }
     }
     catch (\Exception $e) {
@@ -476,6 +482,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       return array();
     }
 
+    // TODO: We need to handle the following params as well:
+    // ['consistency'] = (enum) Explicit write consistency setting for the operation
+    // ['refresh']     = (boolean) Refresh the index after performing the operation
+    // ['replication'] = (enum) Explicitly set the replication type
+    // ['fields']      = (list) Default comma-separated list of fields to return in the response for updates
     $params = $this->getIndexParam($index, TRUE);
 
     /** @var \Drupal\search_api\Item\ItemInterface[] $items */
@@ -490,7 +501,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     }
 
     try {
-      $this->elasticsearchClient->bulk($params);
+      $response = $this->elasticsearchClient->bulk($params);
       // If error throw the error we have.
       if (!empty($response['errors'])) {
         foreach($response['items'] as $item) {
@@ -498,7 +509,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
             // TODO: This foreach maybe is better to return only the indexed items for return
             // instead of throwing an error and stop the process cause we are in bulk
             // and some of the items can be indexed successfully.
-            throw new \Exception($item['index']['error']);
+            throw new SearchApiException($item['index']['error']['reason'] . '. ' . $item['index']['error']['caused_by']['reason']);
           }
         }
       }
@@ -911,43 +922,43 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function getFieldMapping(FieldInterface $field) {
     try{
-      $type = SearchApiUtility::isTextType($field->type);
+      $type = $field->getType();
 
       switch ($type) {
         case 'text':
           return array(
-          'type' => 'string',
-          'boost' => $field['boost'],
+            'type' => 'string',
+            'boost' => $field['boost'],
           );
 
         case 'uri':
         case 'string':
         case 'token':
           return array(
-          'type' => 'string',
-          'index' => 'not_analyzed',
+            'type' => 'string',
+            'index' => 'not_analyzed',
           );
 
         case 'integer':
         case 'duration':
           return array(
-          'type' => 'integer',
+            'type' => 'integer',
           );
 
         case 'boolean':
           return array(
-          'type' => 'boolean',
+            'type' => 'boolean',
           );
 
         case 'decimal':
           return array(
-          'type' => 'float',
+            'type' => 'float',
           );
 
         case 'date':
           return array(
-          'type' => 'date',
-          'format' => 'date_time',
+            'type' => 'date',
+            'format' => 'date_time',
           );
 
         default:
