@@ -656,6 +656,7 @@ function elasticsearch_connector_get_indices_options($cluster_id, $empty_option 
 function elasticsearch_connector_cluster_load($cluster_id) {
   ctools_include('export');
   $result = ctools_export_load_object('elasticsearch_connector_cluster', 'names', array($cluster_id));
+  drupal_alter('elasticsearch_connector_clusters', $result);
   if (isset($result[$cluster_id])) {
     if (isset($result[$cluster_id]->options) && !is_array($result[$cluster_id]->options)) {
       $result[$cluster_id]->options = unserialize($result[$cluster_id]->options);
@@ -702,6 +703,8 @@ function elasticsearch_connector_clusters($include_inactive = TRUE) {
       unset($clusters[$cluster_id]);
     }
   }
+
+  drupal_alter('elasticsearch_connector_clusters', $clusters);
 
   return $clusters;
 }
