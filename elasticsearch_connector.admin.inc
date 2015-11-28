@@ -303,46 +303,42 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#type' => 'textfield',
     '#title' => t('Administrative cluster name'),
     '#default_value' => empty($cluster->name) ? '' : $cluster->name,
-    '#description' => t('Enter the administrative cluster name that will uniquely define your Elasticsearch cluster'),
+    '#description' => t('Enter the administrative cluster name that will be your Elasticsearch cluster unique identifier.'),
     '#required' => TRUE,
   );
 
   $form['cluster_id'] = array(
     '#type' => 'machine_name',
     '#title' => t('Cluster id'),
+    '#default_value' => !empty($cluster->cluster_id) ? $cluster->cluster_id : '',
+    '#maxlength' => 125,
+    '#description' => t('A unique machine-readable name for this Elasticsearch cluster.'),
     '#machine_name' => array(
       'exists' => 'elasticsearch_connector_cluster_load',
     ),
-    '#default_value' => !empty($cluster->cluster_id) ? $cluster->cluster_id : '',
-    '#disabled' => !empty($cluster->cluster_id), // Cannot change it once set.
-    '#description' =>
-      t('Unique, machine-readable identifier for this Elasticsearch environment.'),
     '#required' => TRUE,
+    '#disabled' => !empty($cluster->cluster_id),
   );
 
   $form['url'] = array(
     '#type' => 'textfield',
     '#title' => t('Server URL'),
     '#default_value' => !empty($cluster->url) ? $cluster->url : '',
-    '#description' => t('Enter the URL and the port of a server (node) in the cluster. Example: http://localhost:9200. Please enter the port also even it is the default one e.g. https://localhost:443'),
+    '#description' => t(
+      'URL and port of a server (node) in the cluster. ' .
+      'Please, always enter the port even if it is default one. ' .
+      'Nodes will be automatically discovered. ' .
+      'Examples: http://localhost:9200 or https://localhost:443.'),
     '#required' => TRUE,
-    //'#limit_validation_errors' => array(array('url')),
   );
 
-  $cluster_info = NULL;
-  $form_state_active = FALSE;
-  if (isset($cluster->url) && empty($form_state['input'])) {
-    $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
-    $form_state_active = TRUE;
-  }
-
-  $form['status_info'] = elasticsearch_connector_edit_cluster_form_info($cluster_info, $form_state_active);
+  $form['status_info'] = elasticsearch_connector_edit_cluster_form_info($cluster);
 
   $default = elasticsearch_connector_get_default_connector();
   $form['default'] = array(
     '#type' => 'checkbox',
     '#title' => t('Make this cluster default connection'),
-    '#description' => t('If no specific cluster connection specified the API will use the default connection.'),
+    '#description' => t('If the cluster connection is not specified the API will use the default connection.'),
     '#default_value' => (empty($default) || (!empty($cluster->cluster_id) && $cluster->cluster_id == $default)) ? '1' : '0',
   );
 
@@ -353,8 +349,8 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
   $form['options']['multiple_nodes_connection'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use multiple nodes connection'),
-    '#description' => t('It will automatically discover all nodes and use them in the connection to the cluster. ' .
-      'The Elasticsearch client can then randomise the query execution between nodes.'),
+    '#description' => t('Automatically discover all nodes and use them in the cluster connection. ' .
+      'Then the Elasticsearch client can distribute the query execution on random base between nodes.'),
     '#default_value' => (!empty($cluster->options['multiple_nodes_connection']) ? 1 : 0),
   );
 
@@ -397,7 +393,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
   $form['options']['username'] = array(
     '#type' => 'textfield',
     '#title' => t('Username'),
-    '#description' => t('The username for the authentication.'),
+    '#description' => t('The username for authentication.'),
     '#default_value' => (!empty($cluster->options['username']) ? $cluster->options['username'] : ''),
     '#states' => array (
       'visible' => array(
@@ -409,7 +405,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
   $form['options']['password'] = array(
     '#type' => 'textfield',
     '#title' => t('Password'),
-    '#description' => t('The password for the authentication.'),
+    '#description' => t('The password for authentication.'),
     '#default_value' => (!empty($cluster->options['password']) ? $cluster->options['password'] : ''),
     '#states' => array (
       'visible' => array(
@@ -424,7 +420,7 @@ function elasticsearch_connector_edit_cluster($form, $form_state, $cluster = NUL
     '#size'  => 20,
     '#required' => TRUE,
     '#element_validate' => array('element_validate_number'),
-    '#description' => t('The seconds in which the connection will timeout if no connection with Elasticsearch.'),
+    '#description' => t('After how many seconds the connection should timeout if there is no connection to Elasticsearch.'),
     '#default_value' => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT),
   );
 
@@ -598,50 +594,66 @@ function elasticsearch_connector_cluster_indices_add_submit($form, &$form_state)
  * @param bool $ajax
  * @return array
  */
-function elasticsearch_connector_edit_cluster_form_info($cluster_info = NULL, $ajax = NULL) {
-  $headers = array(
-    array('data' => t('Cluster name')),
-    array('data' => t('Status')),
-    array('data' => t('Number of nodes')),
-  );
+function elasticsearch_connector_edit_cluster_form_info($cluster) {
+  $element = array();
 
-  $rows = $element = array();
+  if (isset($cluster->url)) {
+    try {
+      $cluster_info = elasticsearch_connector_get_cluster_info($cluster);
+      if ($cluster_info) {
+        $headers = array(
+          array('data' => t('Cluster name')),
+          array('data' => t('Status')),
+          array('data' => t('Number of nodes')),
+        );
 
-  if (isset($cluster_info['state'])) {
-    $rows = array(array(
-      $cluster_info['health']['cluster_name'],
-      $cluster_info['health']['status'],
-      $cluster_info['health']['number_of_nodes'],
-    ));
+        if (isset($cluster_info['state'])) {
+          $rows = array(
+            array(
+              $cluster_info['health']['cluster_name'],
+              $cluster_info['health']['status'],
+              $cluster_info['health']['number_of_nodes'],
+            )
+          );
 
-    $element = array(
-      '#theme' => 'table',
-      '#header' => $headers,
-      '#rows' => $rows,
-      '#attributes' => array(
-        'class' => array('admin-elasticsearch-connector'),
-        'id'  => 'cluster-info'),
-    );
-  }
-  elseif (!empty($ajax)) {
-    $rows = array(array(
-      t('Unknown'),
-      t('Unavailable'),
-      '',
-    ));
+          $element = array(
+            '#theme' => 'table',
+            '#header' => $headers,
+            '#rows' => $rows,
+            '#attributes' => array(
+              'class' => array('admin-elasticsearch-connector'),
+              'id' => 'cluster-info'
+            ),
+          );
+        }
+        else {
+          $rows = array(
+            array(
+              t('Unknown'),
+              t('Unavailable'),
+              '',
+            )
+          );
 
-    $element = array(
-      '#theme' => 'table',
-      '#header' => $headers,
-      '#rows' => $rows,
-      '#attributes' => array(
-        'class' => array('admin-elasticsearch-connector'),
-        'id'  => 'cluster-info'),
-    );
-  }
-  else {
-    $element['#type'] = 'markup';
-    $element['#markup'] = '<div id="cluster-info">&nbsp;</div>';
+          $element = array(
+            '#theme' => 'table',
+            '#header' => $headers,
+            '#rows' => $rows,
+            '#attributes' => array(
+              'class' => array('admin-elasticsearch-connector'),
+              'id' => 'cluster-info'
+            ),
+          );
+        }
+      }
+      else {
+        $element['#type'] = 'markup';
+        $element['#markup'] = '<div id="cluster-info">&nbsp;</div>';
+      }
+    }
+    catch (\Exception $e) {
+      drupal_set_message($e->getMessage(), 'error');
+    }
   }
 
   return $element;
