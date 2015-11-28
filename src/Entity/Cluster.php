@@ -178,15 +178,14 @@ class Cluster extends ConfigEntityBase {
   protected function getClientById($cluster_id) {
     $client = NULL;
 
-    $default_cluster = $this::getDefaultCluster();
+    $default_cluster = self::getDefaultCluster();
     if (!isset($cluster_id) && !empty($default_cluster)) {
-      // TODO: CHECK THIS OUT.
-      $cluster_id = $this::getDefaultCluster();
+      $cluster_id = $default_cluster;
     }
 
     if (!empty($cluster_id)) {
       $client = FALSE;
-      $cluster = $this::load($cluster_id);
+      $cluster = self::load($cluster_id);
       if ($cluster) {
         $client = $this->getClientInstance($cluster);
       }
