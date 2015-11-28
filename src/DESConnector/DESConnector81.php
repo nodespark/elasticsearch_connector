@@ -67,9 +67,10 @@ class DESConnector81 extends DESConnector implements DESConnectorInterface {
     $hash = md5(implode(':', $hosts));
 
     if (!isset($instances[$hash])) {
-      $options = array(
-        'hosts' => $hosts,
-      );
+      foreach ($hosts as $host) {
+        $cluster_url = self::buildClusterUrl($host['url'], $host['options']);
+        $options['hosts'][] = $cluster_url;
+      }
 
       // TODO: Remove this from the abstraction!
       // It should be passed via parameter.
@@ -84,11 +85,22 @@ class DESConnector81 extends DESConnector implements DESConnectorInterface {
         $builder = ClientBuilder::create();
         $builder->setHosts($options['hosts']);
 
-        $instances[$hash] = new DESConnector($builder->build());
+        $instances[$hash] = new DESConnector81($builder->build());
       }
     }
 
     return $instances[$hash];
+  }
+
+  /**
+   * Builds the proper cluster URL based on the provided options.
+   *
+   * @param $cluster
+   *
+   * @return string
+   */
+  public static function buildClusterUrl($cluster_url, $options) {
+    return $cluster_url;
   }
 
 }

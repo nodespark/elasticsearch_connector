@@ -44,15 +44,14 @@ use Drupal\Core\Entity\Entity;
  */
 class Cluster extends ConfigEntityBase {
 
-  // Active status.
-  const ELASTICSEARCH_STATUS_ACTIVE = 1;
+  // Active status
+  const ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE = 1;
 
-  // Inactive status.
-  const ELASTICSEARCH_STATUS_INACTIVE = 0;
+  // Inactive status
+  const ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE = 0;
 
-  // Cluster status.
-  const ELASTICSEARCH_CLUSTER_STATUS_OK = 200;
-
+  // Default connection timeout in seconds.
+  const ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT = 3;
   /**
    * The cluster machine name.
    *
@@ -137,7 +136,14 @@ class Cluster extends ConfigEntityBase {
    *   The Elasticsearch object.
    */
   public static function getClientInstance($cluster) {
-    $client = call_user_func($cluster->connector . '::getInstance', array($cluster->url));
+    $hosts = array(
+      array(
+        'url' => $cluster->url,
+        'options' => $cluster->options,
+      ),
+    );
+
+    $client = call_user_func($cluster->connector . '::getInstance', $hosts);
     return $client;
   }
 
@@ -172,16 +178,16 @@ class Cluster extends ConfigEntityBase {
   protected function getClientById($cluster_id) {
     $client = NULL;
 
-    $default_cluster = $this::getDefaultCluster();
+    $default_cluster = self::getDefaultCluster();
     if (!isset($cluster_id) && !empty($default_cluster)) {
-      $cluster_id = $this::getDefaultCluster();
+      $cluster_id = $default_cluster;
     }
 
     if (!empty($cluster_id)) {
       $client = FALSE;
-      $cluster = $this::load($cluster_id);
+      $cluster = self::load($cluster_id);
       if ($cluster) {
-        $client = call_user_func($cluster->connector . '::getInstance', array($cluster->url));
+        $client = $this->getClientInstance($cluster);
       }
     }
 
