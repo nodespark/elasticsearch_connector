@@ -287,8 +287,7 @@ class ClusterForm extends EntityForm {
         drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
         $form_state->setRedirect('entity.elasticsearch_cluster.canonical', array('elasticsearch_cluster' => $cluster->id()));
       }
-      // TODO: This should not be SearchApiException.
-      catch (SearchApiException $e) {
+      catch (Exception $e) {
         $form_state->setRebuild();
         watchdog_exception('elasticsearch_connector', $e);
         drupal_set_message($this->t('The cluster could not be saved.'), 'error');
