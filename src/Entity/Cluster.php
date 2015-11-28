@@ -53,10 +53,10 @@ class Cluster extends ConfigEntityBase {
   // Default connection timeout in seconds.
   const ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT = 3;
   /**
-  * The cluster machine name.
-  *
-  * @var string
-  */
+   * The cluster machine name.
+   *
+   * @var string
+   */
   public $cluster_id;
 
   /**
@@ -82,18 +82,21 @@ class Cluster extends ConfigEntityBase {
 
   /**
    * Options of the cluster.
+   *
    * @var array
    */
   public $options;
 
   /**
    * The locked status of this cluster.
+   *
    * @var bool
    */
   protected $locked = FALSE;
 
   /**
    * The connector class.
+   *
    * @var string
    */
   protected $connector = 'Drupal\elasticsearch_connector\DESConnector\DESConnector';
@@ -151,6 +154,7 @@ class Cluster extends ConfigEntityBase {
    *   Info array.
    *
    * @throws \Exception
+   *   Exception().
    */
   public function getClusterInfo() {
     try {
@@ -168,6 +172,7 @@ class Cluster extends ConfigEntityBase {
    * Return the cluster object based on Cluster ID.
    *
    * @param string $cluster_id
+   *
    * @return \Elasticsearch\Client
    */
   protected function getClientById($cluster_id) {
@@ -191,9 +196,10 @@ class Cluster extends ConfigEntityBase {
   }
 
   /**
-   * Load all clusters
+   * Load all clusters.
    *
    * @param bool $include_inactive
+   *
    * @return \Drupal\elasticsearch_connector\Entity\Cluster[]
    */
   public static function loadAllClusters($include_inactive = TRUE) {
@@ -203,15 +209,17 @@ class Cluster extends ConfigEntityBase {
         unset($clusters[$cluster->cluster_id]);
       }
     }
+
     return $clusters;
   }
 
-/**
- * Check if the REST response is successful and with status code 200.
- * @param array $response
- *
- * @return boolean
- */
+  /**
+   * Check if the REST response is successful and with status code 200.
+   *
+   * @param mixed $response
+   *
+   * @return bool
+   */
   public static function elasticsearchCheckResponseAck($response) {
     if (is_array($response) && !empty($response['acknowledged'])) {
       return TRUE;
@@ -226,10 +234,10 @@ class Cluster extends ConfigEntityBase {
    *
    * @return bool
    */
-    public function checkClusterStatus() {
-      // TODO: Check if we can initialize the client in __construct().
-      $client = self::getClientInstance($this);
-      return $client->clusterIsOk();
-    }
+  public function checkClusterStatus() {
+    // TODO: Check if we can initialize the client in __construct().
+    $client = self::getClientInstance($this);
+    return $client->clusterIsOk();
+  }
 
 }

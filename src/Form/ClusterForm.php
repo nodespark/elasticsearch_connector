@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Contains Drupal\elasticsearch_connector\Form.
+ */
+
 namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
@@ -27,8 +32,8 @@ class ClusterForm extends EntityForm {
     }
     else {
       $form['#title'] = $this->t('Edit Elasticsearch Cluster @label', array('@label' => $cluster->label()));
-    } 
-    
+    }
+
     $this->buildEntityForm($form, $form_state, $cluster);
 
     return $form;
@@ -88,7 +93,7 @@ class ClusterForm extends EntityForm {
     );
 
     $form['options'] = array(
-      '#tree' => TRUE
+      '#tree' => TRUE,
     );
 
     $form['options']['multiple_nodes_connection'] = array(
@@ -178,7 +183,6 @@ class ClusterForm extends EntityForm {
     $values = $form_state->getValues();
 
     // TODO: Check for valid URL when we are submitting the form.
-
     // Set default cluster.
     $default = Cluster::getDefaultCluster();
     if (empty($default) && !$values['default']) {
@@ -190,10 +194,13 @@ class ClusterForm extends EntityForm {
 
     if ($values['default'] == 0 && !empty($default) && $default == $values['cluster_id']) {
       drupal_set_message(
-        t('There must be a default connection. %name is still the default connection.'
-            . 'Please change the default setting on the cluster you wish to set as default.',
-            array(
-            '%name' => $values['name'])
+        t(
+          'There must be a default connection. %name is still the default
+          connection. Please change the default setting on the cluster you wish
+          to set as default.',
+          array(
+            '%name' => $values['name'],
+          )
         ),
         'warning'
       );
@@ -288,4 +295,5 @@ class ClusterForm extends EntityForm {
       }
     }
   }
+
 }

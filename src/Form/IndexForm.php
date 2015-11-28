@@ -19,7 +19,7 @@ use Drupal\elasticsearch_connector\Entity\Cluster;
  */
 class IndexForm extends EntityForm {
 
-    /**
+  /**
    * The entity manager.
    *
    * This object members must be set to anything other than private in order for
@@ -87,9 +87,9 @@ class IndexForm extends EntityForm {
   /**
    * Get cluster field.
    *
-   * @param string
-   *   field name
-   *  
+   * @param string $field
+   *   Field name.
+   *
    * @return array
    *   All clusters' fields.
    */
@@ -105,11 +105,11 @@ class IndexForm extends EntityForm {
   /**
    * Return url of the selected cluster.
    *
-   * @param string
-   *   cluster id
-   *  
+   * @param string $id
+   *   Cluster id.
+   *
    * @return string
-   *   cluster url
+   *   Cluster url.
    */
   protected function getSelectedClusterUrl($id) {
     $result = NULL;
@@ -131,7 +131,6 @@ class IndexForm extends EntityForm {
     );
   }
 
-
   /**
    * {@inheritdoc}
    */
@@ -145,7 +144,7 @@ class IndexForm extends EntityForm {
     $index = $this->getEntity();
 
     $form['#title'] = $this->t('Index');
-    
+
     $this->buildEntityForm($form, $form_state, $index);
     return $form;
   }
@@ -164,7 +163,7 @@ class IndexForm extends EntityForm {
       '#title' => t('Index name'),
       '#required' => TRUE,
       '#default_value' => '',
-      '#description' => t('Enter the index name.')
+      '#description' => t('Enter the index name.'),
     );
 
     $form['index_id'] = array(
@@ -281,4 +280,5 @@ class IndexForm extends EntityForm {
 
     $form_state->setRedirect('elasticsearch_connector.clusters');
   }
+
 }

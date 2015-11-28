@@ -2,10 +2,9 @@
 
 /**
  * @file
- * Contains \Drupal\elasticsearch_connector\Plugin\SearchApi\Backend\SearchApiElasticsearchBackend
+ * Contains the SearchApiElasticsearchBackend object.
  *
  * TODO: Check for dependencies and remove them in order to properly test the code.
- *
  */
 
 namespace Drupal\elasticsearch_connector\Plugin\search_api\backend;
@@ -916,38 +915,38 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       switch ($type) {
         case 'text':
           return array(
-          'type' => 'string',
-          'boost' => $field['boost'],
+            'type' => 'string',
+            'boost' => $field['boost'],
           );
 
         case 'uri':
         case 'string':
         case 'token':
           return array(
-          'type' => 'string',
-          'index' => 'not_analyzed',
+            'type' => 'string',
+            'index' => 'not_analyzed',
           );
 
         case 'integer':
         case 'duration':
           return array(
-          'type' => 'integer',
+            'type' => 'integer',
           );
 
         case 'boolean':
           return array(
-          'type' => 'boolean',
+            'type' => 'boolean',
           );
 
         case 'decimal':
           return array(
-          'type' => 'float',
+            'type' => 'float',
           );
 
         case 'date':
           return array(
-          'type' => 'date',
-          'format' => 'date_time',
+            'type' => 'date',
+            'format' => 'date_time',
           );
 
         default:
@@ -1076,7 +1075,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     // Query options.
     $query_options = $query->getOptions();
 
-    //Index fields
+    // Index fields.
     $index_fields = $this->getIndexFields($query);
 
     // Range.
@@ -1099,7 +1098,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       // Full text fields in which to perform the search.
       $query_full_text_fields = $query->getFields();
 
-      // Query string
+      // Query string.
       $search_string = $this->flattenKeys($keys, $query_options['parse mode']);
 
       if (!empty($search_string)) {
@@ -1113,11 +1112,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $sort = NULL;
     // Sort.
     try {
-      // TODO: Why we are calling SolrSearchQuery????
+      // TODO: Why we are calling SolrSearchQuery?
       $sort = $this->getSortSearchQuery($query);
     }
     catch (\Exception $e) {
-      //watchdog_exception('Elasticsearch Search API', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
+      // watchdog_exception('Elasticsearch Search API', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
       drupal_set_message($e->getMessage(), 'error');
     }
 
@@ -1127,7 +1126,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $query_search_filter = $parsed_query_filters[0];
     }
 
-    // More Like This
+    // More Like This.
     $mlt = array();
     if (isset($query_options['search_api_mlt'])) {
       $mlt = $query_options['search_api_mlt'];
@@ -1191,19 +1190,20 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         }
         $field_type = search_api_extract_inner_type($index_fields[$field_id]['type']);
 
-        // TODO: handle different types (GeoDistance and so on). See the supportedFeatures todo.
+        // TODO: handle different types (GeoDistance and so on). See the
+        // supportedFeatures todo.
         if ($field_type === 'date') {
           $facet_type = 'date_histogram';
           $facet[$field_id] = $this->createDateFieldFacet($field_id, $facet);
         }
         else {
           $facet_type = 'terms';
-          $facet[$field_id][$facet_type]['all_terms'] = (bool)$facet_info['missing'];
+          $facet[$field_id][$facet_type]['all_terms'] = (bool) $facet_info['missing'];
         }
 
         // Add the facet.
         if (!empty($facet[$field_id])) {
-          // Add facet options
+          // Add facet options.
           $facet_info['facet_type'] = $facet_type;
           $facet[$field_id] = $this->addFacetOptions($facet[$field_id], $query, $facet_info);
         }
@@ -1213,7 +1213,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   }
 
   /**
-   * Helper function that add options and return facet
+   * Helper function that add options and return facet.
    */
   protected function addFacetOptions(&$facet, QueryInterface $query, $facet_info) {
     $facet_limit = $this->getFacetLimit($facet_info);
@@ -1227,7 +1227,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     // See http://drupal.org/node/1390598.
     // Filter the facet.
     if (!empty($facet_search_filter)) {
-       $facet['facet_filter'] = $facet_search_filter;
+      $facet['facet_filter'] = $facet_search_filter;
     }
 
     // Limit the number of returned entries.
@@ -1241,7 +1241,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function return Facet filter.
    */
-  protected function getFacetSearchFilter(QueryInterface $query, $facet_info ) {
+  protected function getFacetSearchFilter(QueryInterface $query, $facet_info) {
     $index_fields = $this->getIndexFields($query);
     $facet_search_filter = '';
 
@@ -1270,7 +1270,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     $date_interval = $this->getDateFacetInterval($facet_id);
     $result['date_histogram']['interval'] = $date_interval;
-    // TODO: Check the timezone cause this way of hardcoding doesn't seems right.
+    // TODO: Check the timezone cause this way of hardcoding doesn't seem right.
     $result['date_histogram']['time_zone'] = 'UTC';
     // Use factor 1000 as we store dates as seconds from epoch
     // not milliseconds.
@@ -1280,7 +1280,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   }
 
   /**
-   * Helper function that return facet limits
+   * Helper function that return facet limits.
    */
   protected function getFacetLimit(array $facet_info) {
     // If no limit (-1) is selected, use the server facet limit option.
@@ -1310,17 +1310,17 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         $date_interval = 'month';
         break;
 
-        // Already a selected MONTH, we want the days.
+      // Already a selected MONTH, we want the days.
       case 'MONTH':
         $date_interval = 'day';
         break;
 
-        // Already a selected DAY, we want the hours and so on.
+      // Already a selected DAY, we want the hours and so on.
       case 'DAY':
         $date_interval = 'hour';
         break;
 
-        // By default we return result counts by year.
+      // By default we return result counts by year.
       default:
         $date_interval = 'year';
     }
@@ -1379,9 +1379,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         $result_item = SearchApiUtility::createItem($index, $result['_id']);
         $result_item->setScore($result['_score']);
 
-        // Set each item in _source as a field in Search API
+        // Set each item in _source as a field in Search API.
         foreach ($result['_source'] as $elasticsearch_property_id => $elasticsearch_property) {
-          // Make everything a multifield
+          // Make everything a multifield.
           if (!is_array($elasticsearch_property)) {
             $elasticsearch_property = array($elasticsearch_property);
           }
@@ -1398,7 +1398,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   }
 
   /**
-   *  Helper function that parse facets.
+   * Helper function that parse facets.
    */
   protected function parseSearchFacets($response, QueryInterface $query) {
 
@@ -1454,7 +1454,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function getAutocompleteSuggestions(QueryInterface $query, SearchApiAutocompleteSearch $search, $incomplete_key, $user_input) {
     $suggestions = array();
-    // Turn inputs to lower case, otherwise we get case sensivity problems.
+    // Turn inputs to lower case, otherwise we get case sensitivity problems.
     $incomp = \Unicode::strtolower($incomplete_key);
 
     $index = $query->getIndex();
@@ -1464,7 +1464,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $query->keys($user_input);
 
     try {
-      // TODO: Making autocomplete to work as autocomplete instead of exact string match.
+      // TODO: Make autocomplete to work as autocomplete instead of exact string
+      // match.
       $response = $this->search($query);
     }
     catch (\Exception $e) {
@@ -1505,6 +1506,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     }
   }
 
-  // TODO: Implement the settings update feature.
+  /* TODO: Implement the settings update feature. */
 
 }

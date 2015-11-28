@@ -12,5 +12,7 @@ namespace Drupal\elasticsearch_connector\DESConnector;
  * @package Drupal\elasticsearch_connector
  */
 interface DESConnectorInterface {
+
   static function getInstance(array $hosts);
+
 }

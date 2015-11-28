@@ -1,8 +1,10 @@
 <?php
+
 /**
  * @file
  * Contains \Drupal\elasticsearch_connector\Controller\ClusterListBuilder.
  */
+
 namespace Drupal\elasticsearch_connector\Controller;
 
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
@@ -59,7 +61,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         if ($index->server == $cluster->cluster_id) {
           $cluster_group['index.' . $index->index_id] = $index;
         }
-        else if ($index->server == NULL) {
+        elseif ($index->server == NULL) {
           $lone_indices['index.' . $index->index_id] = $index;
         }
       }
@@ -74,13 +76,13 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildHeader() {
-      return array(
-        'type' => $this->t('Type'),
-        'title' => $this->t('Name'),
-        'machine_name' => $this->t('Machine Name'),
-        'status' => $this->t('Status'),
-        'cluster_status' => $this->t('Cluster Status'),
-      ) + parent::buildHeader();
+    return array(
+      'type' => $this->t('Type'),
+      'title' => $this->t('Name'),
+      'machine_name' => $this->t('Machine Name'),
+      'status' => $this->t('Status'),
+      'cluster_status' => $this->t('Cluster Status'),
+    ) + parent::buildHeader();
   }
 
   /**
@@ -124,7 +126,8 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         ),
         'title' => $this->t('Machine name: @name', array('@name' => $entity->id())),
       );
-    } else if (isset($entity->index_id)) {
+    }
+    elseif (isset($entity->index_id)) {
       $result = array(
         'data' => array(
           'type' => array(
@@ -162,7 +165,8 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         'weight' => 20,
         'url' => new Url('entity.elasticsearch_cluster.canonical', array('elasticsearch_cluster' => $entity->id())),
       );
-    } elseif (isset($entity->index_id)) {
+    }
+    elseif (isset($entity->index_id)) {
       $operations['delete'] = array(
         'title' => $this->t('Delete'),
         'weight' => 20,
@@ -193,5 +197,5 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     }
     return $list;
   }
+
 }
-?>
