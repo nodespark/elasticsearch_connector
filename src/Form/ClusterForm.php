@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Contains Drupal\elasticsearch_connector\Form.
+ */
+
 namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
@@ -27,8 +32,8 @@ class ClusterForm extends EntityForm {
     }
     else {
       $form['#title'] = $this->t('Edit Elasticsearch Cluster @label', array('@label' => $cluster->label()));
-    } 
-    
+    }
+
     $this->buildEntityForm($form, $form_state, $cluster);
 
     return $form;
@@ -71,9 +76,7 @@ class ClusterForm extends EntityForm {
       '#type' => 'textfield',
       '#title' => t('Server URL'),
       '#default_value' => !empty($cluster->url) ? $cluster->url : '',
-      '#description' => t('Enter the URL of a node in the cluster. ' .
-          'All nodes will be automatically discover. ' .
-          'Example: http://localhost:9200'),
+      '#description' => t('Enter the URL of a node in the cluster. All nodes will be automatically discover. Example: http://localhost:9200'),
       '#required' => TRUE,
     );
 
@@ -101,14 +104,16 @@ class ClusterForm extends EntityForm {
     );
 
     $form['options'] = array(
-      '#tree' => TRUE
+      '#tree' => TRUE,
     );
 
     $form['options']['multiple_nodes_connection'] = array(
       '#type' => 'checkbox',
       '#title' => t('Use multiple nodes connection'),
-      '#description' => t('It will automatically discover all nodes and use them in the connection to the cluster. ' .
-        'The Elasticsearch client can then randomise the query execution between nodes.'),
+      '#description' => t(
+        'It will automatically discover all nodes and use them in the connection
+        to the cluster. The Elasticsearch client can then randomise the query
+        execution between nodes.'),
       '#default_value' => (!empty($cluster->options['multiple_nodes_connection']) ? 1 : 0),
     );
 
@@ -132,7 +137,6 @@ class ClusterForm extends EntityForm {
     $values = $form_state->getValues();
 
     // TODO: Check for valid URL when we are submitting the form.
-
     // Set default cluster.
     $default = Cluster::getDefaultCluster();
     if (empty($default) && !$values['default']) {
@@ -144,10 +148,13 @@ class ClusterForm extends EntityForm {
 
     if ($values['default'] == 0 && !empty($default) && $default == $values['cluster_id']) {
       drupal_set_message(
-        t('There must be a default connection. %name is still the default connection.'
-            . 'Please change the default setting on the cluster you wish to set as default.',
-            array(
-            '%name' => $values['name'])
+        t(
+          'There must be a default connection. %name is still the default
+          connection. Please change the default setting on the cluster you wish
+          to set as default.',
+          array(
+            '%name' => $values['name'],
+          )
         ),
         'warning'
       );
@@ -166,11 +173,13 @@ class ClusterForm extends EntityForm {
     $element = array();
 
     if (isset($cluster_info['state'])) {
-      $rows = array(array(
-        $cluster_info['health']['cluster_name'],
-        $cluster_info['health']['status'],
-        $cluster_info['health']['number_of_nodes'],
-      ));
+      $rows = array(
+        array(
+          $cluster_info['health']['cluster_name'],
+          $cluster_info['health']['status'],
+          $cluster_info['health']['number_of_nodes'],
+        ),
+      );
 
       $element = array(
         '#theme' => 'table',
@@ -178,15 +187,18 @@ class ClusterForm extends EntityForm {
         '#rows' => $rows,
         '#attributes' => array(
           'class' => array('admin-elasticsearch'),
-          'id'  => 'cluster-info'),
+          'id' => 'cluster-info',
+        ),
       );
     }
     elseif (!empty($ajax)) {
-      $rows = array(array(
-        t('Unknown'),
-        t('Unavailable'),
-        '',
-      ));
+      $rows = array(
+        array(
+          t('Unknown'),
+          t('Unavailable'),
+          '',
+        ),
+      );
 
       $element = array(
         '#theme' => 'table',
@@ -194,7 +206,8 @@ class ClusterForm extends EntityForm {
         '#rows' => $rows,
         '#attributes' => array(
           'class' => array('admin-elasticsearch'),
-          'id'  => 'cluster-info'),
+          'id'  => 'cluster-info',
+        ),
       );
     }
     else {
@@ -224,4 +237,5 @@ class ClusterForm extends EntityForm {
       }
     }
   }
+
 }

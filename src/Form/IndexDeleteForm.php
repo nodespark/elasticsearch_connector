@@ -57,4 +57,5 @@ class IndexDeleteForm extends EntityConfirmFormBase {
   public function getCancelUrl() {
     return new Url('elasticsearch_connector.clusters');
   }
+
 }

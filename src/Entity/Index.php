@@ -42,10 +42,10 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
 class Index extends ConfigEntityBase {
 
   /**
-  * The index machine name.
-  *
-  * @var string
-  */
+   * The index machine name.
+   *
+   * @var string
+   */
   public $index_id;
 
   /**
@@ -80,9 +80,10 @@ class Index extends ConfigEntityBase {
   }
 
   /**
-   * Load an index object
+   * Loads index object.
    *
    * @param $index_id
+   *
    * @return \Drupal\elasticsearch_connector\Entity\Index
    */
   public static function loadIndex($index_id) {
@@ -90,7 +91,7 @@ class Index extends ConfigEntityBase {
   }
 
   /**
-   * Load all indicess
+   * Load all indices.
    *
    * @return \Drupal\elasticsearch_connector\Entity\Index[]
    */
