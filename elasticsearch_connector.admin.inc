@@ -607,7 +607,7 @@ function elasticsearch_connector_edit_cluster_form_info($cluster) {
           array('data' => t('Number of nodes')),
         );
 
-        if (isset($cluster_info['state'])) {
+        if (isset($cluster_info['state']) && !isset($cluster_info['state']['error'])) {
           $rows = array(
             array(
               $cluster_info['health']['cluster_name'],

@@ -46,8 +46,8 @@ class GuzzleConnectionDebug extends AbstractConnection implements ConnectionInte
       $guzzleOptions = array();
       $guzzleOptions['curl.options']['body_as_string'] = true;
 
-      if (isset($connectionParams['connectionParams']['auth']) === true) {
-        $connectionParams['request.options']['auth'] = $connectionParams['connectionParams']['auth'];
+      if (isset($connectionParams['auth']) === true) {
+        $guzzleOptions['request.options']['auth'] = $connectionParams['auth'];
       }
 
       if (!isset($connectionParams['guzzleOptions'])) {
@@ -58,12 +58,12 @@ class GuzzleConnectionDebug extends AbstractConnection implements ConnectionInte
       $this->guzzle =  new \Guzzle\Http\Client(null,$guzzleOptions);
     }
 
-    if (isset($port) !== true) {
-      $port = 9200;
+    if (isset($hostDetails['port']) !== true) {
+      $hostDetails['port'] = 9200;
     }
 
-    if (isset($connectionParams['connectionParams'])) {
-      $this->connectionOpts = $connectionParams['connectionParams'];
+    if (isset($connectionParams)) {
+      $this->connectionOpts = $connectionParams;
     }
 
     return parent::__construct($hostDetails, $connectionParams, $log, $trace);
