@@ -26,17 +26,17 @@ class ElasticsearchController extends ControllerBase {
    * @return array
    *   An array suitable for drupal_render().
    */
-  public function page(Cluster $cluster) {
+  public function page(Cluster $elasticsearch_cluster) {
     // Build the Search API index information.
     $render = array(
       'view' => array(
         '#theme' => 'elasticsearch_cluster',
-        '#cluster' => $cluster,
+        '#cluster' => $elasticsearch_cluster,
       ),
     );
     // Check if the cluster is enabled and can be written to.
-    if ($cluster->cluster_id) {
-      $render['form'] = $this->formBuilder()->getForm('Drupal\elasticsearch_connector\Form\ClusterForm', $cluster);
+    if ($elasticsearch_cluster->cluster_id) {
+      $render['form'] = $this->formBuilder()->getForm('Drupal\elasticsearch_connector\Form\ClusterForm', $elasticsearch_cluster);
     }
     return $render;
   }
@@ -44,32 +44,32 @@ class ElasticsearchController extends ControllerBase {
   /**
    * Page title callback for a cluster's "View" tab.
    *
-   * @param \Drupal\elasticsearch_connector\Entity\Cluster $cluster
+   * @param \Drupal\elasticsearch_connector\Entity\Cluster $elasticsearch_cluster
    *   The cluster that is displayed.
    *
    * @return string
    *   The page title.
    */
-  public function pageTitle(Cluster $cluster) {
+  public function pageTitle(Cluster $elasticsearch_cluster) {
     // TODO: Check if we need string escaping.
-    return $cluster->label();
+    return $elasticsearch_cluster->label();
   }
 
   /**
    * Complete information about the Elasticsearch Client.
    *
-   * @param Cluster $cluster
+   * @param Cluster $elasticsearch_cluster
    *
    * @return mixed
    *
    * @throws \Exception
    *   Exception.
    */
-  public function getInfo(Cluster $cluster) {
+  public function getInfo(Cluster $elasticsearch_cluster) {
     // TODO: Get the statistics differently.
-    if ($cluster->checkClusterStatus()) {
+    if ($elasticsearch_cluster->checkClusterStatus()) {
       // Nodes.
-      $es_client = $cluster->getClientInstance($cluster);
+      $es_client = $elasticsearch_cluster->getClientInstance($elasticsearch_cluster);
       $es_node_namespace = $es_client->getNodesProperties();
       $node_stats = $es_node_namespace['stats'];
 
@@ -90,7 +90,7 @@ class ElasticsearchController extends ControllerBase {
         }
       }
 
-      $cluster_status = $cluster->getClusterInfo();
+      $cluster_status = $elasticsearch_cluster->getClusterInfo();
       $cluster_statistics_rows = array(
         array(
           array('data' => $cluster_status['health']['number_of_nodes'] . ' ' . t('Nodes')),
