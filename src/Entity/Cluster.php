@@ -35,10 +35,10 @@ use Drupal\Core\Entity\Entity;
  *     "status" = "status"
  *   },
  *   links = {
- *     "canonical" = "/admin/config/elasticsearch-connector/clusters/{elasticsearch_cluster}",
- *     "add-form" = "/admin/config/elasticsearch-connector/clusters/add",
- *     "edit-form" = "/admin/config/elasticsearch-connector/clusters/{elasticsearch_cluster}/edit",
- *     "delete-form" = "/admin/config/elasticsearch-connector/clusters/{elasticsearch_cluster}/delete",
+ *     "canonical" = "/admin/config/search/elasticsearch-connector/clusters/{elasticsearch_cluster}",
+ *     "add-form" = "/admin/config/search/elasticsearch-connector/clusters/add",
+ *     "edit-form" = "/admin/config/search/elasticsearch-connector/clusters/{elasticsearch_cluster}/edit",
+ *     "delete-form" = "/admin/config/search/elasticsearch-connector/clusters/{elasticsearch_cluster}/delete",
  *   }
  * )
  */
