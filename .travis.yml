@@ -87,8 +87,8 @@ env:
   matrix:
     # [[[ SELECT ANY OR MORE OPTIONS ]]]
     #- DRUPAL_TI_RUNNERS="phpunit"
-    #- DRUPAL_TI_RUNNERS="simpletest"
-    #- DRUPAL_TI_RUNNERS="behat"
+    - DRUPAL_TI_RUNNERS="simpletest"
+    - DRUPAL_TI_RUNNERS="behat"
     #- DRUPAL_TI_RUNNERS="simpletest behat"
     #- DRUPAL_TI_RUNNERS="phpunit simpletest behat"
     # Use phpunit-core to test modules with phpunit with Drupal 8 core.
