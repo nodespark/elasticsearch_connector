@@ -64,12 +64,20 @@ class DESConnector81 extends DESConnector implements DESConnectorInterface {
    * @return Client
    */
   public static function getInstance(array $hosts) {
-    $hash = md5(implode(':', $hosts));
+    $hash_hosts = array();
+
+    foreach ($hosts as $host) {
+      $hash_hosts[] = $host['url'];
+    }
+
+    $hash = md5(implode(':', $hash_hosts));
 
     if (!isset($instances[$hash])) {
       foreach ($hosts as $host) {
         $cluster_url = self::buildClusterUrl($host['url'], $host['options']);
         $options['hosts'][] = $cluster_url;
+
+        self::setAuthentication($options, $host);
       }
 
       // TODO: Remove this from the abstraction!
@@ -77,16 +85,8 @@ class DESConnector81 extends DESConnector implements DESConnectorInterface {
       \Drupal::moduleHandler()
         ->alter('elasticsearch_connector_load_library_options', $options);
 
-      if (ELASTICSEARCH_CONNECTOR_VERSION < 2) {
-        $builder = new Client($options);
-        $instances[$hash] = new DESConnector81($builder);
-      }
-      else {
-        $builder = ClientBuilder::create();
-        $builder->setHosts($options['hosts']);
-
-        $instances[$hash] = new DESConnector81($builder->build());
-      }
+      $builder = new Client($options);
+      $instances[$hash] = new DESConnector81($builder);
     }
 
     return $instances[$hash];
@@ -103,4 +103,19 @@ class DESConnector81 extends DESConnector implements DESConnectorInterface {
     return $cluster_url;
   }
 
+  /**
+   * Sets the HTTP authentication options.
+   *
+   * @param array $options
+   *   Array with the options to pass to the Elasticsearch Client.
+   * @param array $host
+   *   Array with the host options as provided from the Cluster form.
+   */
+  public static function setAuthentication(&$options, $host) {
+    if (!empty($host['options']['use_authentication'])) {
+      $options['connectionParams'] = array(
+        'auth' => array($host['options']['username'], $host['options']['password'], $host['options']['authentication_type']),
+      );
+    }
+  }
 }
