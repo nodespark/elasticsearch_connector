@@ -1,0 +1,3 @@
+administer elasticsearch connector:
+  title: 'Administer elasticsearch connector'
+  description: 'Giving you access to administer elasticsearch clusters.'
