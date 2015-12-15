@@ -373,6 +373,11 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $params = $this->getIndexParam($index, TRUE);
 
     try {
+      // If there is no connection there is nothing we can do.
+      if (!$this->elasticsearchClient) {
+        return;
+      }
+
       $this->elasticsearchClient->indices()->deleteMapping($params);
 
       // Check if there are any other types in the index before deleting it.
