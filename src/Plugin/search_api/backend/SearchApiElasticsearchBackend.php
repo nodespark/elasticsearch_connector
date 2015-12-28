@@ -10,7 +10,7 @@
 namespace Drupal\elasticsearch_connector\Plugin\search_api\backend;
 
 use Drupal\search_api\SearchApiException;
-use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Config;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -26,6 +26,7 @@ use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\search_api\Item\FieldInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
+use Drupal\Core\Link;
 
 /**
  * @SearchApiBackend(
@@ -98,7 +99,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $form['server_description'] = array(
         '#type' => 'item',
         '#title' => $this->t('Elasticsearch Cluster'),
-        '#description' => \Drupal::l($serverlink, Url::fromUri($serverlink)),
+        '#description' => Link::fromTextAndUrl($serverlink, Url::fromUri($serverlink)),
       );
     }
     $form['cluster_settings'] = array(
@@ -207,7 +208,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $serverlink = $this->getServerLink();
     $info[] = array(
       'label' => $this->t('Elasticsearch server URI'),
-      'info' => \Drupal::l($serverlink, Url::fromUri($serverlink)),
+      'info' => Link::fromTextAndUrl($serverlink, Url::fromUri($serverlink)),
     );
 
     if ($this->server->status()) {
@@ -329,9 +330,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     }
     else {
       $value = $this->getOption($element['option']);
-      $value = nl2br(String::checkPlain(print_r($value, TRUE)));
+      $value = nl2br(SafeMarkup::checkPlain(print_r($value, TRUE)));
     }
-    $output .= '<dt><em>' . String::checkPlain($element['label']) . '</em></dt>' . "\n";
+    $output .= '<dt><em>' . SafeMarkup::checkPlain($element['label']) . '</em></dt>' . "\n";
     $output .= '<dd>' . $value . '</dd>' . "\n";
 
     return "<dl>\n{$output}</dl>";
@@ -680,8 +681,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         $filters = $this->setFiltersConjunction($filters, $conjunction);
       }
       catch (\Exception $e) {
-        watchdog('Elasticsearch Search API', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
-        drupal_set_message(String::checkPlain($e->getMessage()), 'error');
+        watchdog('Elasticsearch Search API', SafeMarkup::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
+        drupal_set_message(SafeMarkup::checkPlain($e->getMessage()), 'error');
       }
 
       return $filters;
@@ -965,7 +966,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       }
     }
     catch (\Exception $e) {
-      watchdog('Elasticsearch Backend', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
+      watchdog('Elasticsearch Backend', SafeMarkup::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
     }
   }
 
@@ -1127,7 +1128,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $sort = $this->getSortSearchQuery($query);
     }
     catch (\Exception $e) {
-      // watchdog_exception('Elasticsearch Search API', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
+      // watchdog_exception('Elasticsearch Search API', SafeMarkup::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
       drupal_set_message($e->getMessage(), 'error');
     }
 
@@ -1480,7 +1481,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $response = $this->search($query);
     }
     catch (\Exception $e) {
-      watchdog('Elasticsearch Search API', String::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
+      watchdog('Elasticsearch Search API', SafeMarkup::checkPlain($e->getMessage()), array(), WATCHDOG_ERROR);
       return array();
     }
 
