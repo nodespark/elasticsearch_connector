@@ -8,9 +8,6 @@ elasticsearch_connector.cluster.*:
     name:
       type: string
       label: 'Cluster Name'
-    uuid:
-      type: string
-      label: 'UUID'
     status:
       type: string
       label: 'Cluster Status'
@@ -27,3 +24,6 @@ elasticsearch_connector.cluster.*:
     locked:
       type: boolean
       label: 'Locked'
+    connector:
+      type: string
+      label: 'The Elasticsearch connector class'

@@ -9,21 +9,24 @@ namespace Drupal\elasticsearch_connector\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 
+// TODO: Check the list builder.
 /**
- * Defines the search server configuration entity.
+ * Defines the Elasticsearch Connector Index configuration entity.
  *
  * @ConfigEntityType(
  *   id = "elasticsearch_index",
- *   label = @Translation("Elasticsearch Cluster Indices"),
+ *   label = @Translation("Elasticsearch Index"),
  *   handlers = {
- *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
  *     "list_builder" = "Drupal\elasticsearch_connector\Controller\IndexListBuilder",
  *     "form" = {
  *       "default" = "Drupal\elasticsearch_connector\Form\IndexForm",
  *       "delete" = "Drupal\elasticsearch_connector\Form\IndexDeleteForm",
  *     },
+ *     "route_provider" = {
+ *       "html" = "Drupal\elasticsearch_connector\Entity\IndexRouteProvider",
+ *     },
  *   },
- *   admin_permission = "administer elasticsearch",
+ *   admin_permission = "administer elasticsearch index",
  *   config_prefix = "index",
  *   entity_keys = {
  *     "id" = "index_id",
@@ -33,9 +36,15 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *     "server" = "server"
  *   },
  *   links = {
- *     "canonical" = "/admin/config/search/elasticsearch-connector/clusters",
- *     "add-form" = "/admin/config/search/elasticsearch-connector/indices/add",
- *     "delete-form" = "/admin/config/search/elasticsearch-connector/indices/{elasticsearch_index}/delete",
+ *     "add-form" = "/admin/config/search/elasticsearch-connector/index/add",
+ *     "delete-form" = "/admin/config/search/elasticsearch-connector/index/{elasticsearch_index}/delete",
+ *   },
+ *   config_export = {
+ *     "id",
+ *     "label",
+ *     "num_of_shards",
+ *     "num_of_replica",
+ *     "server",
  *   }
  * )
  */

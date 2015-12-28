@@ -278,7 +278,7 @@ class IndexForm extends EntityForm {
 
     drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
 
-    $form_state->setRedirect('elasticsearch_connector.clusters');
+    $form_state->setRedirect('elasticsearch_connector.config_entity.list');
   }
 
 }

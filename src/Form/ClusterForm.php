@@ -10,6 +10,7 @@ namespace Drupal\elasticsearch_connector\Form;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\EntityStorageException;
 
 /**
  * Provides a form for the Cluster entity.
@@ -209,6 +210,10 @@ class ClusterForm extends EntityForm {
 
   /**
    * Build the cluster info table for the edit page.
+   *
+   * @param \Drupal\elasticsearch_connector\Entity\Cluster|NULL $cluster
+   *
+   * @return array
    */
   protected function clusterFormInfo(Cluster $cluster = NULL) {
     $element = array();
@@ -285,9 +290,9 @@ class ClusterForm extends EntityForm {
         $cluster = $this->getEntity();
         $cluster->save();
         drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
-        $form_state->setRedirect('entity.elasticsearch_cluster.canonical', array('elasticsearch_cluster' => $cluster->id()));
+        $form_state->setRedirect('elasticsearch_connector.config_entity.list');
       }
-      catch (Exception $e) {
+      catch (EntityStorageException $e) {
         $form_state->setRebuild();
         watchdog_exception('elasticsearch_connector', $e);
         drupal_set_message($this->t('The cluster could not be saved.'), 'error');

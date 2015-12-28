@@ -36,7 +36,7 @@ class IndexDeleteForm extends EntityConfirmFormBase {
         $client->indices()->delete(array('index' => $this->entity->index_id));
         $this->entity->delete();
         drupal_set_message($this->t('The index %title has been deleted.', array('%title' => $this->entity->label())));
-        $form_state->setRedirect('elasticsearch_connector.clusters');
+        $form_state->setRedirect('elasticsearch_connector.config_entity.list');
       }
       catch (\Exception $e) {
         drupal_set_message($e->getMessage(), 'error');
@@ -55,7 +55,7 @@ class IndexDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('elasticsearch_connector.clusters');
+    return new Url('elasticsearch_connector.config_entity.list');
   }
 
 }

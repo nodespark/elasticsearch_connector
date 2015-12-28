@@ -111,7 +111,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
             'data' => array(
               '#type' => 'link',
               '#title' => $entity->label(),
-            ) + $entity->urlInfo('canonical')->toRenderArray(),
+            ) + $entity->toUrl('edit-form')->toRenderArray(),
           ),
           'machine_name' => array(
             'data' => $entity->id(),
@@ -173,6 +173,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         'url' => new Url('entity.elasticsearch_index.delete_form', array('elasticsearch_index' => $entity->id())),
       );
     }
+
     return $operations;
   }
 
