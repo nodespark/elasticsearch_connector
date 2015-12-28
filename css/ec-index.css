@@ -18,3 +18,6 @@ ul.index-dialog-links li a {
   background: url('../img/plus.png') left no-repeat;
 }
 
+.es-list-index {
+  padding-left: 3em;
+}

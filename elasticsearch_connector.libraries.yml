@@ -1,0 +1,5 @@
+drupal.elasticsearch_connector.ec_index:
+  version: VERSION
+  css:
+    theme:
+      css/ec-index.css: {}
