@@ -17,7 +17,6 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *   id = "elasticsearch_index",
  *   label = @Translation("Elasticsearch Index"),
  *   handlers = {
- *     "list_builder" = "Drupal\elasticsearch_connector\Controller\IndexListBuilder",
  *     "form" = {
  *       "default" = "Drupal\elasticsearch_connector\Form\IndexForm",
  *       "delete" = "Drupal\elasticsearch_connector\Form\IndexDeleteForm",
@@ -33,15 +32,11 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *     "label" = "name",
  *     "num_of_shards" = "num_of_shards",
  *     "num_of_replica" = "num_of_replica",
- *     "server" = "server"
- *   },
- *   links = {
- *     "add-form" = "/admin/config/search/elasticsearch-connector/index/add",
- *     "delete-form" = "/admin/config/search/elasticsearch-connector/index/{elasticsearch_index}/delete",
+ *     "server" = "server",
  *   },
  *   config_export = {
- *     "id",
- *     "label",
+ *     "index_id",
+ *     "name",
  *     "num_of_shards",
  *     "num_of_replica",
  *     "server",

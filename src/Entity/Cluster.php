@@ -34,15 +34,9 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *     "url" = "url",
  *     "options" = "options",
  *   },
- *   links = {
- *     "canonical" = "/admin/config/search/elasticsearch-connector/cluster/{elasticsearch_cluster}",
- *     "add-form" = "/admin/config/search/elasticsearch-connector/cluster/add",
- *     "edit-form" = "/admin/config/search/elasticsearch-connector/cluster/{elasticsearch_cluster}/edit",
- *     "delete-form" = "/admin/config/search/elasticsearch-connector/cluster/{elasticsearch_cluster}/delete",
- *   },
  *   config_export = {
- *     "id",
- *     "label",
+ *     "cluster_id",
+ *     "name",
  *     "status",
  *     "url",
  *     "options",

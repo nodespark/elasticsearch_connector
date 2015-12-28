@@ -166,11 +166,10 @@ class ClusterForm extends EntityForm {
     );
 
     $form['options']['timeout'] = array(
-      '#type' => 'textfield',
+      '#type' => 'number',
       '#title' => t('Connection timeout'),
       '#size'  => 20,
       '#required' => TRUE,
-      '#element_validate' => array('element_validate_number'),
       '#description' => t('After how many seconds the connection should timeout if there is no connection to Elasticsearch.'),
       '#default_value' => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : Cluster::ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT),
     );
