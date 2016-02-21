@@ -927,7 +927,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         case 'text':
           return array(
             'type' => 'string',
-            'boost' => $field['boost'],
           );
 
         case 'uri':
@@ -1107,7 +1106,12 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       }
 
       // Full text fields in which to perform the search.
-      $query_full_text_fields = $query->getFields();
+      $query_full_text_fields = $query->getIndex()->getFulltextFields();
+      $query_fields = array();
+      foreach($query_full_text_fields as $full_text_field_name){
+        $full_text_field = $index_fields[$full_text_field_name];
+        $query_fields[] = $full_text_field->getFieldIdentifier() . '^' . $full_text_field->getBoost();
+      }
 
       // Query string.
       $search_string = $this->flattenKeys($keys, $query_options['parse mode']);
@@ -1115,7 +1119,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       if (!empty($search_string)) {
         $query_search_string = array('query_string' => array());
         $query_search_string['query_string']['query'] = $search_string;
-        $query_search_string['query_string']['fields'] = array_values($query_full_text_fields);
+        $query_search_string['query_string']['fields'] = $query_fields;
         $query_search_string['query_string']['analyzer'] = 'snowball';
       }
     }
