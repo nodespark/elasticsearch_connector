@@ -21,6 +21,7 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *     "form" = {
  *       "default" = "Drupal\elasticsearch_connector\Form\IndexForm",
  *       "delete" = "Drupal\elasticsearch_connector\Form\IndexDeleteForm",
+ *       "edit" = "Drupal\elasticsearch_connector\Form\IndexForm",
  *     },
  *   },
  *   admin_permission = "administer elasticsearch",

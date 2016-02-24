@@ -1,0 +1,8 @@
+parameters:
+  elasticsearch_connector.client.factory.class:  Drupal\elasticsearch_connector\AWS\S3\ClientFactory
+
+services:
+  elasticsearch_connector.client_manager:
+    class: \Drupal\elasticsearch_connector\ElasticSearch\ClientManager
+    arguments:
+      - @module_handler

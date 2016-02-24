@@ -1,0 +1,160 @@
+<?php
+
+namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
+
+use Drupal\search_api\IndexInterface;
+use Drupal\search_api\Item\FieldInterface;
+
+/**
+ * Class IndexFactory
+ *
+ * @author andy.thorne@timeinc.com
+ */
+class IndexFactory {
+
+  /**
+   * Build parameters required to index
+   *
+   * TODO: We need to handle the following params as well:
+   * ['consistency'] = (enum) Explicit write consistency setting for the operation
+   * ['refresh']     = (boolean) Refresh the index after performing the operation
+   * ['replication'] = (enum) Explicitly set the replication type
+   * ['fields']      = (list) Default comma-separated list of fields to return in the response for updates
+   *
+   * @param IndexInterface $index
+   * @param bool           $with_type
+   *
+   * @return array
+   */
+  public static function index(IndexInterface $index, $with_type = FALSE) {
+    $params = [];
+    $params['index'] = IndexFactory::getIndexName($index);
+
+    if ($with_type) {
+      $params['type'] = $index->id();
+    }
+
+    return $params;
+  }
+
+  /**
+   * Build parameters required to create an index
+   * TODO: Add the timeout option.
+   *
+   * @param \Drupal\search_api\IndexInterface $index
+   *
+   * @return array
+   */
+  public static function create(IndexInterface $index) {
+    return [
+      'index' => IndexFactory::getIndexName($index),
+      'body' => [
+        'settings' => [
+          'number_of_shards' => $index->getOption('number_of_shards', 5),
+          'number_of_replicas' => $index->getOption('number_of_replicas', 1),
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Build parameters to bulk delete indexes
+   *
+   * @param \Drupal\search_api\IndexInterface $index
+   * @param array                             $ids
+   *
+   * @return array
+   */
+  public static function bulkDelete(IndexInterface $index, array $ids) {
+    $params = IndexFactory::index($index, TRUE);
+    foreach ($ids as $id) {
+      $params['body'][] = [
+        'delete' => [
+          '_index' => $params['index'],
+          '_type' => $params['type'],
+          '_id' => $id,
+        ]
+      ];
+    }
+
+    return $params;
+  }
+
+  /**
+   * Build parameters to bulk delete indexes
+   *
+   * @param \Drupal\search_api\IndexInterface       $index
+   * @param \Drupal\search_api\Item\ItemInterface[] $items
+   *
+   * @return array
+   */
+  public static function bulkIndex(IndexInterface $index, array $items) {
+    $params = IndexFactory::index($index, TRUE);
+
+    foreach ($items as $id => $item) {
+      $data = ['id' => $id];
+      /** @var FieldInterface $field */
+      foreach ($item as $name => $field) {
+        $data[$field->getFieldIdentifier()] = $field->getValues();
+      }
+      $params['body'][] = ['index' => ['_id' => $data['id']]];
+      $params['body'][] = $data;
+    }
+
+    return $params;
+  }
+
+  /**
+   * Build parameters required to create an index mapping
+   * TODO: We need also:
+   * $params['index'] - (Required)
+   * ['type'] - The name of the document type
+   * ['timeout'] - (time) Explicit operation timeout
+   *
+   * @param \Drupal\search_api\IndexInterface $index
+   *
+   * @return mixed
+   */
+  public static function mapping(IndexInterface $index) {
+    $params = IndexFactory::index($index, TRUE);
+
+    $properties = [
+      'id' => [
+        'type' => 'string',
+        'index' => 'not_analyzed',
+        'include_in_all' => FALSE
+      ],
+    ];
+
+    // Map index fields.
+    foreach ($index->getFields() as $field_id => $field_data) {
+      $properties[$field_id] = MappingFactory::mappingFromField($field_data);
+    }
+
+    $params['body'][$params['type']]['properties'] = $properties;
+
+    return $params;
+  }
+
+  /**
+   * Helper function. Returns the elasticsearch name of an index.
+   *
+   * @param IndexInterface $index
+   *
+   * @return string
+   */
+  public static function getIndexName(IndexInterface $index) {
+
+    $options = \Drupal::database()->getConnectionOptions();
+    $site_database = $options['database'];
+
+    $index_machine_name = is_string($index) ? $index : $index->id();
+
+    return preg_replace(
+      '/[^A-Za-z0-9_]+/',
+      '',
+      'elasticsearch_index_' . $site_database . '_' . $index_machine_name
+    );
+  }
+
+}
