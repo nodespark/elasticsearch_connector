@@ -5,11 +5,6 @@
  * Provides hook implementations and functions accessible from other modules.
  */
 
-define('ELASTICSEARCH_CONNECTOR_VERSION', '2.0');
-
-use Symfony\Component\HttpFoundation\Request;
-use Drupal\Component\Utility\Url;
-
 /**
  * Implements hook_help().
  */

@@ -8,16 +8,22 @@
 namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
+use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
 use Drupal\elasticsearch_connector\Entity\Index;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Entity\EntityManager;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 
 /**
  * Form controller for node type forms.
  */
 class IndexForm extends EntityForm {
+
+  /**
+   * @var ClientManager
+   */
+  private $clientManager;
 
   /**
    * The entity manager.
@@ -27,17 +33,27 @@ class IndexForm extends EntityForm {
    *
    * @var \Drupal\Core\Entity\EntityManager
    */
-  protected $entityManager;
+  protected $entityTypeManager;
 
   /**
    * Constructs an IndexForm object.
    *
-   * @param \Drupal\Core\Entity\EntityManager $entity_manager
+   * @param \Drupal\Core\Entity\EntityManager|\Drupal\Core\Entity\EntityTypeManager $entity_manager
    *   The entity manager.
+   * @param \Drupal\elasticsearch_connector\ElasticSearch\ClientManager             $client_manager
    */
-  public function __construct(EntityManager $entity_manager) {
+  public function __construct(EntityTypeManager $entity_manager, ClientManager $client_manager) {
     // Setup object members.
-    $this->entityManager = $entity_manager;
+    $this->entityTypeManager = $entity_manager;
+    $this->clientManager = $client_manager;
+  }
+
+
+  static public function create(ContainerInterface $container) {
+    return new static (
+      $container->get('entity_type.manager'),
+      $container->get('elasticsearch_connector.client_manager')
+    );
   }
 
   /**
@@ -47,7 +63,7 @@ class IndexForm extends EntityForm {
    *   An instance of EntityManager.
    */
   protected function getEntityManager() {
-    return $this->entityManager;
+    return $this->entityTypeManager;
   }
 
   /**
@@ -120,15 +136,6 @@ class IndexForm extends EntityForm {
       }
     }
     return $result;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('entity.manager')
-    );
   }
 
   /**
@@ -233,52 +240,38 @@ class IndexForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, FormStateInterface $form_state) {
-    $values = $values;
-
-    $cluster_url = self::getSelectedClusterUrl($values['server']);
-
-    $client = Cluster::getClientByUrls(array($cluster_url));
-    $index_params = array();
-    if ($client) {
-      try {
-        $index_params['index'] = $values['index_id'];
-        $index_params['body']['settings']['number_of_shards']   = $values['num_of_shards'];
-        $index_params['body']['settings']['number_of_replicas'] = $values['num_of_replica'];
-        $index_params['body']['settings']['cluster_machine_name'] = $values['server'];
-
-      }
-      catch (\Exception $e) {
-        drupal_set_message($e->getMessage(), 'error');
-      }
-      try {
-        $response = $client->indices()->create($index_params);
-        if (Cluster::elasticsearchCheckResponseAck($response)) {
-          drupal_set_message(t('The index %index having id %index_id has been successfully created.',
-            array('%index' => $values['name'], '%index_id' => $values['index_id'])));
-        }
-        else {
-          drupal_set_message(t('Fail to create the index %index having id @index_id',
-            array('%index' => $values['name'], '@index_id' => $values['index_id'])), 'error');
-        }
-      }
-      catch (\Exception $e) {
-        drupal_set_message($e->getMessage(), 'error');
-      }
-    }
-    return parent::submit($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function save(array $form, FormStateInterface $form_state) {
+    /** @var Index $index */
     $index = $this->entity;
-    $index->save();
 
-    drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
+    $cluster = Cluster::load($index->server);
+    $client = $this->clientManager->getClientForCluster($cluster);
 
-    $form_state->setRedirect('elasticsearch_connector.clusters');
+    $index_params['index'] = $index->index_id;
+    $index_params['body']['settings']['number_of_shards']   = $form_state->getValue('num_of_shards');
+    $index_params['body']['settings']['number_of_replicas'] = $form_state->getValue('num_of_replica');
+    $index_params['body']['settings']['cluster_machine_name'] = $form_state->getValue('server');
+
+    try {
+      $response = $client->indices()->create($index_params);
+      if (Cluster::elasticsearchCheckResponseAck($response)) {
+        drupal_set_message(t('The index %index having id %index_id has been successfully created.',
+          array('%index' => $form_state->getValue('name'), '%index_id' => $form_state->getValue('index_id'))));
+      }
+      else {
+        drupal_set_message(t('Fail to create the index %index having id @index_id',
+          array('%index' => $form_state->getValue('name'), '@index_id' => $form_state->getValue('index_id'))), 'error');
+      }
+
+      $index->save();
+
+      drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
+
+      $form_state->setRedirect('elasticsearch_connector.clusters');
+    }
+    catch (\Exception $e) {
+      drupal_set_message($e->getMessage(), 'error');
+    }
   }
 
 }
