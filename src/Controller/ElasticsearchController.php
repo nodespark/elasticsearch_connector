@@ -105,6 +105,7 @@ class ElasticsearchController extends ControllerBase {
 
       $total_docs = 0;
       $total_size = 0;
+      $node_rows = array();
       if (!empty($node_stats['nodes'])) {
         // TODO: Better format the results in order to build the
         // correct output.
@@ -151,6 +152,7 @@ class ElasticsearchController extends ControllerBase {
         ),
       );
 
+      $cluster_health_rows = array();
       $cluster_health_mapping = array(
         'cluster_name' => t('Cluster name'),
         'status' => t('Status'),
