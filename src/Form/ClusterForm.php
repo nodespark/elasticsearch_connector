@@ -13,6 +13,7 @@ use Drupal\elasticsearch_connector\ElasticSearch\ClientConnector;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Entity\EntityStorageException;
 
 /**
  * Provides a form for the Cluster entity.
@@ -206,11 +207,10 @@ class ClusterForm extends EntityForm {
     );
 
     $form['options']['timeout'] = array(
-      '#type' => 'textfield',
+      '#type' => 'number',
       '#title' => t('Connection timeout'),
       '#size' => 20,
       '#required' => TRUE,
-      '#element_validate' => array('element_validate_number'),
       '#description' => t(
         'After how many seconds the connection should timeout if there is no connection to Elasticsearch.'
       ),
@@ -253,7 +253,7 @@ class ClusterForm extends EntityForm {
   /**
    * Build the cluster info table for the edit page.
    *
-   * @param \Drupal\elasticsearch_connector\Entity\Cluster $cluster
+   * @param \Drupal\elasticsearch_connector\Entity\Cluster|NULL $cluster
    *
    * @return array
    */
@@ -316,7 +316,8 @@ class ClusterForm extends EntityForm {
           $element['#type'] = 'markup';
           $element['#markup'] = '<div id="cluster-info">&nbsp;</div>';
         }
-      } catch (\Exception $e) {
+      }
+      catch (\Exception $e) {
         drupal_set_message($e->getMessage(), 'error');
       }
     }
@@ -333,17 +334,10 @@ class ClusterForm extends EntityForm {
       try {
         $cluster = $this->getEntity();
         $cluster->save();
-        drupal_set_message(
-          t(
-            'Cluster %label has been updated.',
-            array('%label' => $cluster->label())
-          )
-        );
-        $form_state->setRedirect(
-          'entity.elasticsearch_cluster.canonical',
-          array('elasticsearch_cluster' => $cluster->id())
-        );
-      } catch (\Exception $e) {
+        drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
+        $form_state->setRedirect('elasticsearch_connector.config_entity.list');
+      }
+      catch (EntityStorageException $e) {
         $form_state->setRebuild();
         watchdog_exception('elasticsearch_connector', $e);
         drupal_set_message(
