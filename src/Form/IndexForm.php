@@ -31,7 +31,7 @@ class IndexForm extends EntityForm {
    * This object members must be set to anything other than private in order for
    * \Drupal\Core\DependencyInjection\DependencySerialization to be detected.
    *
-   * @var \Drupal\Core\Entity\EntityManager
+   * @var \Drupal\Core\Entity\EntityTypeManager
    */
   protected $entityTypeManager;
 
@@ -39,7 +39,7 @@ class IndexForm extends EntityForm {
    * Constructs an IndexForm object.
    *
    * @param \Drupal\Core\Entity\EntityManager|\Drupal\Core\Entity\EntityTypeManager $entity_manager
-   *   The entity manager.
+   *   The entity type manager.
    * @param \Drupal\elasticsearch_connector\ElasticSearch\ClientManager             $client_manager
    */
   public function __construct(EntityTypeManager $entity_manager, ClientManager $client_manager) {
@@ -267,7 +267,7 @@ class IndexForm extends EntityForm {
 
       drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
 
-      $form_state->setRedirect('elasticsearch_connector.clusters');
+      $form_state->setRedirect('elasticsearch_connector.config_entity.list');
     }
     catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
