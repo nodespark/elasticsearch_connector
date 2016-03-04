@@ -8,14 +8,36 @@
 namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Entity\EntityStorageException;
+use Drupal\elasticsearch_connector\ElasticSearch\ClientConnector;
+use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
+use Drupal\elasticsearch_connector\Entity\Cluster;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a form for the Cluster entity.
  */
 class ClusterForm extends EntityForm {
+
+  /**
+   * @var ClientManager
+   */
+  private $clientManager;
+
+  /**
+   * ElasticsearchController constructor.
+   *
+   * @param ClientManager $client_manager
+   */
+  public function __construct(ClientManager $client_manager) {
+    $this->clientManager = $client_manager;
+  }
+
+  static public function create(ContainerInterface $container) {
+    return new static (
+      $container->get('elasticsearch_connector.client_manager')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -32,7 +54,10 @@ class ClusterForm extends EntityForm {
       $form['#title'] = $this->t('Add Elasticsearch Cluster');
     }
     else {
-      $form['#title'] = $this->t('Edit Elasticsearch Cluster @label', array('@label' => $cluster->label()));
+      $form['#title'] = $this->t(
+        'Edit Elasticsearch Cluster @label',
+        array('@label' => $cluster->label())
+      );
     }
 
     $this->buildEntityForm($form, $form_state, $cluster);
@@ -43,9 +68,13 @@ class ClusterForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function buildEntityForm(array &$form, FormStateInterface $form_state, Cluster $cluster) {
+  public function buildEntityForm(
+    array &$form,
+    FormStateInterface $form_state,
+    Cluster $cluster
+  ) {
     $form['cluster'] = array(
-      '#type'  => 'value',
+      '#type' => 'value',
       '#value' => $cluster,
     );
 
@@ -53,7 +82,9 @@ class ClusterForm extends EntityForm {
       '#type' => 'textfield',
       '#title' => t('Administrative cluster name'),
       '#default_value' => empty($cluster->name) ? '' : $cluster->name,
-      '#description' => t('Enter the administrative cluster name that will be your Elasticsearch cluster unique identifier.'),
+      '#description' => t(
+        'Enter the administrative cluster name that will be your Elasticsearch cluster unique identifier.'
+      ),
       '#required' => TRUE,
     );
 
@@ -62,7 +93,9 @@ class ClusterForm extends EntityForm {
       '#title' => t('Cluster id'),
       '#default_value' => !empty($cluster->cluster_id) ? $cluster->cluster_id : '',
       '#maxlength' => 125,
-      '#description' => t('A unique machine-readable name for this Elasticsearch cluster.'),
+      '#description' => t(
+        'A unique machine-readable name for this Elasticsearch cluster.'
+      ),
       '#machine_name' => array(
         'exists' => ['Drupal\elasticsearch_connector\Entity\Cluster', 'load'],
         'source' => array('name'),
@@ -79,7 +112,8 @@ class ClusterForm extends EntityForm {
         'URL and port of a server (node) in the cluster. ' .
         'Please, always enter the port even if it is default one. ' .
         'Nodes will be automatically discovered. ' .
-        'Examples: http://localhost:9200 or https://localhost:443.'),
+        'Examples: http://localhost:9200 or https://localhost:443.'
+      ),
       '#required' => TRUE,
     );
 
@@ -89,7 +123,9 @@ class ClusterForm extends EntityForm {
     $form['default'] = array(
       '#type' => 'checkbox',
       '#title' => t('Make this cluster default connection'),
-      '#description' => t('If the cluster connection is not specified the API will use the default connection.'),
+      '#description' => t(
+        'If the cluster connection is not specified the API will use the default connection.'
+      ),
       '#default_value' => (empty($default) || (!empty($cluster->cluster_id) && $cluster->cluster_id == $default)) ? '1' : '0',
     );
 
@@ -100,8 +136,10 @@ class ClusterForm extends EntityForm {
     $form['options']['multiple_nodes_connection'] = array(
       '#type' => 'checkbox',
       '#title' => t('Use multiple nodes connection'),
-      '#description' => t('Automatically discover all nodes and use them in the cluster connection. ' .
-        'Then the Elasticsearch client can distribute the query execution on random base between nodes.'),
+      '#description' => t(
+        'Automatically discover all nodes and use them in the cluster connection. ' .
+        'Then the Elasticsearch client can distribute the query execution on random base between nodes.'
+      ),
       '#default_value' => (!empty($cluster->options['multiple_nodes_connection']) ? 1 : 0),
     );
 
@@ -110,8 +148,8 @@ class ClusterForm extends EntityForm {
       '#title' => t('Status'),
       '#default_value' => isset($cluster->status) ? $cluster->status : Cluster::ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE,
       '#options' => array(
-        Cluster::ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE    => t('Active'),
-        Cluster::ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE  => t('Inactive'),
+        Cluster::ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE => t('Active'),
+        Cluster::ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE => t('Inactive'),
       ),
       '#required' => TRUE,
     );
@@ -119,7 +157,9 @@ class ClusterForm extends EntityForm {
     $form['options']['use_authentication'] = array(
       '#type' => 'checkbox',
       '#title' => t('Use authentication'),
-      '#description' => t('Use HTTP authentication method to connect to Elasticsearch.'),
+      '#description' => t(
+        'Use HTTP authentication method to connect to Elasticsearch.'
+      ),
       '#default_value' => (!empty($cluster->options['use_authentication']) ? 1 : 0),
       '#suffix' => '<div id="hosting-iframe-container">&nbsp;</div>',
     );
@@ -128,13 +168,13 @@ class ClusterForm extends EntityForm {
       '#type' => 'radios',
       '#title' => t('Authentication type'),
       '#description' => t('Select the http authentication type.'),
-      '#options'  => array(
+      '#options' => array(
         'Digest' => t('Digest'),
-        'Basic'  => t('Basic'),
-        'NTLM'   => t('NTLM')
+        'Basic' => t('Basic'),
+        'NTLM' => t('NTLM')
       ),
       '#default_value' => (!empty($cluster->options['authentication_type']) ? $cluster->options['authentication_type'] : 'Digest'),
-      '#states' => array (
+      '#states' => array(
         'visible' => array(
           ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
         ),
@@ -146,7 +186,7 @@ class ClusterForm extends EntityForm {
       '#title' => t('Username'),
       '#description' => t('The username for authentication.'),
       '#default_value' => (!empty($cluster->options['username']) ? $cluster->options['username'] : ''),
-      '#states' => array (
+      '#states' => array(
         'visible' => array(
           ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
         ),
@@ -158,7 +198,7 @@ class ClusterForm extends EntityForm {
       '#title' => t('Password'),
       '#description' => t('The password for authentication.'),
       '#default_value' => (!empty($cluster->options['password']) ? $cluster->options['password'] : ''),
-      '#states' => array (
+      '#states' => array(
         'visible' => array(
           ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
         ),
@@ -166,11 +206,14 @@ class ClusterForm extends EntityForm {
     );
 
     $form['options']['timeout'] = array(
-      '#type' => 'number',
+      '#type' => 'textfield',
       '#title' => t('Connection timeout'),
-      '#size'  => 20,
+      '#size' => 20,
       '#required' => TRUE,
-      '#description' => t('After how many seconds the connection should timeout if there is no connection to Elasticsearch.'),
+      '#element_validate' => array('element_validate_number'),
+      '#description' => t(
+        'After how many seconds the connection should timeout if there is no connection to Elasticsearch.'
+      ),
       '#default_value' => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : Cluster::ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT),
     );
   }
@@ -210,7 +253,7 @@ class ClusterForm extends EntityForm {
   /**
    * Build the cluster info table for the edit page.
    *
-   * @param \Drupal\elasticsearch_connector\Entity\Cluster|NULL $cluster
+   * @param \Drupal\elasticsearch_connector\Entity\Cluster $cluster
    *
    * @return array
    */
@@ -219,7 +262,10 @@ class ClusterForm extends EntityForm {
 
     if (isset($cluster->url)) {
       try {
-        $cluster_info = $cluster->getClusterInfo();
+        $client = $this->clientManager->getClientForCluster($cluster);
+        $client_connector = new ClientConnector($client);
+
+        $cluster_info = $client_connector->getClusterInfo();
         if ($cluster_info) {
           $headers = array(
             array('data' => t('Cluster name')),
@@ -270,8 +316,7 @@ class ClusterForm extends EntityForm {
           $element['#type'] = 'markup';
           $element['#markup'] = '<div id="cluster-info">&nbsp;</div>';
         }
-      }
-      catch (\Exception $e) {
+      } catch (\Exception $e) {
         drupal_set_message($e->getMessage(), 'error');
       }
     }
@@ -288,13 +333,23 @@ class ClusterForm extends EntityForm {
       try {
         $cluster = $this->getEntity();
         $cluster->save();
-        drupal_set_message(t('Cluster %label has been updated.', array('%label' => $cluster->label())));
-        $form_state->setRedirect('elasticsearch_connector.config_entity.list');
-      }
-      catch (EntityStorageException $e) {
+        drupal_set_message(
+          t(
+            'Cluster %label has been updated.',
+            array('%label' => $cluster->label())
+          )
+        );
+        $form_state->setRedirect(
+          'entity.elasticsearch_cluster.canonical',
+          array('elasticsearch_cluster' => $cluster->id())
+        );
+      } catch (\Exception $e) {
         $form_state->setRebuild();
         watchdog_exception('elasticsearch_connector', $e);
-        drupal_set_message($this->t('The cluster could not be saved.'), 'error');
+        drupal_set_message(
+          $this->t('The cluster could not be saved.'),
+          'error'
+        );
       }
     }
   }

@@ -7,15 +7,36 @@
 
 namespace Drupal\elasticsearch_connector\Controller;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\elasticsearch_connector\ElasticSearch\ClientConnector;
+use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
 use Drupal\elasticsearch_connector\Entity\Cluster;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides route responses for elasticsearch clusters.
  */
 class ElasticsearchController extends ControllerBase {
+
+  /**
+   * @var ClientManager
+   */
+  private $clientManager;
+
+  /**
+   * ElasticsearchController constructor.
+   *
+   * @param ClientManager $client_manager
+   */
+  public function __construct(ClientManager $client_manager) {
+    $this->clientManager = $client_manager;
+  }
+
+  static public function create(ContainerInterface $container) {
+    return new static (
+      $container->get('elasticsearch_connector.client_manager')
+    );
+  }
 
   /**
    * Displays information about an Elasticsearch Cluster.
@@ -36,7 +57,10 @@ class ElasticsearchController extends ControllerBase {
     );
     // Check if the cluster is enabled and can be written to.
     if ($elasticsearch_cluster->cluster_id) {
-      $render['form'] = $this->formBuilder()->getForm('Drupal\elasticsearch_connector\Form\ClusterForm', $elasticsearch_cluster);
+      $render['form'] = $this->formBuilder()->getForm(
+        'Drupal\elasticsearch_connector\Form\ClusterForm',
+        $elasticsearch_cluster
+      );
     }
     return $render;
   }
@@ -67,15 +91,20 @@ class ElasticsearchController extends ControllerBase {
    */
   public function getInfo(Cluster $elasticsearch_cluster) {
     // TODO: Get the statistics differently.
-    if ($elasticsearch_cluster->checkClusterStatus()) {
+    $es_client = $this->clientManager->getClientForCluster($elasticsearch_cluster);
+    $client_connector = new ClientConnector($es_client);
+
+    $node_rows = array();
+    $cluster_statistics_rows = array();
+    $cluster_health_rows = array();
+
+    if ($client_connector->isClusterOk()) {
       // Nodes.
-      $es_client = $elasticsearch_cluster->getClientInstance($elasticsearch_cluster);
-      $es_node_namespace = $es_client->getNodesProperties();
+      $es_node_namespace = $client_connector->getNodesProperties();
       $node_stats = $es_node_namespace['stats'];
 
       $total_docs = 0;
       $total_size = 0;
-      $node_rows = array();
       if (!empty($node_stats['nodes'])) {
         // TODO: Better format the results in order to build the
         // correct output.
@@ -83,42 +112,65 @@ class ElasticsearchController extends ControllerBase {
           $row = array();
           $row[] = array('data' => $node_properties['name']);
           $row[] = array('data' => $node_properties['indices']['docs']['count']);
-          $row[] = array('data' => format_size($node_properties['indices']['store']['size_in_bytes']));
+          $row[] = array(
+            'data' => format_size(
+              $node_properties['indices']['store']['size_in_bytes']
+            )
+          );
           $total_docs += $node_properties['indices']['docs']['count'];
           $total_size += $node_properties['indices']['store']['size_in_bytes'];
           $node_rows[] = $row;
         }
       }
 
-      $cluster_status = $elasticsearch_cluster->getClusterInfo();
+      $cluster_status = $client_connector->getClusterInfo();
       $cluster_statistics_rows = array(
         array(
-          array('data' => $cluster_status['health']['number_of_nodes'] . ' ' . t('Nodes')),
-          array('data' => $cluster_status['health']['active_shards'] + $cluster_status['health']['unassigned_shards'] . ' ' . t('Total Shards')),
-          array('data' => $cluster_status['health']['active_shards'] . ' ' . t('Successful Shards')),
-          array('data' => count($cluster_status['state']['metadata']['indices']) . ' ' . t('Indices')),
+          array(
+            'data' => $cluster_status['health']['number_of_nodes'] . ' ' . t(
+                'Nodes'
+              )
+          ),
+          array(
+            'data' => $cluster_status['health']['active_shards'] + $cluster_status['health']['unassigned_shards'] . ' ' . t(
+                'Total Shards'
+              )
+          ),
+          array(
+            'data' => $cluster_status['health']['active_shards'] . ' ' . t(
+                'Successful Shards'
+              )
+          ),
+          array(
+            'data' => count(
+                $cluster_status['state']['metadata']['indices']
+              ) . ' ' . t('Indices')
+          ),
           array('data' => $total_docs . ' ' . t('Total Documents')),
           array('data' => format_size($total_size) . ' ' . t('Total Size')),
         ),
       );
 
-      $cluster_health_rows = array();
       $cluster_health_mapping = array(
-        'cluster_name'                     => t('Cluster name'),
-        'status'                           => t('Status'),
-        'timed_out'                        => t('Time out'),
-        'number_of_nodes'                  => t('Number of nodes'),
-        'number_of_data_nodes'             => t('Number of data nodes'),
-        'active_primary_shards'            => t('Active primary shards'),
-        'active_shards'                    => t('Active shards'),
-        'relocating_shards'                => t('Relocating shards'),
-        'initializing_shards'              => t('Initializing shards'),
-        'unassigned_shards'                => t('Unassigned shards'),
-        'delayed_unassigned_shards'        => t('Delayed unassigned shards'),
-        'number_of_pending_tasks'          => t('Number of pending tasks'),
-        'number_of_in_flight_fetch'        => t('Number of in-flight fetch'),
-        'task_max_waiting_in_queue_millis' => t('Task max waiting in queue millis'),
-        'active_shards_percent_as_number'  => t('Active shards percent as number'),
+        'cluster_name' => t('Cluster name'),
+        'status' => t('Status'),
+        'timed_out' => t('Time out'),
+        'number_of_nodes' => t('Number of nodes'),
+        'number_of_data_nodes' => t('Number of data nodes'),
+        'active_primary_shards' => t('Active primary shards'),
+        'active_shards' => t('Active shards'),
+        'relocating_shards' => t('Relocating shards'),
+        'initializing_shards' => t('Initializing shards'),
+        'unassigned_shards' => t('Unassigned shards'),
+        'delayed_unassigned_shards' => t('Delayed unassigned shards'),
+        'number_of_pending_tasks' => t('Number of pending tasks'),
+        'number_of_in_flight_fetch' => t('Number of in-flight fetch'),
+        'task_max_waiting_in_queue_millis' => t(
+          'Task max waiting in queue millis'
+        ),
+        'active_shards_percent_as_number' => t(
+          'Active shards percent as number'
+        ),
       );
 
       foreach ($cluster_status['health'] as $health_key => $health_value) {
@@ -131,7 +183,7 @@ class ElasticsearchController extends ControllerBase {
 
     $output['cluster_statistics_wrapper'] = array(
       '#type' => 'fieldset',
-      '#title'  => t('Cluster statistics'),
+      '#title' => t('Cluster statistics'),
       '#collapsible' => TRUE,
       '#collapsed' => FALSE,
       '#attributes' => array(),

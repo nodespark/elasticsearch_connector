@@ -96,13 +96,6 @@ class Cluster extends ConfigEntityBase {
   protected $locked = FALSE;
 
   /**
-   * The connector class.
-   *
-   * @var string
-   */
-  protected $connector = 'Drupal\elasticsearch_connector\DESConnector\DESConnector';
-
-  /**
    * {@inheritdoc}
    */
   public function id() {
@@ -115,7 +108,10 @@ class Cluster extends ConfigEntityBase {
    * @return string
    */
   public static function getDefaultCluster() {
-    return \Drupal::state()->get('elasticsearch_connector_get_default_connector', '');
+    return \Drupal::state()->get(
+      'elasticsearch_connector_get_default_connector',
+      ''
+    );
   }
 
   /**
@@ -126,75 +122,10 @@ class Cluster extends ConfigEntityBase {
    * @return mixed
    */
   public static function setDefaultCluster($cluster_id) {
-    return \Drupal::state()->set('elasticsearch_connector_get_default_connector', $cluster_id);
-  }
-
-  /**
-   * Get the Elasticsearch client.
-   *
-   * @param object $cluster
-   *   The cluster object.
-   *
-   * @return object
-   *   The Elasticsearch object.
-   */
-  public static function getClientInstance($cluster) {
-    $hosts = array(
-      array(
-        'url' => $cluster->url,
-        'options' => $cluster->options,
-      ),
+    return \Drupal::state()->set(
+      'elasticsearch_connector_get_default_connector',
+      $cluster_id
     );
-
-    $client = call_user_func($cluster->connector . '::getInstance', $hosts);
-    return $client;
-  }
-
-  /**
-   * Return cluster info.
-   *
-   * @return array
-   *   Info array.
-   *
-   * @throws \Exception
-   *   Exception().
-   */
-  public function getClusterInfo() {
-    try {
-      $client = self::getClientInstance($this);
-      $result = $client->getClusterInfo();
-    }
-    catch (\Exception $e) {
-      throw $e;
-    }
-
-    return $result;
-  }
-
-  /**
-   * Return the cluster object based on Cluster ID.
-   *
-   * @param string $cluster_id
-   *
-   * @return \Elasticsearch\Client
-   */
-  protected function getClientById($cluster_id) {
-    $client = NULL;
-
-    $default_cluster = self::getDefaultCluster();
-    if (!isset($cluster_id) && !empty($default_cluster)) {
-      $cluster_id = $default_cluster;
-    }
-
-    if (!empty($cluster_id)) {
-      $client = FALSE;
-      $cluster = self::load($cluster_id);
-      if ($cluster) {
-        $client = $this->getClientInstance($cluster);
-      }
-    }
-
-    return $client;
   }
 
   /**
@@ -231,15 +162,31 @@ class Cluster extends ConfigEntityBase {
     }
   }
 
-  /**
-   * Check if the cluster status is OK.
-   *
-   * @return bool
-   */
-  public function checkClusterStatus() {
-    // TODO: Check if we can initialize the client in __construct().
-    $client = self::getClientInstance($this);
-    return $client->clusterIsOk();
-  }
 
+  /**
+   * Get the full base URL of the cluster, including any authentication
+   *
+   * @param bool $safe If True (default), the the password will be starred out
+   *
+   * @return string
+   */
+  public function getBaseUrl($safe = TRUE) {
+    $options = $this->options;
+    if ($options['use_authentication']) {
+      if ($options['username'] && $options['password']) {
+        $schema = file_uri_scheme($this->url);
+        $host = file_uri_target($this->url);
+        $user = $options['username'];
+
+        if ($safe) {
+          return $schema . '://' . $user . ':****@' . $host;
+        }
+        else {
+          return $schema . '://' . $user . ':' . $options['password'] . '@' . $host;
+        }
+      }
+    }
+
+    return $this->url;
+  }
 }

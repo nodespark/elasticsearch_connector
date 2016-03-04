@@ -14,6 +14,9 @@ elasticsearch_connector.cluster.*:
     url:
       type: string
       label: 'Cluster URL'
+    proxy:
+      type: string
+      label: 'Cluster Proxy'
     options:
       type: mapping
       label: 'Options'
