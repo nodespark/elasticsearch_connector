@@ -162,7 +162,6 @@ class Cluster extends ConfigEntityBase {
     }
   }
 
-
   /**
    * Get the full base URL of the cluster, including any authentication
    *
