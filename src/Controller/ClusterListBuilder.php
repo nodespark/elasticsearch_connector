@@ -37,6 +37,21 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   /**
    * {@inheritdoc}
    */
+  public function __construct(
+    EntityTypeInterface $entity_type,
+    EntityStorageInterface $storage,
+    EntityStorageInterface $index_storage,
+    ClientManager $client_manager
+  ) {
+    parent::__construct($entity_type, $storage);
+
+    $this->indexStorage = $index_storage;
+    $this->clientManager = $client_manager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public static function createInstance(
     ContainerInterface $container,
     EntityTypeInterface $entity_type
@@ -52,21 +67,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   /**
    * {@inheritdoc}
    */
-  public function __construct(
-    EntityTypeInterface $entity_type,
-    EntityStorageInterface $storage,
-    EntityStorageInterface $index_storage,
-    ClientManager $client_manager
-  ) {
-    parent::__construct($entity_type, $storage);
-    $this->indexStorage = $index_storage;
-    $this->clientManager = $client_manager;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function load() {
+  public function group() {
     /** @var Cluster[] $clusters */
     $clusters = $this->storage->loadMultiple();
     /** @var Index[] $indices */
@@ -78,6 +79,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
       $cluster_group = array(
         'cluster.' . $cluster->cluster_id => $cluster,
       );
+
       foreach ($indices as $index) {
         if ($index->server == $cluster->cluster_id) {
           $cluster_group['index.' . $index->index_id] = $index;
@@ -86,11 +88,14 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
           $lone_indices['index.' . $index->index_id] = $index;
         }
       }
+
       $cluster_groups['cluster.' . $cluster->cluster_id] = $cluster_group;
     }
-    $cluster_groups['cluster.lone'] = $lone_indices;
 
-    return $cluster_groups;
+    return array(
+      'clusters' => $cluster_groups,
+      'lone_indexes' => $lone_indices,
+    );
   }
 
   /**
@@ -142,9 +147,10 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
           ),
           'title' => array(
             'data' => array(
-                '#type' => 'link',
-                '#title' => $entity->label(),
-              ) + $entity->urlInfo('canonical')->toRenderArray(),
+              '#type' => 'link',
+              '#title' => $entity->label(),
+              '#url' => new Url('entity.elasticsearch_cluster.edit_form', array('elasticsearch_cluster' => $entity->id())),
+            ),
           ),
           'machine_name' => array(
             'data' => $entity->id(),
@@ -168,6 +174,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         'data' => array(
           'type' => array(
             'data' => $this->t('Index'),
+            'class' => array('es-list-index'),
           ),
           'title' => array(
             'data' => $entity->label(),
@@ -189,6 +196,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         ),
       );
     }
+
     return $result;
   }
 
@@ -196,28 +204,33 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function getDefaultOperations(EntityInterface $entity) {
-    $operations = parent::getDefaultOperations($entity);
+    $operations = array();
 
     if (isset($entity->cluster_id)) {
       $operations['info'] = array(
         'title' => $this->t('Info'),
+        'weight' => 19,
+        'url' => new Url('entity.elasticsearch_cluster.canonical', array('elasticsearch_cluster' => $entity->id())),
+      );
+      $operations['edit'] = array(
+        'title' => $this->t('Edit'),
         'weight' => 20,
-        'url' => new Url(
-          'entity.elasticsearch_cluster.canonical',
-          array('elasticsearch_cluster' => $entity->id())
-        ),
+        'url' => new Url('entity.elasticsearch_cluster.edit_form', array('elasticsearch_cluster' => $entity->id())),
+      );
+      $operations['delete'] = array(
+        'title' => $this->t('Delete'),
+        'weight' => 21,
+        'url' => new Url('entity.elasticsearch_cluster.delete_form', array('elasticsearch_cluster' => $entity->id())),
       );
     }
     elseif (isset($entity->index_id)) {
       $operations['delete'] = array(
         'title' => $this->t('Delete'),
         'weight' => 20,
-        'url' => new Url(
-          'entity.elasticsearch_index.delete_form',
-          array('elasticsearch_index' => $entity->id())
-        ),
+        'url' => new Url('entity.elasticsearch_index.delete_form', array('elasticsearch_index' => $entity->id())),
       );
     }
+
     return $operations;
   }
 
@@ -225,8 +238,10 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function render() {
-    $entity_groups = $this->load();
+    $entity_groups = $this->group();
+
     $list['#type'] = 'container';
+    $list['#attached']['library'][] = 'elasticsearch_connector/drupal.elasticsearch_connector.ec_index';
     $list['clusters'] = array(
       '#type' => 'table',
       '#header' => $this->buildHeader(),
@@ -240,7 +255,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         )
       ),
     );
-    foreach ($entity_groups as $cluster_group) {
+    foreach ($entity_groups['clusters'] as $cluster_group) {
       foreach ($cluster_group as $entity) {
         $list['clusters']['#rows'][$entity->id()] = $this->buildRow($entity);
       }

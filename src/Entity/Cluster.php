@@ -8,37 +8,38 @@
 namespace Drupal\elasticsearch_connector\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\Core\Entity\Entity;
 
 /**
- * Defines the search server configuration entity.
+ * Defines the Elasticsearch Connector Cluster configuration entity.
  *
  * @ConfigEntityType(
  *   id = "elasticsearch_cluster",
  *   label = @Translation("Elasticsearch Cluster"),
  *   handlers = {
- *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
  *     "list_builder" = "Drupal\elasticsearch_connector\Controller\ClusterListBuilder",
  *     "form" = {
  *       "default" = "Drupal\elasticsearch_connector\Form\ClusterForm",
- *       "edit" = "Drupal\elasticsearch_connector\Form\ClusterForm",
  *       "delete" = "Drupal\elasticsearch_connector\Form\ClusterDeleteForm",
  *     },
+ *     "route_provider" = {
+ *       "html" = "Drupal\elasticsearch_connector\Entity\ClusterRouteProvider",
+ *     },
  *   },
- *   admin_permission = "administer elasticsearch",
+ *   admin_permission = "administer elasticsearch cluster",
  *   config_prefix = "cluster",
  *   entity_keys = {
  *     "id" = "cluster_id",
  *     "label" = "name",
- *     "uuid" = "uuid",
+ *     "status" = "status",
  *     "url" = "url",
- *     "status" = "status"
+ *     "options" = "options",
  *   },
- *   links = {
- *     "canonical" = "/admin/config/search/elasticsearch-connector/clusters/{elasticsearch_cluster}",
- *     "add-form" = "/admin/config/search/elasticsearch-connector/clusters/add",
- *     "edit-form" = "/admin/config/search/elasticsearch-connector/clusters/{elasticsearch_cluster}/edit",
- *     "delete-form" = "/admin/config/search/elasticsearch-connector/clusters/{elasticsearch_cluster}/delete",
+ *   config_export = {
+ *     "cluster_id",
+ *     "name",
+ *     "status",
+ *     "url",
+ *     "options",
  *   }
  * )
  */
@@ -116,7 +117,9 @@ class Cluster extends ConfigEntityBase {
   /**
    * Set the default (cluster) used for elasticsearch.
    *
-   * @return string
+   * @param $cluster_id
+   *
+   * @return mixed
    */
   public static function setDefaultCluster($cluster_id) {
     return \Drupal::state()->set(
@@ -158,7 +161,6 @@ class Cluster extends ConfigEntityBase {
       return FALSE;
     }
   }
-
 
   /**
    * Get the full base URL of the cluster, including any authentication

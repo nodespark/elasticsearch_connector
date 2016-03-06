@@ -44,7 +44,7 @@ class IndexDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return t('Are you sure you want to delete the index %title?', array('%title' => $this->entity->label()));
+    return $this->t('Are you sure you want to delete the index %title?', array('%title' => $this->entity->label()));
   }
 
   /**
@@ -60,10 +60,10 @@ class IndexDeleteForm extends EntityConfirmFormBase {
       }
       $this->entity->delete();
       drupal_set_message($this->t('The index %title has been deleted.', array('%title' => $this->entity->label())));
-      $form_state->setRedirect('elasticsearch_connector.clusters');
+      $form_state->setRedirect('elasticsearch_connector.config_entity.list');
     }
     catch (Missing404Exception $e){
-      // the index was not found, so just remove it anyway
+      // The index was not found, so just remove it anyway.
       drupal_set_message($e->getMessage(), 'error');
     }
     catch (\Exception $e) {
@@ -82,7 +82,7 @@ class IndexDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('elasticsearch_connector.clusters');
+    return new Url('elasticsearch_connector.config_entity.list');
   }
 
 }
