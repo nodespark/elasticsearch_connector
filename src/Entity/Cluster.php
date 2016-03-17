@@ -106,6 +106,9 @@ class Cluster extends ConfigEntityBase {
    * Get the default (cluster) used for elasticsearch.
    *
    * @return string
+   *
+   * TODO: Not sure that getting the default cluster in general should be part of the CLuster entity.
+   * TODO: Maybe check if that is a default Cluster entity - YES, but in general - NO.
    */
   public static function getDefaultCluster() {
     return \Drupal::state()->get(
