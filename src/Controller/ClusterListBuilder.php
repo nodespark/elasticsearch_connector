@@ -240,12 +240,19 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   public function render() {
     $entity_groups = $this->group();
 
+    $rows = array();
+    foreach ($entity_groups['clusters'] as $cluster_group) {
+      foreach ($cluster_group as $entity) {
+        $rows[$entity->id()] = $this->buildRow($entity);
+      }
+    }
+
     $list['#type'] = 'container';
     $list['#attached']['library'][] = 'elasticsearch_connector/drupal.elasticsearch_connector.ec_index';
     $list['clusters'] = array(
       '#type' => 'table',
       '#header' => $this->buildHeader(),
-      '#rows' => array(),
+      '#rows' => $rows,
       '#empty' => $this->t(
         'No clusters available. <a href="@link">Add new cluster</a>.',
         array(
@@ -255,11 +262,6 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
         )
       ),
     );
-    foreach ($entity_groups['clusters'] as $cluster_group) {
-      foreach ($cluster_group as $entity) {
-        $list['clusters']['#rows'][$entity->id()] = $this->buildRow($entity);
-      }
-    }
     return $list;
   }
 
