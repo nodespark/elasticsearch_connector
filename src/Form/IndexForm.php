@@ -147,22 +147,19 @@ class IndexForm extends EntityForm {
     }
 
     $form = parent::form($form, $form_state);
-
-    $index = $this->getEntity();
-
     $form['#title'] = $this->t('Index');
 
-    $this->buildEntityForm($form, $form_state, $index);
+    $this->buildEntityForm($form, $form_state);
     return $form;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function buildEntityForm(array &$form, FormStateInterface $form_state, Index $index) {
+  public function buildEntityForm(array &$form, FormStateInterface $form_state) {
     $form['index'] = array(
       '#type'  => 'value',
-      '#value' => $index,
+      '#value' => $this->entity,
     );
 
     $form['name'] = array(
@@ -186,14 +183,14 @@ class IndexForm extends EntityForm {
         'replace' => '_',
       ),
       '#required' => TRUE,
-      '#disabled' => !empty($index->index_id),
+      '#disabled' => !empty($this->entity->index_id),
     );
 
     // Here server refers to the elasticsearch cluster.
     $form['server'] = array(
       '#type' => 'radios',
       '#title' => $this->t('Server'),
-      '#default_value' => !empty($index->server) ? $index->server : Cluster::getDefaultCluster(),
+      '#default_value' => !empty($this->entity->server) ? $this->entity->server : Cluster::getDefaultCluster(),
       '#description' => $this->t('Select the server this index should reside on. Index can not be enabled without connection to valid server.'),
       '#options' => $this->getClusterField('cluster_id'),
       '#weight' => 9,
@@ -219,8 +216,8 @@ class IndexForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function validate(array $form, FormStateInterface $form_state) {
-    parent::validate($form, $form_state);
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form, $form_state);
 
     $values = $form_state->getValues();
 
@@ -244,10 +241,10 @@ class IndexForm extends EntityForm {
     /** @var Index $index */
     $index = $this->entity;
 
-    $cluster = Cluster::load($index->server);
+    $cluster = Cluster::load($this->entity->server);
     $client = $this->clientManager->getClientForCluster($cluster);
 
-    $index_params['index'] = $index->index_id;
+    $index_params['index'] = $this->entity->index_id;
     $index_params['body']['settings']['number_of_shards']   = $form_state->getValue('num_of_shards');
     $index_params['body']['settings']['number_of_replicas'] = $form_state->getValue('num_of_replica');
     $index_params['body']['settings']['cluster_machine_name'] = $form_state->getValue('server');
@@ -263,9 +260,9 @@ class IndexForm extends EntityForm {
           array('%index' => $form_state->getValue('name'), '@index_id' => $form_state->getValue('index_id'))), 'error');
       }
 
-      $index->save();
+      parent::save($form, $form_state);
 
-      drupal_set_message(t('Index %label has been added.', array('%label' => $index->label())));
+      drupal_set_message(t('Index %label has been added.', array('%label' => $this->entity->label())));
 
       $form_state->setRedirect('elasticsearch_connector.config_entity.list');
     }
