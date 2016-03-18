@@ -29,7 +29,6 @@ use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api\SearchApiException;
 use Drupal\search_api\Utility as SearchApiUtility;
-use Elasticsearch\Client;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -51,7 +50,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /** @var Cluster */
   protected $cluster;
 
-  /** @var Client */
+  /** @var \Elasticsearch\Client */
   protected $client;
 
   /** @var \Drupal\Core\Form\FormBuilderInterface */
