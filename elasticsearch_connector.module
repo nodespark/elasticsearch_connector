@@ -794,7 +794,6 @@ function elasticsearch_connector_load_library($cluster) {
         'hosts' => array($cluster->url),
         'guzzleOptions' => array(
           'curl.options' => array(
-            CURLOPT_DNS_USE_GLOBAL_CACHE    => TRUE,
             CURLOPT_IPRESOLVE               => CURL_IPRESOLVE_V4,
             CURLOPT_CONNECTTIMEOUT          => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT)
           )
