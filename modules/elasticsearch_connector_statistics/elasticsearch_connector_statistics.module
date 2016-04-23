@@ -318,8 +318,9 @@ function elasticsearch_connector_statistics_log_data(\nodespark\DESConnector\Cli
     'entity'          => $entity,
     'referer'         => $_GET['referer'],
     'timestamp'      => time(),
-    '_ttl'            => $ttl,
   );
+
+  $doc['ttl'] = $ttl;
 
   // Alter the document, or add more fields.
   drupal_alter('elasticsearch_connector_statistics_log_data', $doc, $client);

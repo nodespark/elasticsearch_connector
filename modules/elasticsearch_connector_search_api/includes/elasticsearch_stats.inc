@@ -177,8 +177,9 @@ class SearchApiElasticsearchConnectorStats {
         'results'           => isset($response['hits']['total']) ? $response['hits']['total'] : 0,
         'username'          => ($user->uid > 0 ? $user->name : ''),
         'timestamp'         => time(),
-        '_ttl'              => $this->ttl,
       );
+
+      $doc['ttl'] = $this->ttl;
 
       $ret = $client->index($doc);
       return $ret;
