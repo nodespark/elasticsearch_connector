@@ -408,12 +408,12 @@ function elasticsearch_connector_statistics_get_mapping($ttl = NULL) {
 
 /**
  * Create Elasticsearch connector statistics type.
- * @param Elasticsearch\Client $client
+ * @param \nodespark\DESConnector\ClientInterface $client
  * @param string
  * @patam string
  * @return array
  */
-function elasticsearch_connector_statistics_create_type(Elasticsearch\Client $client, $index, $type, $ttl = NULL) {
+function elasticsearch_connector_statistics_create_type(\nodespark\DESConnector\ClientInterface $client, $index, $type, $ttl = NULL) {
   $mapping_params['index'] = $index;
   $mapping_params['type'] = $type;
   $my_type_mapping = elasticsearch_connector_statistics_get_mapping($ttl);

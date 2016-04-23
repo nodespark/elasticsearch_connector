@@ -758,7 +758,7 @@ function elasticsearch_connector_set_default_connector($connection) {
  *
  * @param string $cluster_id
  * @param boolean
- * @return \Elasticsearch\Client $client
+ * @return \nodespark\DESConnector\ClientInterface $client
  */
 function elasticsearch_connector_get_client_by_id($cluster_id = NULL, $default_fallback = NULL) {
   if (!isset($cluster_id) && !empty($default_fallback)) {
@@ -898,10 +898,10 @@ function elasticsearch_connector_get_cluster_info($cluster, $enable_messages = F
 
 /**
  * Get the nodes stats from elasticsearch server.
- * @param \Elasticsearch\Client $client
+ * @param \nodespark\DESConnector\ClientInterface $client
  * @return array
  */
-function elasticsearch_connector_get_cluster_nodes_stat(\Elasticsearch\Client $client) {
+function elasticsearch_connector_get_cluster_nodes_stat(\nodespark\DESConnector\ClientInterface $client) {
   try {
     return $client->nodes()->stats();
   }
@@ -917,11 +917,11 @@ function elasticsearch_connector_get_cluster_nodes_stat(\Elasticsearch\Client $c
  * Read more about plugins system here:
  * http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-plugins.html
  *
- * @param \Elasticsearch\Client $client
+ * @param \nodespark\DESConnector\ClientInterface $client
  * @param string $plugin
  * @return boolean
  */
-function elasticsearch_connector_check_plugin_exists(\Elasticsearch\Client $client, $plugin_name) {
+function elasticsearch_connector_check_plugin_exists(\nodespark\DESConnector\ClientInterface $client, $plugin_name) {
   $nodes_plugins = array();
   $result = FALSE;
 

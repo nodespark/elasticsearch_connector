@@ -861,7 +861,7 @@ function elasticsearch_watchdog_clear_log_form($form) {
 /**
  * Create Elasticsearch watchdog type.
  */
-function elasticsearch_watchdog_create_type(Elasticsearch\Client $client, $index, $type) {
+function elasticsearch_watchdog_create_type(\nodespark\DESConnector\ClientInterface $client, $index, $type) {
   $mapping_params['index'] = $index;
   $mapping_params['type'] = $type;
   $my_type_mapping = elasticsearch_watchdog_get_mapping();
