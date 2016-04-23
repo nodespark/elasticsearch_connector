@@ -1972,12 +1972,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   }
 
   /**
-   * Helper function. Get Autocomplete suggestions.
-   *
-   * @param SearchApiQueryInterface $query
-   * @param SearchApiAutocompleteSearch $search
-   * @param string $incomplete_key
-   * @param string $user_input
+   * Implements SearchApiAutocompleteInterface::getAutocompleteSuggestions().
    */
   public function getAutocompleteSuggestions(SearchApiQueryInterface $query, SearchApiAutocompleteSearch $search, $incomplete_key, $user_input) {
     $suggestions = array();
@@ -2011,14 +2006,14 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           $matches[$item_title] = array(
             'key' => $index->datasource()->getItemLabel($item),
             'user_input' => '',
-            'suggestion_suffix' => l($item_title, $url_item['path'], array('html' => TRUE)),
+            'render' => l($item_title, $url_item['path'], array('html' => TRUE)),
           );
         }
         else {
           $matches[$item_title] = array(
             'key' => $index->datasource()->getItemLabel($item),
             'user_input' => '',
-            'suggestion_suffix' => $item_title,
+            'render' => $item_title,
           );
         }
       }
