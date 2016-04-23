@@ -288,10 +288,10 @@ function _elasticsearch_connector_statistics_match_entity(&$path, $account) {
 
 /**
  *
- * @param \Elasticsearch\Client $client
+ * @param \nodespark\DESConnector\ClientInterface $client
  * @param array $access_log
  */
-function elasticsearch_connector_statistics_log_data(\Elasticsearch\Client $client) {
+function elasticsearch_connector_statistics_log_data(\nodespark\DESConnector\ClientInterface $client) {
   global $user;
 
   $cluster_settings = variable_get('elasticsearch_connector_statistics_cluster', array());

@@ -144,7 +144,7 @@ class SearchApiElasticsearchConnectorStats {
   /**
    * Logging the statistics into the stats type in elasticsearch index.
    *
-   * @param \Elasticsearch\Client $client
+   * @param \nodespark\DESConnector\ClientInterface $client
    * @param array $access_log
    */
   public function logStat($response) {

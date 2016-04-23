@@ -65,7 +65,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
   /**
    * Get the Elasticsearch connector object.
-   * @return object <\Elasticsearch\Client, boolean, >
+   * @return object <\nodespark\DESConnector\ClientInterface, boolean, >
    */
   public function getConnectorObject() {
     return $this->elasticsearchClient;
@@ -560,7 +560,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    *
    */
   protected function checkClient($throwError = FALSE) {
-    if (empty($this->elasticsearchClient) || !($this->elasticsearchClient instanceof \Elasticsearch\Client)) {
+    if (empty($this->elasticsearchClient) || !($this->elasticsearchClient instanceof \nodespark\DESConnector\ClientInterface)) {
       if ($throwError) {
         throw new SearchApiElasticsearchConnectorException(t('Elasticsearch library hasn\'t been initialized successfully.' ));
       }

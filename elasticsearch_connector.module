@@ -794,17 +794,17 @@ function elasticsearch_connector_load_library($cluster) {
     if (valid_url($cluster->url)) {
       $options = array(
         'hosts' => array($cluster->url),
-        'guzzleOptions' => array(
-          'curl.options' => array(
-            CURLOPT_IPRESOLVE               => CURL_IPRESOLVE_V4,
-            CURLOPT_CONNECTTIMEOUT          => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT)
-          )
+        'curl' => array(
+          CURLOPT_IPRESOLVE               => CURL_IPRESOLVE_V4,
+          CURLOPT_CONNECTTIMEOUT          => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT)
         )
       );
 
       if (!empty($cluster->options['use_authentication'])) {
-        $options['connectionParams'] = array(
-          'auth'    => array($cluster->options['username'], $cluster->options['password'], $cluster->options['authentication_type']),
+        $options['auth'][$cluster->url] = array(
+          'username' => $cluster->options['username'],
+          'password' => $cluster->options['password'],
+          'method' => $cluster->options['authentication_type']
         );
       }
 
