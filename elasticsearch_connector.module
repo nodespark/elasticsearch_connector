@@ -778,8 +778,10 @@ function elasticsearch_connector_get_client_by_id($cluster_id = NULL, $default_f
 
 /**
  *
- * @param string $url
- * @return
+ * @param object $cluster
+ *   The cluster object for which we want to load the Elasticsearch client.
+ *
+ * @return \nodespark\DESConnector\ClientInterface
  */
 function elasticsearch_connector_load_library($cluster) {
   static $clients;
@@ -807,21 +809,22 @@ function elasticsearch_connector_load_library($cluster) {
       }
 
       try {
-        if (!class_exists('\Elasticsearch\Client') && module_exists('composer_manager')) {
+
+        if (!class_exists('\nodespark\DESConnector\ClientFactory') && module_exists('composer_manager')) {
           // If the class doesn't exists try to explicitly load the classes!
           // The issues is in update.php where search api call this function, but the function
           // has not been invoked.
           composer_manager_register_autoloader();
         }
 
-        if (!class_exists('\Elasticsearch\Client')) {
+        if (!class_exists('\nodespark\DESConnector\ClientFactory')) {
           // No library available!
           return FALSE;
         }
 
         drupal_alter('elasticsearch_connector_load_library_options', $options, $cluster);
 
-        $clients[$cluster->cluster_id] = new \Elasticsearch\Client($options);
+        $clients[$cluster->cluster_id] = \nodespark\DESConnector\ClientFactory::create($options);
       }
       catch (Exception $e) {
         drupal_set_message($e->getMessage(), 'error');
@@ -866,7 +869,7 @@ function elasticsearch_connector_check_response_ack($response) {
  *    $cluster - The cluster object.
  * @param boolean
  *    $enable_messages - Set error message if the get status function throw exception.
- * @return return array
+ * @return array return
  *    Return the info for the cluster:
  *      'info'
  *      'state'
@@ -877,14 +880,10 @@ function elasticsearch_connector_get_cluster_info($cluster, $enable_messages = F
   $client = elasticsearch_connector_load_library($cluster);
   if (!empty($client)) {
     try {
-      $info = $client->info();
-      $result['client'] = $client;
-      $result['info'] = $result['state'] = $result['health'] = $result['stats'] = array();
-      if (elasticsearch_connector_check_status($info)) {
-        $result['info'] = $info;
-        $result['state'] = $client->cluster()->state();
-        $result['health'] = $client->cluster()->health();
-        $result['stats'] = $client->nodes()->stats();
+      if ($client->isClusterOk()) {
+        $result = $client->getClusterInfo();
+        $result['client'] = $client;
+        $result['info']['status'] = ELASTICSEARCH_CONNECTOR_CLUSTER_STATUS_OK;
       }
     }
     catch (Exception $e) {

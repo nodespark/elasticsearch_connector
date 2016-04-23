@@ -92,7 +92,7 @@ function elasticsearch_connector_cluster_indices($cluster) {
   $client = $cluster_info['client'];
 
   if ($client && !empty($cluster_info['info']) && elasticsearch_connector_check_status($cluster_info['info'])) {
-    $indices = $client->indices()->stats();
+    $indices = $client->getIndicesStats();
     foreach ($indices['indices'] as $index_name => $index_info) {
       $row = array();
 
@@ -192,10 +192,10 @@ function elasticsearch_connector_info_cluster($cluster) {
   $node_rows = $cluster_statistics_rows = $cluster_health_rows = array();
 
   if (isset($cluster_client) && !empty($cluster_status['info']) && elasticsearch_connector_check_status($cluster_status['info'])) {
-    $node_stats = $cluster_status['stats'];
+    $node_stats = $cluster_client->getNodesProperties();
     $total_docs = $total_size = 0;
-    if (isset($node_stats)) {
-      foreach ($node_stats['nodes'] as $node_key => $node_values) {
+    if (isset($node_stats['stats'])) {
+      foreach ($node_stats['stats']['nodes'] as $node_key => $node_values) {
         $row = array();
         $row[] = array('data' => $node_values['name']);
         $row[] = array('data' => $node_values['indices']['docs']['count']);
@@ -230,7 +230,9 @@ function elasticsearch_connector_info_cluster($cluster) {
       'relocating_shards'     => t('Relocating shards'),
       'initializing_shards'   => t('Initializing shards'),
       'unassigned_shards'     => t('Unassigned shards'),
+      'delayed_unassigned_shards' => t('Delayed unassigned shards'),
       'number_of_pending_tasks' => t('Number of pending tasks'),
+      'number_of_in_flight_fetch' => t('Number of in flight fetch'),
     );
 
     foreach ($cluster_status['health'] as $health_key => $health_value) {
