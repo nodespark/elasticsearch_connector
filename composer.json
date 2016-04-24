@@ -12,7 +12,7 @@
       "name": "Nikolay Ignatov",
       "email": "nignatov@nodespark.com",
       "homepage": "http://www.nodespark.com",
-      "role": "Maintainer"
+      "role": "Creator and Maintainer"
     },
     {
       "name": "Prateek Sachan",
@@ -25,6 +25,10 @@
       "email": "lachezar.valchev@gmail.com",
       "homepage": "https://drupal.org/u/lachezar.valchev",
       "role": "Maintainer"
+    },
+    {
+      "name": "See other contributors",
+      "homepage":"https://www.drupal.org/node/2159059/committers"
     }
   ],
   "support": {
