@@ -133,10 +133,12 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
 
       if ($client_connector->isClusterOk()) {
         $cluster_health = $client_connector->cluster()->health();
+        $version_number = $client_connector->getServerVersion();
         $status = $cluster_health['status'];
       }
       else {
-        $status = t('Not available');
+        $status = $this->t('Not available');
+        $version_number = $this->t('Unknown version');
       }
       $result = array(
         'data' => array(
@@ -146,7 +148,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
           'title' => array(
             'data' => array(
               '#type' => 'link',
-              '#title' => $entity->label(),
+              '#title' => $entity->label() . ' (' . $version_number . ')',
               '#url' => new Url('entity.elasticsearch_cluster.edit_form', array('elasticsearch_cluster' => $entity->id())),
             ),
           ),
