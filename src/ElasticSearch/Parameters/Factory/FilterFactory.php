@@ -6,8 +6,6 @@ use Drupal\search_api\Query\Condition;
 
 /**
  * Class FilterFactory
- *
- * @author andy.thorne@timeinc.com
  */
 class FilterFactory {
 

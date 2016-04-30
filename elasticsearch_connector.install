@@ -8,9 +8,11 @@
 /**
  * Implements hook_requirements().
  *
- * Check Elastica installation.
+ * Checks for Elasticsearch client library installation.
  */
 function elasticsearch_connector_requirements($phase) {
+  // TODO: This should be rewritten in order to get the correct library.
+
   if ($phase === 'install') {
     if (version_compare(phpversion(), '5.3.9', '<')) {
       return array(

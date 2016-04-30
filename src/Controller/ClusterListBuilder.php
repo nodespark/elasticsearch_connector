@@ -12,10 +12,10 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Url;
-use Drupal\elasticsearch_connector\ElasticSearch\ClientConnector;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\elasticsearch_connector\Entity\Index;
+use nodespark\DESConnector\ClientInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -116,16 +116,14 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
    */
   public function buildRow(EntityInterface $entity) {
     if ($entity instanceof Cluster) {
-      $es_client = $this->clientManager->getClientForCluster($entity);
+      $client_connector = $this->clientManager->getClientForCluster($entity);
     }
     elseif ($entity instanceof Index) {
       $cluster = Cluster::load($entity->server);
-      $es_client = $this->clientManager->getClientForCluster($cluster);
+      $client_connector = $this->clientManager->getClientForCluster($cluster);
     } else {
       throw new NotFoundHttpException();
     }
-
-    $client_connector = new ClientConnector($es_client);
 
     $row = parent::buildRow($entity);
     $result = array();
@@ -134,7 +132,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
       $cluster = Cluster::load($entity->cluster_id);
 
       if ($client_connector->isClusterOk()) {
-        $cluster_health = $es_client->cluster()->health();
+        $cluster_health = $client_connector->cluster()->health();
         $status = $cluster_health['status'];
       }
       else {

@@ -7,8 +7,6 @@ use Drupal\search_api\Item\FieldInterface;
 
 /**
  * Class IndexFactory
- *
- * @author andy.thorne@timeinc.com
  */
 class IndexFactory {
 

@@ -7,8 +7,6 @@ use Elasticsearch\Common\Exceptions\ElasticsearchException;
 
 /**
  * Class MappingFactory
- *
- * @author andy.thorne@timeinc.com
  */
 class MappingFactory {
 

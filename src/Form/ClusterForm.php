@@ -9,7 +9,7 @@ namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\elasticsearch_connector\ElasticSearch\ClientConnector;
+// TODO: This should be an interface!
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -253,8 +253,7 @@ class ClusterForm extends EntityForm {
 
     if (isset($this->entity->url)) {
       try {
-        $client = $this->clientManager->getClientForCluster($this->entity);
-        $client_connector = new ClientConnector($client);
+        $client_connector = $this->clientManager->getClientForCluster($this->entity);
 
         $cluster_info = $client_connector->getClusterInfo();
         if ($cluster_info) {

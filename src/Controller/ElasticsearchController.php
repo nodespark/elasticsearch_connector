@@ -8,7 +8,6 @@
 namespace Drupal\elasticsearch_connector\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\elasticsearch_connector\ElasticSearch\ClientConnector;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -91,8 +90,7 @@ class ElasticsearchController extends ControllerBase {
    */
   public function getInfo(Cluster $elasticsearch_cluster) {
     // TODO: Get the statistics differently.
-    $es_client = $this->clientManager->getClientForCluster($elasticsearch_cluster);
-    $client_connector = new ClientConnector($es_client);
+    $client_connector = $this->clientManager->getClientForCluster($elasticsearch_cluster);
 
     $node_rows = array();
     $cluster_statistics_rows = array();

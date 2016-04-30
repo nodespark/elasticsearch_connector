@@ -4,17 +4,14 @@ namespace Drupal\elasticsearch_connector\ElasticSearch;
 
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
-use Elasticsearch\Client;
-use GuzzleHttp\Ring\Client\CurlHandler;
+use nodespark\DESConnector\ClientInterface;
 
 /**
  * Class ClientManager
- *
- * @author andy.thorne@timeinc.com
  */
-class ClientManager {
+class ClientManager implements ClientManagerInterface {
 
-  /** @var Client[] */
+  /** @var \nodespark\DESConnector\ClientInterface[] */
   protected $clients = [];
 
   /**
@@ -23,18 +20,42 @@ class ClientManager {
   protected $moduleHandler;
 
   /**
+   * The classname that implements \nodespark\DESConnector\ClientFactoryInterface
+   * @var string
+   */
+  protected $clientManagerClass;
+
+  /**
    * ConnectorManager constructor.
    *
    * @param ModuleHandlerInterface $module_handler
    */
-  public function __construct(ModuleHandlerInterface $module_handler) {
+  public function __construct(ModuleHandlerInterface $module_handler, $clientManagerClass) {
     $this->moduleHandler = $module_handler;
+    $this->setClientManager($clientManagerClass);
+  }
+
+  protected function setClientManager($clientManagerClass) {
+    if (!class_exists($clientManagerClass)) {
+      // TODO: Handle the messages translations.
+      // TODO: Create class exception to wrap the errors.
+      throw new \Exception('The given parameter is not a class');
+    }
+
+    $interfaces = class_implements($clientManagerClass);
+    if (is_array($interfaces) && in_array('nodespark\DESConnector\ClientFactoryInterface', $interfaces)) {
+      $this->clientManagerClass = $clientManagerClass;
+    }
   }
 
   /**
+   * Get the Elasticsearch client required by the functionalities.
+   *
    * @param Cluster $cluster
    *
-   * @return Client
+   * @return \nodespark\DESConnector\ClientInterface
+   *
+   * @throws \Exception
    */
   public function getClientForCluster(Cluster $cluster) {
     $hosts = [
@@ -52,14 +73,18 @@ class ClientManager {
         ),
         'options' => array(),
         'curl' => array(),
-        'handler' => new CurlHandler(),
       );
       $this->moduleHandler->alter(
         'elasticsearch_connector_load_library_options',
         $options
       );
 
-      $this->clients[$hash] = ClientFactory::create($options);
+      $this->clients[$hash] = call_user_func_array($this->clientManagerClass .'::create', array($options));
+
+      if (! ($this->clients[$hash] instanceof ClientInterface)) {
+        // TODO: Handle the exception with specific class and handle the translation.
+        throw new \Exception('The instance of the class is not the supported one.');
+      }
     }
 
     return $this->clients[$hash];

@@ -9,8 +9,6 @@ use Drupal\search_api\Utility as SearchApiUtility;
 
 /**
  * Class SearchFactory
- *
- * @author andy.thorne@timeinc.com
  */
 class SearchFactory {
 

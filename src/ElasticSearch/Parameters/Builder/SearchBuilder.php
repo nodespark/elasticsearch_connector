@@ -15,8 +15,6 @@ use Elasticsearch\Common\Exceptions\ElasticsearchException;
 
 /**
  * Class SearchBuilder
- *
- * @author andy.thorne@timeinc.com
  */
 class SearchBuilder {
 
