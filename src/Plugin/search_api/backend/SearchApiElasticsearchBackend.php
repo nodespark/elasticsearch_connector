@@ -15,7 +15,6 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
-use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters;
@@ -77,6 +76,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * @param \Drupal\Core\Extension\ModuleHandlerInterface               $module_handler
    * @param ClientManagerInterface                                      $client_manager
    * @param \Drupal\Core\Config\Config                                  $elasticsearch_settings
+   * * @param LoggerInterface                                           $logger
    */
   public function __construct(
     array $configuration,
