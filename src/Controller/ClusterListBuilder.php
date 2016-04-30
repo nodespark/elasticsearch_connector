@@ -12,7 +12,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Url;
-use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
+use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\elasticsearch_connector\Entity\Index;
 use nodespark\DESConnector\ClientInterface;
@@ -30,7 +30,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   protected $indexStorage;
 
   /**
-   * @var ClientManager
+   * @var ClientManagerInterface
    */
   private $clientManager;
 
@@ -41,7 +41,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     EntityTypeInterface $entity_type,
     EntityStorageInterface $storage,
     EntityStorageInterface $index_storage,
-    ClientManager $client_manager
+    ClientManagerInterface $client_manager
   ) {
     parent::__construct($entity_type, $storage);
 

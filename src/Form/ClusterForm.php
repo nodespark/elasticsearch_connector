@@ -10,7 +10,7 @@ namespace Drupal\elasticsearch_connector\Form;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 // TODO: This should be an interface!
-use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
+use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityStorageException;
@@ -21,16 +21,16 @@ use Drupal\Core\Entity\EntityStorageException;
 class ClusterForm extends EntityForm {
 
   /**
-   * @var ClientManager
+   * @var ClientManagerInterface
    */
   private $clientManager;
 
   /**
    * ElasticsearchController constructor.
    *
-   * @param ClientManager $client_manager
+   * @param ClientManagerInterface $client_manager
    */
-  public function __construct(ClientManager $client_manager) {
+  public function __construct(ClientManagerInterface $client_manager) {
     $this->clientManager = $client_manager;
   }
 

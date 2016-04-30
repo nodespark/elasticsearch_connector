@@ -9,7 +9,7 @@ namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
+use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\Core\Url;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
@@ -21,16 +21,16 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class IndexDeleteForm extends EntityConfirmFormBase {
 
   /**
-   * @var ClientManager
+   * @var ClientManagerInterface
    */
   private $clientManager;
 
   /**
    * ElasticsearchController constructor.
    *
-   * @param ClientManager $client_manager
+   * @param ClientManagerInterface $client_manager
    */
-  public function __construct(ClientManager $client_manager) {
+  public function __construct(ClientManagerInterface $client_manager) {
     $this->clientManager = $client_manager;
   }
 

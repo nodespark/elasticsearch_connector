@@ -17,7 +17,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
-use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
+use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\SearchFactory;
@@ -59,7 +59,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /** @var \Drupal\Core\Extension\ModuleHandlerInterface */
   protected $moduleHandler;
 
-  /** @var ClientManager */
+  /** @var ClientManagerInterface */
   protected $clientManager;
 
   /**
@@ -70,7 +70,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * @param array                                                       $plugin_definition
    * @param \Drupal\Core\Form\FormBuilderInterface                      $form_builder
    * @param \Drupal\Core\Extension\ModuleHandlerInterface               $module_handler
-   * @param \Drupal\elasticsearch_connector\ElasticSearch\ClientManager $client_manager
+   * @param ClientManagerInterface                                      $client_manager
    * @param \Drupal\Core\Config\Config                                  $elasticsearch_settings
    */
   public function __construct(
@@ -79,7 +79,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     array $plugin_definition,
     FormBuilderInterface $form_builder,
     ModuleHandlerInterface $module_handler,
-    ClientManager $client_manager,
+    ClientManagerInterface $client_manager,
     Config $elasticsearch_settings
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);

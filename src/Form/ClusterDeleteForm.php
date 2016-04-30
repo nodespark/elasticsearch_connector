@@ -11,7 +11,7 @@ use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\elasticsearch_connector\ElasticSearch\ClientManager;
+use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -21,7 +21,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class ClusterDeleteForm extends EntityConfirmFormBase {
 
   /**
-   * @var ClientManager
+   * @var ClientManagerInterface
    */
   private $clientManager;
 
@@ -40,11 +40,11 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
    *
    * @param \Drupal\Core\Entity\EntityManager|\Drupal\Core\Entity\EntityTypeManager $entity_manager
    *   The entity manager.
-   * @param \Drupal\elasticsearch_connector\ElasticSearch\ClientManager             $client_manager
+   * @param \Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface             $client_manager
    */
   public function __construct(
     EntityTypeManager $entity_manager,
-    ClientManager $client_manager
+    ClientManagerInterface $client_manager
   ) {
     // Setup object members.
     $this->entityManager = $entity_manager;
