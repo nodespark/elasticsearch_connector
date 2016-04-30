@@ -150,29 +150,28 @@ class Cluster extends ConfigEntityBase {
   }
 
   /**
-   * Get the full base URL of the cluster, including any authentication
-   *
-   * @param bool $safe If True (default), the the password will be starred out
+   * Get the full base URL of the cluster, including any authentication.
    *
    * @return string
    */
-  public function getBaseUrl($safe = TRUE) {
+  public function getSafeUrl() {
     $options = $this->options;
+    $url_parsed = parse_url($this->url);
     if ($options['use_authentication']) {
-      if ($options['username'] && $options['password']) {
-        $schema = file_uri_scheme($this->url);
-        $host = file_uri_target($this->url);
-        $user = $options['username'];
-
-        if ($safe) {
-          return $schema . '://' . $user . ':****@' . $host;
-        }
-        else {
-          return $schema . '://' . $user . ':' . $options['password'] . '@' . $host;
-        }
-      }
+      return $url_parsed['scheme'] . '://' . $options['username'] . ':****@' . $url_parsed['host'];
     }
+    else {
+      return $url_parsed['scheme'] . '://'
+        . (isset($url_parsed['user']) ? $url_parsed['user'] . ':****@' : '')
+        . $url_parsed['host'];
+    }
+  }
 
+  /**
+   * Get the raw url.
+   * @return string
+   */
+  public function getRawUrl() {
     return $this->url;
   }
 }

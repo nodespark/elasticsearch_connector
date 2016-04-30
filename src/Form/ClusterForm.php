@@ -9,7 +9,6 @@ namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
-// TODO: This should be an interface!
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -163,11 +162,11 @@ class ClusterForm extends EntityForm {
       '#title' => t('Authentication type'),
       '#description' => t('Select the http authentication type.'),
       '#options' => array(
-        'Digest' => t('Digest'),
         'Basic' => t('Basic'),
+        'Digest' => t('Digest'),
         'NTLM' => t('NTLM')
       ),
-      '#default_value' => (!empty($this->entity->options['authentication_type']) ? $this->entity->options['authentication_type'] : 'Digest'),
+      '#default_value' => (!empty($this->entity->options['authentication_type']) ? $this->entity->options['authentication_type'] : 'Basic'),
       '#states' => array(
         'visible' => array(
           ':input[name="options[use_authentication]"]' => array('checked' => TRUE),

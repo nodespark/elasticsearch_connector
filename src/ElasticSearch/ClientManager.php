@@ -69,11 +69,22 @@ class ClientManager implements ClientManagerInterface {
     if (!isset($this->clients[$hash])) {
       $options = array(
         'hosts' => array(
-          $cluster->getBaseUrl(FALSE),
+          $cluster->getRawUrl(),
         ),
         'options' => array(),
         'curl' => array(),
       );
+
+      if ($cluster->options['use_authentication']) {
+        $options['auth'] = [
+          $cluster->url => [
+            'username' => $cluster->options['username'],
+            'password' => $cluster->options['password'],
+            'method' => $cluster->options['authentication_type'],
+          ]
+        ];
+      }
+
       $this->moduleHandler->alter(
         'elasticsearch_connector_load_library_options',
         $options

@@ -151,7 +151,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     if (!$this->server->isNew()) {
-      $server_link = $this->cluster->getBaseUrl();
+      $server_link = $this->cluster->getSafeUrl();
       // Editing this server
       $form['server_description'] = [
         '#type'        => 'item',
@@ -225,7 +225,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   public function viewSettings() {
     $info = [];
 
-    $server_link = $this->cluster->getBaseUrl();
+    $server_link = $this->cluster->getSafeUrl();
     $info[]      = [
       'label' => $this->t('Elasticsearch server URI'),
       'info'  => Link::fromTextAndUrl($server_link, Url::fromUri($server_link)),
