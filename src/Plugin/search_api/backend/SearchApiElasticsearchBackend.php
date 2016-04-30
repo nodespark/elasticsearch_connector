@@ -348,7 +348,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
           }
         }
 
-        throw new SearchApiException($this->t('There was errors when indexing the items.'));
+        throw new SearchApiException($this->t('An error occurred during indexing. Check your watchdog for more information.'));
       }
     } catch (ElasticsearchException $e) {
       drupal_set_message($e->getMessage(), 'error');

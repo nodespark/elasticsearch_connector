@@ -14,7 +14,7 @@ function elasticsearch_connector_requirements($phase) {
   // TODO: This should be rewritten in order to get the correct library.
 
   if ($phase === 'install') {
-    if (version_compare(phpversion(), '5.3.9', '<')) {
+    if (version_compare(phpversion(), '5.4', '<')) {
       return array(
         'elasticsearch_connector' => array(
           'title' => t('The PHP version is not compatible with this module.'),
@@ -27,11 +27,11 @@ function elasticsearch_connector_requirements($phase) {
   }
 
   if ($phase == 'runtime') {
-    if (!class_exists('\Elasticsearch\Client')) {
+    if (!interface_exists('\nodespark\DESConnector\ClientInterface')) {
       return array(
         'elasticsearch_connector' => array(
-          'title' => t('The Elasticsearch library is missing.'),
-          'description' => t('The official library for Elasticsearch connection is missing.'),
+          'title' => t('The Elasticsearch client library is missing.'),
+          'description' => t('The client library for Elasticsearch connection is missing.'),
           'severity' => REQUIREMENT_ERROR,
           'value' => t('Elasticsearch library missing.'),
         ),
@@ -40,8 +40,8 @@ function elasticsearch_connector_requirements($phase) {
     else {
       return array(
         'elasticsearch_connector' => array(
-          'title' => t('Elasticsearch PHP library'),
-          'description' => t('The official Elasticsearch library was correctly installed.'),
+          'title' => t('Elasticsearch PHP client library'),
+          'description' => t('The client library for Elasticsearch was correctly installed.'),
           'severity' => REQUIREMENT_OK,
           'value' => t('OK'),
         ),
