@@ -56,7 +56,7 @@ class MappingFactory {
         case 'date':
           return [
             'type'   => 'date',
-            'format' => 'date_time',
+            'format' => 'epoch_second',
           ];
       }
     } catch (ElasticsearchException $e) {

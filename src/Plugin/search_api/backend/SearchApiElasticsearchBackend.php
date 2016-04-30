@@ -29,6 +29,7 @@ use Drupal\search_api\SearchApiException;
 use Drupal\search_api\Utility as SearchApiUtility;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
 use nodespark\DESConnector\ClientInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -62,6 +63,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   protected $clientManager;
 
   /**
+   * @var LoggerInterface
+   */
+  protected $logger;
+
+  /**
    * SearchApiElasticsearchBackend constructor.
    *
    * @param array                                                       $configuration
@@ -79,13 +85,15 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     FormBuilderInterface $form_builder,
     ModuleHandlerInterface $module_handler,
     ClientManagerInterface $client_manager,
-    Config $elasticsearch_settings
+    Config $elasticsearch_settings,
+    LoggerInterface $logger
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->formBuilder           = $form_builder;
     $this->moduleHandler         = $module_handler;
     $this->clientManager         = $client_manager;
+    $this->logger                = $logger;
     $this->elasticsearchSettings = $elasticsearch_settings;
 
     if (empty($this->configuration['cluster_settings']['cluster'])) {
@@ -112,7 +120,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $container->get('form_builder'),
       $container->get('module_handler'),
       $container->get('elasticsearch_connector.client_manager'),
-      $container->get('config.factory')->get('elasticsearch.settings')
+      $container->get('config.factory')->get('elasticsearch.settings'),
+      $container->get('logger.factory')->get('elasticconnector_sapi')
     );
   }
 
@@ -290,6 +299,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $response = $this->client->indices()->putMapping(
         IndexFactory::mapping($index)
       );
+
       if (!$this->client->CheckResponseAck($response)) {
         drupal_set_message(t('Cannot create the mapping of the fields!'), 'error');
       }
@@ -334,12 +344,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       if (!empty($response['errors'])) {
         foreach ($response['items'] as $item) {
           if (!empty($item['index']['status']) && $item['index']['status'] == '400') {
-            // TODO: This foreach maybe is better to return only the indexed items for return
-            // instead of throwing an error and stop the process cause we are in bulk
-            // and some of the items can be indexed successfully.
-            throw new SearchApiException($item['index']['error']['reason'] . '. ' . $item['index']['error']['caused_by']['reason']);
+            $this->logger->error($item['index']['error']['reason'] . '. ' . $item['index']['error']['caused_by']['reason']);
           }
         }
+
+        throw new SearchApiException($this->t('There was errors when indexing the items.'));
       }
     } catch (ElasticsearchException $e) {
       drupal_set_message($e->getMessage(), 'error');
