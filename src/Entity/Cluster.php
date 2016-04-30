@@ -150,22 +150,6 @@ class Cluster extends ConfigEntityBase {
   }
 
   /**
-   * Check if the REST response is successful and with status code 200.
-   *
-   * @param mixed $response
-   *
-   * @return bool
-   */
-  public static function elasticsearchCheckResponseAck($response) {
-    if (is_array($response) && !empty($response['acknowledged'])) {
-      return TRUE;
-    }
-    else {
-      return FALSE;
-    }
-  }
-
-  /**
    * Get the full base URL of the cluster, including any authentication
    *
    * @param bool $safe If True (default), the the password will be starred out

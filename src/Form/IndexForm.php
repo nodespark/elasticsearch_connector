@@ -251,7 +251,7 @@ class IndexForm extends EntityForm {
 
     try {
       $response = $client->indices()->create($index_params);
-      if (Cluster::elasticsearchCheckResponseAck($response)) {
+      if ($client->CheckResponseAck($response)) {
         drupal_set_message(t('The index %index having id %index_id has been successfully created.',
           array('%index' => $form_state->getValue('name'), '%index_id' => $form_state->getValue('index_id'))));
       }

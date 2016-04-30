@@ -24,12 +24,11 @@ use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\SearchFactor
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
-use Drupal\search_api\Item\FieldInterface;
 use Drupal\search_api\Query\QueryInterface;
-use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api\SearchApiException;
 use Drupal\search_api\Utility as SearchApiUtility;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
+use nodespark\DESConnector\ClientInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -50,7 +49,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /** @var Cluster */
   protected $cluster;
 
-  /** @var \Elasticsearch\Client */
+  /** @var ClientInterface */
   protected $client;
 
   /** @var \Drupal\Core\Form\FormBuilderInterface */
@@ -225,7 +224,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     if ($this->server->status()) {
       // If the server is enabled, check whether Elasticsearch can be reached.
-      $ping = $this->client->cluster()->health();
+      $ping = $this->client->isClusterOk();
       if ($ping) {
         $msg = $this->t('The Elasticsearch server could be reached');
       }
@@ -260,7 +259,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
           $response = $this->client->indices()->create(
             IndexFactory::create($index)
           );
-          if (!Cluster::elasticsearchCheckResponseAck($response)) {
+          if (!$this->client->CheckResponseAck($response)) {
             drupal_set_message($this->t('The elasticsearch client wasn\'t able to create index'), 'error');
           }
         }
@@ -291,7 +290,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $response = $this->client->indices()->putMapping(
         IndexFactory::mapping($index)
       );
-      if (!Cluster::elasticsearchCheckResponseAck($response)) {
+      if (!$this->client->CheckResponseAck($response)) {
         drupal_set_message(t('Cannot create the mapping of the fields!'), 'error');
       }
     } catch (ElasticsearchException $e) {
