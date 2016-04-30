@@ -459,12 +459,11 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       if (!empty($response['errors'])) {
         foreach($response['items'] as $item) {
           if (!empty($item['index']['status']) && $item['index']['status'] == '400') {
-            // TODO: This foreach maybe is better to return only the indexed items for return
-            // instead of throwing an error and stop the process cause we are in bulk
-            // and some of the items can be indexed successfully.
-            throw new SearchApiElasticsearchConnectorException($item['index']['error']);
+            watchdog('Elasticsearch Search API', $item['index']['error'], array(), WATCHDOG_ERROR);
           }
         }
+
+        throw new SearchApiElasticsearchConnectorException(t('An error occurred during indexing. Check your watchdog for more information.'));
       }
     }
     catch (Exception $e) {
