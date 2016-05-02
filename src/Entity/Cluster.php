@@ -158,12 +158,16 @@ class Cluster extends ConfigEntityBase {
     $options = $this->options;
     $url_parsed = parse_url($this->url);
     if ($options['use_authentication']) {
-      return $url_parsed['scheme'] . '://' . $options['username'] . ':****@' . $url_parsed['host'];
+      return $url_parsed['scheme'] . '://'
+            . $options['username'] . ':****@'
+            . $url_parsed['host']
+            . (isset($url_parsed['port']) ? ':' . $url_parsed['port'] : '');
     }
     else {
       return $url_parsed['scheme'] . '://'
         . (isset($url_parsed['user']) ? $url_parsed['user'] . ':****@' : '')
-        . $url_parsed['host'];
+        . $url_parsed['host']
+        . (isset($url_parsed['port']) ? ':' . $url_parsed['port'] : '');
     }
   }
 

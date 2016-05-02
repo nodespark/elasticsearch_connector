@@ -103,6 +103,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $this->cluster = Cluster::load(
       $this->configuration['cluster_settings']['cluster']
     );
+
+    if (!isset($this->cluster)) {
+      throw new SearchApiException($this->t('Cannot load the Elasticsearch cluster for your index.'));
+    }
+
     $this->client = $this->clientManager->getClientForCluster(
       $this->cluster
     );
@@ -162,7 +167,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $form['cluster_settings'] = [
       '#type'  => 'fieldset',
       '#title' => t('Elasticsearch settings'),
-      '#tree'  => FALSE,
     ];
 
     //We are not displaying disabled clusters
@@ -171,6 +175,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     foreach ($clusters as $key => $cluster) {
       $options[$key] = $cluster->cluster_id;
     }
+
     $options[Cluster::getDefaultCluster()] = t('Default cluster: ' . Cluster::getDefaultCluster());
     $form['cluster_settings']['cluster']   = [
       '#type'          => 'select',
@@ -187,6 +192,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * {@inheritdoc}
    */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
+    parent::validateConfigurationForm($form, $form_state);
   }
 
   /**
