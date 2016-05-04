@@ -124,6 +124,8 @@ class SearchBuilder {
     // Query options.
     $query_options = $this->query->getOptions();
 
+    $parse_mode = $this->query->getParseMode();
+
     // Index fields.
     $index_fields = $this->index->getFields();
 
@@ -154,7 +156,7 @@ class SearchBuilder {
       }
 
       // Query string.
-      $search_string = $this->flattenKeys($keys, $query_options['parse mode']);
+      $search_string = $this->flattenKeys($keys, $parse_mode);
 
       if (!empty($search_string)) {
         $query_search_string = ['query_string' => []];
