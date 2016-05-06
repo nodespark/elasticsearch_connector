@@ -310,7 +310,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $params = $this->getIndexParam($index, TRUE);
 
     $properties = array(
-      'id' => array('type' => 'integer', 'include_in_all' => FALSE),
+      'id' => array('type' => 'string', 'include_in_all' => FALSE),
     );
 
     // Map index fields.
