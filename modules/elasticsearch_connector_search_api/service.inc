@@ -1236,11 +1236,16 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
             $spatial['field'] => $point,
           ),
         );
-        if (empty($query_options['query_search_filter']['and'])) {
+
+        if (!empty($query_options['query_search_filter'])) {
+          $query_options['query_search_filter'] = array(
+            'and' => array(
+              $query_options['query_search_filter'],
+              $geo_distance_filter
+            ),
+          );
+        } else {
           $query_options['query_search_filter'] = $geo_distance_filter;
-        }
-        else {
-          $query_options['query_search_filter']['and'][] = $geo_distance_filter;
         }
 
         // // Geo distance range filter.
