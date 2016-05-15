@@ -1,0 +1,10 @@
+name: 
+  'Elasticsearch Connector Views'
+description: 
+  'Stand alone module for integration between Drupal Views and Elasticsearch indexes.'
+core: 8.x
+package: Elasticsearch
+type: module
+dependencies:
+ - views
+version: VERSION
