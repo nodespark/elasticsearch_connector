@@ -4,7 +4,7 @@ namespace Drupal\elasticsearch_connector\ElasticSearch;
 
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
-use nodespark\DESConnector\ClientInterface;
+use nodespark\DESConnector\ClientFactoryInterface;
 
 /**
  * Class ClientManager
@@ -23,33 +23,20 @@ class ClientManager implements ClientManagerInterface {
    * The classname that implements \nodespark\DESConnector\ClientFactoryInterface
    * @var string
    */
-  protected $clientManagerClass;
+  protected $clientManagerFactory;
 
   /**
    * ConnectorManager constructor.
    *
    * @param ModuleHandlerInterface $module_handler
    */
-  public function __construct(ModuleHandlerInterface $module_handler, $clientManagerClass) {
+  public function __construct(ModuleHandlerInterface $module_handler, ClientFactoryInterface $clientManagerFactory) {
     $this->moduleHandler = $module_handler;
-    $this->setClientManager($clientManagerClass);
-  }
-
-  protected function setClientManager($clientManagerClass) {
-    if (!class_exists($clientManagerClass)) {
-      // TODO: Handle the messages translations.
-      // TODO: Create class exception to wrap the errors.
-      throw new \Exception('The given parameter is not a class');
-    }
-
-    $interfaces = class_implements($clientManagerClass);
-    if (is_array($interfaces) && in_array('nodespark\DESConnector\ClientFactoryInterface', $interfaces)) {
-      $this->clientManagerClass = $clientManagerClass;
-    }
+    $this->clientManagerFactory = $clientManagerFactory;
   }
 
   /**
-   * Get the Elasticsearch client required by the functionalities.
+   * Get the Elasticsearch client required by the functionality.
    *
    * @param Cluster $cluster
    *
@@ -90,12 +77,7 @@ class ClientManager implements ClientManagerInterface {
         $options
       );
 
-      $this->clients[$hash] = call_user_func_array($this->clientManagerClass .'::create', array($options));
-
-      if (! ($this->clients[$hash] instanceof ClientInterface)) {
-        // TODO: Handle the exception with specific class and handle the translation.
-        throw new \Exception('The instance of the class is not the supported one.');
-      }
+      $this->clients[$hash] = $this->clientManagerFactory->create($options);
     }
 
     return $this->clients[$hash];
