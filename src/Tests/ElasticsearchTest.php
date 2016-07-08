@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\elasticsearch_connector\Tests\ElasticsearchTest.
- */
-
 namespace Drupal\elasticsearch_connector\Tests;
 
 use Drupal\search_api\Entity\Index;
@@ -74,7 +69,9 @@ class ElasticsearchTest extends BackendTest {
   }
 
   /**
-   * Tests various indexing scenarios for the Elasticsearch backend as given in search_api_db.
+   * Tests various indexing scenarios for the Elasticsearch backend.
+   *
+   * As given in search_api_db.
    */
   public function testFramework() {
     if ($this->elasticsearchAvailable) {
@@ -126,7 +123,15 @@ class ElasticsearchTest extends BackendTest {
     sleep(1);
     $results = $prepareSearch->execute();
     $this->assertEqual($results->getResultCount(), 3, 'Search for »test foo« returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 4)), 'Search for »test foo« returned correct result.');
+    $this->assertEqual(
+      array_keys(
+        $results->getResultItems()
+      ),
+      $this->getItemIds(
+        array(1, 2, 4)
+      ),
+      'Search for »test foo« returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -177,126 +182,35 @@ class ElasticsearchTest extends BackendTest {
     $this->assertEqual($results->getResultCount(), 0, 'Clearing the server worked correctly.');
   }
 
-  // search_api_db tests to be overridden
+  /**
+   * A search_api_db tests to be overridden.
+   */
   protected function checkServerTables() {
   }
 
+  /**
+   * To be overridden.
+   */
   protected function searchSuccess2() {
-/*
-    $prepareSearch = $this->buildSearch('test')->range(1, 2);
-    sleep(1);
-    $results = $prepareSearch->execute();
-    $this->assertEqual($results->getResultCount(), 4, 'Search for »test« returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(4, 1)), 'Search for »test« returned correct result.');
-    $this->assertIgnored($results);
-    $this->assertWarnings($results);
-
-    $prepareSearch = $this->buildSearch(NULL, array('body,test foobar'));
-    sleep(1);
-    $results = $prepareSearch->execute();
-    $this->assertEqual($results->getResultCount(), 1, 'Search with multi-term fulltext filter returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3)), 'Search with multi-term fulltext filter returned correct result.');
-    $this->assertIgnored($results);
-    $this->assertWarnings($results);
-
-    $prepareSearch = $this->buildSearch('test foo');
-    sleep(1);
-    $results = $prepareSearch->execute();
-    $this->assertEqual($results->getResultCount(), 4, 'Search for »test foo« returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(2, 4, 1, 3)), 'Search for »test foo« returned correct result.');
-    $this->assertIgnored($results, array('foo'), 'Short key was ignored.');
-    $this->assertWarnings($results);
-
-    $prepareSearch = $this->buildSearch('foo', array('type,item'));
-    sleep(1);
-    $results = $prepareSearch->execute();
-    $this->assertEqual($results->getResultCount(), 3, 'Search for »foo« returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 3)), 'Search for »foo« returned correct result.');
-    $this->assertIgnored($results, array('foo'), 'Short key was ignored.');
-    $this->assertWarnings($results, array($this->t('No valid search keys were present in the query.')), 'No warnings were displayed.');
-
-    $keys = array(
-      '#conjunction' => 'AND',
-      'test',
-      array(
-        '#conjunction' => 'OR',
-        'baz',
-        'foobar',
-      ),
-      array(
-        '#conjunction' => 'OR',
-        '#negation' => TRUE,
-        'bar',
-        'fooblob',
-      ),
-    );
-    $prepareSearch = $this->buildSearch($keys);
-    sleep(1);
-    $results = $prepareSearch->execute();
-    $this->assertEqual($results->getResultCount(), 1, 'Complex search 1 returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3)), 'Complex search 1 returned correct result.');
-    $this->assertIgnored($results, array('baz', 'bar'), 'Correct keys were ignored.');
-    $this->assertWarnings($results);
-
-    $keys = array(
-      '#conjunction' => 'AND',
-      'test',
-      array(
-        '#conjunction' => 'OR',
-        'baz',
-        'foobar',
-      ),
-      array(
-        '#conjunction' => 'OR',
-        '#negation' => TRUE,
-        'bar',
-        'fooblob',
-      ),
-    );
-    $prepareSearch = $this->buildSearch($keys);
-    sleep(1);
-    $results = $prepareSearch->execute();
-    $this->assertEqual($results->getResultCount(), 1, 'Complex search 2 returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3)), 'Complex search 2 returned correct result.');
-    $this->assertIgnored($results, array('baz', 'bar'), 'Correct keys were ignored.');
-    $this->assertWarnings($results);
-
-    $prepareSearch = $this->buildSearch(NULL, array('keywords,orange'));
-    sleep(1);
-    $results = $prepareSearch->execute();
-    $this->assertEqual($results->getResultCount(), 3, 'Filter query 1 on multi-valued field returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 5)), 'Filter query 1 on multi-valued field returned correct result.');
-    $this->assertIgnored($results);
-    $this->assertWarnings($results);
-
-    $filters = array(
-      'keywords,orange',
-      'keywords,apple',
-    );
-    $prepareSearch = $this->buildSearch(NULL, $filters);
-    sleep(1);
-    $results = $prepareSearch->execute();
-    $this->assertEqual($results->getResultCount(), 1, 'Filter query 2 on multi-valued field returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(2)), 'Filter query 2 on multi-valued field returned correct result.');
-    $this->assertIgnored($results);
-    $this->assertWarnings($results);
-
-    $prepareSearch = $this->buildSearch()->condition($this->getFieldId('keywords'), NULL);
-    sleep(1);
-    $results = $prepareSearch->execute();
-    $this->assertEqual($results->getResultCount(), 1, 'Query with NULL filter returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3)), 'Query with NULL filter returned correct result.');
-    $this->assertIgnored($results);
-    $this->assertWarnings($results);
-*/
   }
 
+  /**
+   * Regression tests.
+   */
   protected function regressionTests() {
     // Regression tests for #2007872.
     $prepareSearch = $this->buildSearch('test')->sort($this->getFieldId('id'), 'ASC')->sort($this->getFieldId('type'), 'ASC');
     $results = $prepareSearch->execute();
     $this->assertEqual($results->getResultCount(), 4, 'Sorting on field with NULLs returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 3, 4)), 'Sorting on field with NULLs returned correct result.');
+    $this->assertEqual(
+      array_keys(
+        $results->getResultItems()
+      ),
+      $this->getItemIds(
+        array(1, 2, 3, 4)
+      ),
+      'Sorting on field with NULLs returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -308,7 +222,15 @@ class ElasticsearchTest extends BackendTest {
     $query->sort($this->getFieldId('id'), 'ASC');
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 3, 'OR filter on field with NULLs returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3, 4, 5)), 'OR filter on field with NULLs returned correct result.');
+    $this->assertEqual(
+      array_keys(
+        $results->getResultItems()
+      ),
+      $this->getItemIds(
+        array(3, 4, 5)
+      ),
+      'OR filter on field with NULLs returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -321,7 +243,15 @@ class ElasticsearchTest extends BackendTest {
     $query->sort($this->getFieldId('id'), 'ASC');
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 4, 'OR filter on multi-valued field returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 4, 5)), 'OR filter on multi-valued field returned correct result.');
+    $this->assertEqual(
+      array_keys(
+        $results->getResultItems()
+      ),
+      $this->getItemIds(
+        array(1, 2, 4, 5)
+      ),
+      'OR filter on multi-valued field returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -337,7 +267,15 @@ class ElasticsearchTest extends BackendTest {
     $query->sort($this->getFieldId('id'), 'ASC');
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 3, 'Multiple OR filters on multi-valued field returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(2, 4, 5)), 'Multiple OR filters on multi-valued field returned correct result.');
+    $this->assertEqual(
+      array_keys(
+        $results->getResultItems()
+      ),
+      $this->getItemIds(
+        array(2, 4, 5)
+      ),
+      'Multiple OR filters on multi-valued field returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -355,7 +293,15 @@ class ElasticsearchTest extends BackendTest {
     $query->sort($this->getFieldId('id'), 'ASC');
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 3, 'Complex nested filters on multi-valued field returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(2, 4, 5)), 'Complex nested filters on multi-valued field returned correct result.');
+    $this->assertEqual(
+      array_keys(
+        $results->getResultItems()
+      ),
+      $this->getItemIds(
+        array(2, 4, 5)
+      ),
+      'Complex nested filters on multi-valued field returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -369,7 +315,15 @@ class ElasticsearchTest extends BackendTest {
     $query->sort($this->getFieldId('id'), 'ASC');
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 3, 'OR keywords returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 4)), 'OR keywords returned correct result.');
+    $this->assertEqual(
+      array_keys(
+        $results->getResultItems()
+      ),
+      $this->getItemIds(
+        array(1, 2, 4)
+      ),
+      'OR keywords returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -377,7 +331,6 @@ class ElasticsearchTest extends BackendTest {
     $query->range(0, 0);
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 5, 'Multi-field OR keywords returned correct number of results.');
-    //$this->assertFalse($results->getResultItems(), 'Multi-field OR keywords returned correct result.');
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -395,7 +348,15 @@ class ElasticsearchTest extends BackendTest {
     $query->sort($this->getFieldId('id'), 'ASC');
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 4, 'Nested OR keywords returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 4, 5)), 'Nested OR keywords returned correct result.');
+    $this->assertEqual(
+      array_keys(
+        $results->getResultItems()
+      ),
+      $this->getItemIds(
+        array(1, 2, 4, 5)
+      ),
+      'Nested OR keywords returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -416,7 +377,15 @@ class ElasticsearchTest extends BackendTest {
     $query->sort($this->getFieldId('id'), 'ASC');
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 4, 'Nested multi-field OR keywords returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 4, 5)), 'Nested multi-field OR keywords returned correct result.');
+    $this->assertEqual(
+      array_keys(
+        $results->getResultItems()
+      ),
+      $this->getItemIds(
+        array(1, 2, 4, 5)
+      ),
+      'Nested multi-field OR keywords returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -463,6 +432,9 @@ class ElasticsearchTest extends BackendTest {
 
   }
 
+  /**
+   * Regression Tests 2.
+   */
   protected function regressionTests2() {
     // Create a "keywords" field on the test entity type.
     FieldStorageConfig::create(array(
@@ -514,13 +486,29 @@ class ElasticsearchTest extends BackendTest {
     $this->assertWarnings($results);
   }
 
-
+  /**
+   * A updateIndex tests.
+   */
   protected function updateIndex() {
   }
 
+  /**
+   * A editServer tests.
+   */
   protected function editServer() {
   }
 
+  /**
+   * A assertIgnored test.
+   *
+   * @param \Drupal\search_api\Query\ResultSetInterface $results
+   *   Search results.
+   * @param array $ignored
+   *   What to be ignored.
+   * @param string $message
+   *   Result message.
+   */
   protected function assertIgnored(ResultSetInterface $results, array $ignored = array(), $message = 'No keys were ignored.') {
   }
+
 }

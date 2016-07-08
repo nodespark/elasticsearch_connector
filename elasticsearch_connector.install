@@ -12,7 +12,6 @@
  */
 function elasticsearch_connector_requirements($phase) {
   // TODO: This should be rewritten in order to get the correct library.
-
   if ($phase === 'install') {
     if (version_compare(phpversion(), '5.4', '<')) {
       return array(
@@ -50,13 +49,4 @@ function elasticsearch_connector_requirements($phase) {
   }
 
   return array();
-}
-
-/**
- * Implements hook_uninstall().
- *
- * Delete Search Api elasticsearch servers.
- */
-function elasticsearch_connector_uninstall() {
-  //\Drupal::state()->delete('elasticsearch_connector_get_default_connector');
 }

@@ -1,9 +1,9 @@
-parameters:
-  elasticsearch_connector.client.factory.class:  '\nodespark\DESConnector\ClientFactory'
-
 services:
+  elasticsearch_connector.client_factory:
+    class: '\nodespark\DESConnector\ClientFactory'
+
   elasticsearch_connector.client_manager:
     class: \Drupal\elasticsearch_connector\ElasticSearch\ClientManager
     arguments:
       - @module_handler
-      - %elasticsearch_connector.client.factory.class%
+      - @elasticsearch_connector.client_factory

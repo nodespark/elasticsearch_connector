@@ -5,6 +5,8 @@
  * Provides hook implementations and functions accessible from other modules.
  */
 
+use \Elasticsearch\Client;
+
 /**
  * Implements hook_help().
  */
@@ -66,10 +68,14 @@ function elasticsearch_connector_element_info() {
  * Process the ec_cluster element type.
  *
  * @param array $element
+ *   Form element array.
  * @param array $form_state
+ *   Form State array.
  * @param array $form
+ *   Form array.
  *
  * @return array $element
+ *   The altered $element array.
  */
 function _elasticsearch_ec_clusters_process(array $element, array &$form_state, array $form) {
   $element = form_process_select($element);
@@ -88,6 +94,7 @@ function _elasticsearch_ec_clusters_process(array $element, array &$form_state, 
  * Attach required javascript for the ec_index element.
  *
  * @return array
+ *   Prepared array with assets to attach.
  */
 function _elasticsearch_ec_index_attached() {
   return array(
@@ -105,8 +112,10 @@ function _elasticsearch_ec_index_attached() {
  * Invokes the hooks similar to the module_invoke.
  *
  * @param object $cluster
+ *   The fully loaded Cluster object.
  *
  * @return array
+ *   Array with clusters locked for deletion.
  */
 function _elasticsearch_check_if_cluster_locked($cluster) {
   $locked = array();
@@ -132,9 +141,12 @@ function _elasticsearch_check_if_cluster_locked($cluster) {
  * Invokes the hooks similar to the module_invoke.
  *
  * @param string $cluster
+ *   The fully loaded Cluster object.
  * @param string $index
+ *   The fully loaded Index object.
  *
  * @return array
+ *   Array with indexes locked for deletion.
  */
 function _elasticsearch_check_if_index_locked($cluster, $index) {
   $locked = array();
@@ -167,10 +179,14 @@ function elasticsearch_connector_elasticsearch_edit_lock($type, $cluster, $index
  * Build two drop downs, one for the cluster and one for the indices.
  *
  * @param array $element
+ *   Form element array.
  * @param array $form_state
+ *   Form State array.
  * @param array $form
+ *   Form array.
  *
  * @return array $element
+ *   The altered $element array.
  */
 function _elasticsearch_ec_index_process(array $element, array &$form_state, array $form) {
   $element['#tree'] = TRUE;
@@ -326,17 +342,20 @@ function elasticsearch_connector_redirect_page($cluster, $index_name) {
   // the required data.
   if (elasticsearch_in_dialog() && isset($_GET['elasticsearch-dialog-close'])) {
     drupal_add_js(drupal_get_path('module', 'elasticsearch') . '/js/ec-index-child.js');
-    drupal_add_js(array(
-    'elasticsearch' =>
+    drupal_add_js(
       array(
-        'dialog' => array(
-          'cluster_id' => $cluster->cluster_id,
-          'index_name' => $index_name,
-          'index_element_id' => (string) $_GET['index_element_id'],
-          'cluster_element_id' => (string) $_GET['cluster_element_id'],
+        'elasticsearch' =>
+        array(
+          'dialog' => array(
+            'cluster_id' => $cluster->cluster_id,
+            'index_name' => $index_name,
+            'index_element_id' => (string) $_GET['index_element_id'],
+            'cluster_element_id' => (string) $_GET['cluster_element_id'],
+          ),
         ),
       ),
-    ), 'setting');
+      'setting'
+    );
   }
 
   return '';
@@ -346,7 +365,9 @@ function elasticsearch_connector_redirect_page($cluster, $index_name) {
  * Ajax callback for the ec_index element.
  *
  * @param array $form
+ *   Form array.
  * @param array $form_state
+ *   Form State array.
  */
 function _elasticsearch_ec_index_ajax(array $form, array $form_state) {
   $parents = $form_state['triggering_element']['#parents'];
@@ -361,8 +382,10 @@ function _elasticsearch_ec_index_ajax(array $form, array $form_state) {
  * Get the indices based on cluster id.
  *
  * @param string $cluster_id
+ *   Cluster id.
  *
  * @return array Indices
+ *   Array with indices attached to the provided Cluster.
  */
 function elasticsearch_connector_get_indices_options($cluster_id, $empty_option = FALSE) {
   // TODO in src.
@@ -390,8 +413,10 @@ function elasticsearch_connector_get_indices_options($cluster_id, $empty_option 
  * Check if the index name has been passed correctly.
  *
  * @param string $index_name
+ *   Index name.
  *
- * @return string boolean
+ * @return bool
+ *   TRUE or FALSE depending on whether it is a valid name or not.
  */
 function elasticsearch_connector_index_valid_load($index_name) {
   // TODO in src.
@@ -406,10 +431,12 @@ function elasticsearch_connector_index_valid_load($index_name) {
  * Get the nodes stats from elasticsearch server.
  *
  * @param \Elasticsearch\Client $client
+ *   ElasticSearch client object.
  *
  * @return array
+ *   Array with cluster stats.
  */
-function elasticsearch_connector_get_cluster_nodes_stat(\Elasticsearch\Client $client) {
+function elasticsearch_connector_get_cluster_nodes_stat(Client $client) {
   try {
     return $client->nodes()->stats();
   }
@@ -425,13 +452,16 @@ function elasticsearch_connector_get_cluster_nodes_stat(\Elasticsearch\Client $c
  * check all of them.
  *
  * @param \Elasticsearch\Client $client
+ *   Fully loaded Client object.
  * @param string $plugin_name
+ *   Plugin name.
  *
  * @return bool
+ *   TRUE or FALSE depending if the plugin exists.
  *
  * @see http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-plugins.html
  */
-function elasticsearch_connector_check_plugin_exists(\Elasticsearch\Client $client, $plugin_name) {
+function elasticsearch_connector_check_plugin_exists(Client $client, $plugin_name) {
   $nodes_plugins = array();
   $result = FALSE;
 
@@ -473,13 +503,15 @@ function template_process_elasticsearch_page(&$variables) {
   }
 }
 
-
 /**
  * Validates #element_validate of any form element as Elasticsearch TTL setting.
  *
  * @param array $element
+ *   Form element array.
  * @param array $form_state
+ *   Form State array.
  * @param array $form
+ *   Form array.
  */
 function _elasticsearch_validate_ttl_field(array $element, array &$form_state, array $form) {
   if (!empty($element['#value']) && !preg_match('/^([\d]+)(d|m|h|ms|w)$/', $element['#value'])) {
