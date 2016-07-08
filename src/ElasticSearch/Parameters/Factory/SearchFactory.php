@@ -38,7 +38,7 @@ class SearchFactory {
     $index = $query->getIndex();
 
     // Set up the results array.
-    $results = SearchApiUtility::createSearchResultSet($query);
+    $results = $query->getResults();
     $results->setExtraData('elasticsearch_response', $response);
     $results->setResultCount($response['hits']['total']);
 

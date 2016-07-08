@@ -393,7 +393,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function search(QueryInterface $query) {
     // Results.
-    $search_result = SearchApiUtility::createSearchResultSet($query);
+    $search_result = $query->getResults();
 
     // Get index
     $index = $query->getIndex();
