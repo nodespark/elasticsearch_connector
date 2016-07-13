@@ -221,7 +221,7 @@ class IndexForm extends EntityForm {
 
     $values = $form_state->getValues();
 
-    if (!preg_match('/^[a-z][a-z0-9_]*$/i', $values['name'])) {
+    if (!preg_match('/^[a-z][a-z0-9_]*$/i', $values['index_id'])) {
       $form_state->setErrorByName('name', t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
     }
 
