@@ -451,6 +451,8 @@ function elasticsearch_connector_get_cluster_nodes_stat(Client $client) {
   catch (\Exception $e) {
     drupal_set_message($e->getMessage(), 'error');
   }
+
+  return array();
 }
 
 /**

@@ -14,7 +14,7 @@
 
             // Trigger change to update the form cache.
             $('#' + settings.cluster_element_id).trigger('change');
-          }
+          };
 
           return false;
         }, context);
@@ -28,7 +28,7 @@
   Drupal.ECIndexDialog = {
     dialog_open: false,
     open_dialog: null
-  }
+  };
 
   /**
    * If this property is set to be a function, it
@@ -56,7 +56,7 @@
         close: function () {
           Drupal.ECIndexDialog.dialog_open = false;
         }
-      }).width(window_width - 10).height(window_height)
+      }).width(window_width - 10).height(window_height);
       $(window).bind("resize scroll", function () {
         // Move the dialog the main window moves.
         if (typeof Drupal.ECIndexDialog == "object" && Drupal.ECIndexDialog.open_dialog != null) {
@@ -66,7 +66,7 @@
       });
       this.dialog_open = true;
     }
-  }
+  };
 
   /**
    * Set dimensions of the dialog dependning on the current winow size
@@ -78,7 +78,7 @@
       var window_height = $(window).height() / 100 * 90;
       this.open_dialog.dialog("option", "width", window_width).dialog("option", "height", window_height).width(window_width - 10).height(window_height);
     }
-  }
+  };
 
   /**
    * Close the dialog and provide an entity id and a title
