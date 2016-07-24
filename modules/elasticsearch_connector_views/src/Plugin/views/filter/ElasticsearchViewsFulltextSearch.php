@@ -4,7 +4,6 @@ namespace Drupal\elasticsearch_connector_views\Plugin\views\filter;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\filter\FilterPluginBase;
-use Drupal\views\Views;
 
 /**
  * Default implementation of the base filter plugin.

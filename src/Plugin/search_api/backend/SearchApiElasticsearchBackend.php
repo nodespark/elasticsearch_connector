@@ -26,7 +26,6 @@ use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\SearchApiException;
-use Drupal\search_api\Utility as SearchApiUtility;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
 use nodespark\DESConnector\ClientInterface;
 use Psr\Log\LoggerInterface;

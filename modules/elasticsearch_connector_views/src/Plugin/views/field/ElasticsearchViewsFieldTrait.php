@@ -3,7 +3,6 @@
 namespace Drupal\elasticsearch_connector_views\Plugin\views\field;
 
 use Drupal\elasticsearch_connector_views\Plugin\views\ElasticsearchViewsHandlerTrait;
-use Drupal\views\Plugin\views\field\MultiItemsFieldHandlerInterface;
 use Drupal\views\ResultRow;
 
 /**

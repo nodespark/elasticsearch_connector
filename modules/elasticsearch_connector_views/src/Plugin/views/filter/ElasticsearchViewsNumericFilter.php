@@ -2,7 +2,6 @@
 
 namespace Drupal\elasticsearch_connector_views\Plugin\views\filter;
 
-use Drupal\views\Plugin\views\filter\FilterPluginBase;
 use Drupal\views\Plugin\views\filter\NumericFilter;
 
 /**

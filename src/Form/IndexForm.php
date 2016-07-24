@@ -10,7 +10,6 @@ namespace Drupal\elasticsearch_connector\Form;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
-use Drupal\elasticsearch_connector\Entity\Index;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;

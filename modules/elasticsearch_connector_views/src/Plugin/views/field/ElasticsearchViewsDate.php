@@ -3,8 +3,6 @@
 namespace Drupal\elasticsearch_connector_views\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\Date;
-use Drupal\views\Plugin\views\field\MultiItemsFieldHandlerInterface;
-use Drupal\views\ResultRow;
 
 /**
  * Handles the display of date fields in Search API Views.
