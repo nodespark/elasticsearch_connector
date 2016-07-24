@@ -14,12 +14,9 @@ use Drupal\elasticsearch_connector\Entity\Cluster;
 function elasticsearch_connector_views_views_data() {
   $data = array();
 
-  $data = array();
-
   $clientManager = \Drupal::service('elasticsearch_connector.client_manager');
   foreach (Cluster::loadAllClusters(FALSE) as $cluster) {
     $elasticsearchClient = $clientManager->getClientForCluster($cluster);
-    $info = $elasticsearchClient->getClusterInfo();
     if ($elasticsearchClient->isClusterOk()) {
       $indices = $elasticsearchClient->indices()->stats();
       // TODO: Handle aliases also, not only indices.

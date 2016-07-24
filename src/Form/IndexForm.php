@@ -241,9 +241,6 @@ class IndexForm extends EntityForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    /** @var Index $index */
-    $index = $this->entity;
-
     $cluster = Cluster::load($this->entity->server);
     $client = $this->clientManager->getClientForCluster($cluster);
 
