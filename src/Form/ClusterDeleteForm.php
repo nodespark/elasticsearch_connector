@@ -40,7 +40,7 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
    *
    * @param \Drupal\Core\Entity\EntityManager|\Drupal\Core\Entity\EntityTypeManager $entity_manager
    *   The entity manager.
-   * @param \Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface             $client_manager
+   * @param \Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface $client_manager
    */
   public function __construct(
     EntityTypeManager $entity_manager,

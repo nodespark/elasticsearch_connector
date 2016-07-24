@@ -94,7 +94,10 @@ class IndexForm extends EntityForm {
    */
   protected function getAllClusters() {
     $options = array();
-    foreach ($this->getClusterStorage()->loadMultiple() as $cluster_machine_name) {
+    foreach (
+      $this->getClusterStorage()
+           ->loadMultiple() as $cluster_machine_name
+    ) {
       $options[$cluster_machine_name->cluster_id] = $cluster_machine_name;
     }
     return $options;
@@ -158,7 +161,7 @@ class IndexForm extends EntityForm {
    */
   public function buildEntityForm(array &$form, FormStateInterface $form_state) {
     $form['index'] = array(
-      '#type'  => 'value',
+      '#type' => 'value',
       '#value' => $this->entity,
     );
 
@@ -245,19 +248,33 @@ class IndexForm extends EntityForm {
     $client = $this->clientManager->getClientForCluster($cluster);
 
     $index_params['index'] = $this->entity->index_id;
-    $index_params['body']['settings']['number_of_shards']   = $form_state->getValue('num_of_shards');
+    $index_params['body']['settings']['number_of_shards'] = $form_state->getValue('num_of_shards');
     $index_params['body']['settings']['number_of_replicas'] = $form_state->getValue('num_of_replica');
     $index_params['body']['settings']['cluster_machine_name'] = $form_state->getValue('server');
 
     try {
       $response = $client->indices()->create($index_params);
       if ($client->CheckResponseAck($response)) {
-        drupal_set_message(t('The index %index having id %index_id has been successfully created.',
-          array('%index' => $form_state->getValue('name'), '%index_id' => $form_state->getValue('index_id'))));
+        drupal_set_message(
+          t(
+            'The index %index having id %index_id has been successfully created.',
+            array(
+              '%index' => $form_state->getValue('name'),
+              '%index_id' => $form_state->getValue('index_id'),
+            )
+          )
+        );
       }
       else {
-        drupal_set_message(t('Fail to create the index %index having id @index_id',
-          array('%index' => $form_state->getValue('name'), '@index_id' => $form_state->getValue('index_id'))), 'error');
+        drupal_set_message(
+          t(
+            'Fail to create the index %index having id @index_id',
+            array(
+              '%index' => $form_state->getValue('name'),
+              '@index_id' => $form_state->getValue('index_id'),
+            )
+          ), 'error'
+        );
       }
 
       parent::save($form, $form_state);

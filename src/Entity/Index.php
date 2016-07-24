@@ -75,6 +75,7 @@ class Index extends ConfigEntityBase {
 
   /**
    * Cluster the index is attached to.
+   *
    * @var array
    */
   public $server;

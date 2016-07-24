@@ -105,11 +105,20 @@ class ElasticsearchTest extends BackendTest {
    * Tests whether some test searches have the correct results.
    */
   protected function searchSuccess1() {
-    $prepareSearch = $this->buildSearch('test')->range(1, 2)->sort($this->getFieldId('id'), 'ASC');
+    $prepareSearch = $this->buildSearch('test')
+                          ->range(1, 2)
+                          ->sort($this->getFieldId('id'), 'ASC');
     sleep(1);
     $results = $prepareSearch->execute();
     $this->assertEqual($results->getResultCount(), 4, 'Search for »test« returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(2, 3)), 'Search for »test« returned correct result.');
+    $this->assertEqual(
+      array_keys($results->getResultItems()), $this->getItemIds(
+      array(
+        2,
+        3,
+      )
+    ), 'Search for »test« returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -119,7 +128,8 @@ class ElasticsearchTest extends BackendTest {
     $this->assertEqual($results->getResultItems()[$id]->getId(), $id);
     $this->assertEqual($results->getResultItems()[$id]->getDatasourceId(), 'entity:entity_test');
 
-    $prepareSearch = $this->buildSearch('test foo')->sort($this->getFieldId('id'), 'ASC');
+    $prepareSearch = $this->buildSearch('test foo')
+                          ->sort($this->getFieldId('id'), 'ASC');
     sleep(1);
     $results = $prepareSearch->execute();
     $this->assertEqual($results->getResultCount(), 3, 'Search for »test foo« returned correct number of results.');
@@ -135,11 +145,19 @@ class ElasticsearchTest extends BackendTest {
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
-    $prepareSearch = $this->buildSearch('foo', array('type,item'))->sort($this->getFieldId('id'), 'ASC');
+    $prepareSearch = $this->buildSearch('foo', array('type,item'))
+                          ->sort($this->getFieldId('id'), 'ASC');
     sleep(1);
     $results = $prepareSearch->execute();
     $this->assertEqual($results->getResultCount(), 2, 'Search for »foo« returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2)), 'Search for »foo« returned correct result.');
+    $this->assertEqual(
+      array_keys($results->getResultItems()), $this->getItemIds(
+      array(
+        1,
+        2,
+      )
+    ), 'Search for »foo« returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -199,7 +217,9 @@ class ElasticsearchTest extends BackendTest {
    */
   protected function regressionTests() {
     // Regression tests for #2007872.
-    $prepareSearch = $this->buildSearch('test')->sort($this->getFieldId('id'), 'ASC')->sort($this->getFieldId('type'), 'ASC');
+    $prepareSearch = $this->buildSearch('test')
+                          ->sort($this->getFieldId('id'), 'ASC')
+                          ->sort($this->getFieldId('type'), 'ASC');
     $results = $prepareSearch->execute();
     $this->assertEqual($results->getResultCount(), 4, 'Sorting on field with NULLs returned correct number of results.');
     $this->assertEqual(
@@ -327,7 +347,12 @@ class ElasticsearchTest extends BackendTest {
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
-    $query = $this->buildSearch($keys, array(), array($this->getFieldId('name'), $this->getFieldId('body')));
+    $query = $this->buildSearch(
+      $keys, array(), array(
+      $this->getFieldId('name'),
+      $this->getFieldId('body'),
+    )
+    );
     $query->range(0, 0);
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 5, 'Multi-field OR keywords returned correct number of results.');
@@ -373,7 +398,12 @@ class ElasticsearchTest extends BackendTest {
         'baz',
       ),
     );
-    $query = $this->buildSearch($keys, array(), array($this->getFieldId('name'), $this->getFieldId('body')));
+    $query = $this->buildSearch(
+      $keys, array(), array(
+      $this->getFieldId('name'),
+      $this->getFieldId('body'),
+    )
+    );
     $query->sort($this->getFieldId('id'), 'ASC');
     $results = $query->execute();
     $this->assertEqual($results->getResultCount(), 4, 'Nested multi-field OR keywords returned correct number of results.');
@@ -396,9 +426,18 @@ class ElasticsearchTest extends BackendTest {
       'foo',
       'bar',
     );
-    $results = $this->buildSearch($keys)->sort('search_api_id', 'ASC')->execute();
+    $results = $this->buildSearch($keys)
+                    ->sort('search_api_id', 'ASC')
+                    ->execute();
     $this->assertEqual($results->getResultCount(), 2, 'Negated AND fulltext search returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3, 4)), 'Negated AND fulltext search returned correct result.');
+    $this->assertEqual(
+      array_keys($results->getResultItems()), $this->getItemIds(
+      array(
+        3,
+        4,
+      )
+    ), 'Negated AND fulltext search returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -424,9 +463,18 @@ class ElasticsearchTest extends BackendTest {
         'bar',
       ),
     );
-    $results = $this->buildSearch($keys)->sort('search_api_id', 'ASC')->execute();
+    $results = $this->buildSearch($keys)
+                    ->sort('search_api_id', 'ASC')
+                    ->execute();
     $this->assertEqual($results->getResultCount(), 2, 'Nested NOT AND fulltext search returned correct number of results.');
-    $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(3, 4)), 'Nested NOT AND fulltext search returned correct result.');
+    $this->assertEqual(
+      array_keys($results->getResultItems()), $this->getItemIds(
+      array(
+        3,
+        4,
+      )
+    ), 'Nested NOT AND fulltext search returned correct result.'
+    );
     $this->assertIgnored($results);
     $this->assertWarnings($results);
 
@@ -437,35 +485,46 @@ class ElasticsearchTest extends BackendTest {
    */
   protected function regressionTests2() {
     // Create a "keywords" field on the test entity type.
-    FieldStorageConfig::create(array(
-      'field_name' => 'prices',
-      'entity_type' => 'entity_test',
-      'type' => 'decimal',
-      'cardinality' => FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED,
-    ))->save();
-    FieldConfig::create(array(
-      'field_name' => 'prices',
-      'entity_type' => 'entity_test',
-      'bundle' => 'item',
-      'label' => 'Prices',
-    ))->save();
+    FieldStorageConfig::create(
+      array(
+        'field_name' => 'prices',
+        'entity_type' => 'entity_test',
+        'type' => 'decimal',
+        'cardinality' => FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED,
+      )
+    )->save();
+    FieldConfig::create(
+      array(
+        'field_name' => 'prices',
+        'entity_type' => 'entity_test',
+        'bundle' => 'item',
+        'label' => 'Prices',
+      )
+    )->save();
 
     // Regression test for #1916474.
     /** @var \Drupal\search_api\Index\IndexInterface $index */
     $index = Index::load($this->indexId);
-    $index->getFields(FALSE)[$this->getFieldId('prices')]->setType('decimal')->setIndexed(TRUE, TRUE);
+    $index->getFields(FALSE)[$this->getFieldId('prices')]->setType('decimal')
+                                                         ->setIndexed(TRUE, TRUE);
     $success = $index->save();
     $this->assertTrue($success, 'The index field settings were successfully changed.');
 
     // Reset the static cache so the new values will be available.
-    \Drupal::entityManager()->getStorage('search_api_server')->resetCache(array($this->serverId));
-    \Drupal::entityManager()->getStorage('search_api_index')->resetCache(array($this->serverId));
+    \Drupal::entityManager()
+           ->getStorage('search_api_server')
+           ->resetCache(array($this->serverId));
+    \Drupal::entityManager()
+           ->getStorage('search_api_index')
+           ->resetCache(array($this->serverId));
 
-    entity_create('entity_test', array(
+    entity_create(
+      'entity_test', array(
       'id' => 6,
       'prices' => array('3.5', '3.25', '3.75', '3.5'),
       'type' => 'item',
-    ))->save();
+    )
+    )->save();
 
     $this->indexItems($this->indexId);
 

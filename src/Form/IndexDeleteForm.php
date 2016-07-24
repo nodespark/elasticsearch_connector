@@ -55,14 +55,16 @@ class IndexDeleteForm extends EntityConfirmFormBase {
     $cluster = Cluster::load($this->entity->server);
     $client = $this->clientManager->getClientForCluster($cluster);
     try {
-      if($client->indices()->exists(array('index' => $this->entity->index_id))) {
+      if ($client->indices()
+                 ->exists(array('index' => $this->entity->index_id))
+      ) {
         $client->indices()->delete(['index' => $this->entity->index_id]);
       }
       $this->entity->delete();
       drupal_set_message($this->t('The index %title has been deleted.', array('%title' => $this->entity->label())));
       $form_state->setRedirect('elasticsearch_connector.config_entity.list');
     }
-    catch (Missing404Exception $e){
+    catch (Missing404Exception $e) {
       // The index was not found, so just remove it anyway.
       drupal_set_message($e->getMessage(), 'error');
     }

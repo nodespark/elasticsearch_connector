@@ -20,7 +20,9 @@ class ClientManager implements ClientManagerInterface {
   protected $moduleHandler;
 
   /**
-   * The classname that implements \nodespark\DESConnector\ClientFactoryInterface
+   * The classname that implements
+   * \nodespark\DESConnector\ClientFactoryInterface
+   *
    * @var string
    */
   protected $clientManagerFactory;
@@ -68,7 +70,7 @@ class ClientManager implements ClientManagerInterface {
             'username' => $cluster->options['username'],
             'password' => $cluster->options['password'],
             'method' => $cluster->options['authentication_type'],
-          ]
+          ],
         ];
       }
 

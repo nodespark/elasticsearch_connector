@@ -23,7 +23,7 @@ class FilterFactory {
       switch ($condition->getOperator()) {
         case '<>':
           $filter = [
-            'exists' => ['field' => $condition->getField()]
+            'exists' => ['field' => $condition->getField()],
           ];
           break;
 
@@ -31,9 +31,9 @@ class FilterFactory {
           $filter = [
             'not' => [
               'filter' => [
-                'exists' => ['field' => $condition->getField()]
-              ]
-            ]
+                'exists' => ['field' => $condition->getField()],
+              ],
+            ],
           ];
           break;
 
@@ -48,7 +48,7 @@ class FilterFactory {
       switch ($condition->getOperator()) {
         case '=':
           $filter = [
-            'term' => [$condition->getField() => $condition->getValue()]
+            'term' => [$condition->getField() => $condition->getValue()],
           ];
           break;
 
@@ -56,9 +56,9 @@ class FilterFactory {
           $filter = [
             'not' => [
               'filter' => [
-                'term' => [$condition->getField() => $condition->getValue()]
-              ]
-            ]
+                'term' => [$condition->getField() => $condition->getValue()],
+              ],
+            ],
           ];
           break;
 
@@ -66,12 +66,12 @@ class FilterFactory {
           $filter = [
             'range' => [
               $condition->getField() => [
-                'from'          => $condition->getValue(),
-                'to'            => NULL,
+                'from' => $condition->getValue(),
+                'to' => NULL,
                 'include_lower' => FALSE,
-                'include_upper' => FALSE
-              ]
-            ]
+                'include_upper' => FALSE,
+              ],
+            ],
           ];
           break;
 
@@ -79,12 +79,12 @@ class FilterFactory {
           $filter = [
             'range' => [
               $condition->getField() => [
-                'from'          => $condition->getValue(),
-                'to'            => NULL,
+                'from' => $condition->getValue(),
+                'to' => NULL,
                 'include_lower' => TRUE,
-                'include_upper' => FALSE
-              ]
-            ]
+                'include_upper' => FALSE,
+              ],
+            ],
           ];
           break;
 
@@ -92,12 +92,12 @@ class FilterFactory {
           $filter = [
             'range' => [
               $condition->getField() => [
-                'from'          => NULL,
-                'to'            => $condition->getValue(),
+                'from' => NULL,
+                'to' => $condition->getValue(),
                 'include_lower' => FALSE,
-                'include_upper' => FALSE
-              ]
-            ]
+                'include_upper' => FALSE,
+              ],
+            ],
           ];
           break;
 
@@ -105,12 +105,12 @@ class FilterFactory {
           $filter = [
             'range' => [
               $condition->getField() => [
-                'from'          => NULL,
-                'to'            => $condition->getValue(),
+                'from' => NULL,
+                'to' => $condition->getValue(),
                 'include_lower' => FALSE,
-                'include_upper' => TRUE
-              ]
-            ]
+                'include_upper' => TRUE,
+              ],
+            ],
           ];
           break;
 
@@ -118,7 +118,10 @@ class FilterFactory {
           throw new \Exception(
             t(
               'Undefined operator :field_operator for :field_id field! Incorrect filter criteria is using for searching!',
-              [':field_operator' => $condition->getOperator(), ':field_id' => $condition->getField()]
+              [
+                ':field_operator' => $condition->getOperator(),
+                ':field_id' => $condition->getField(),
+              ]
             )
           );
       }

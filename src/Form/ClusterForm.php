@@ -164,7 +164,7 @@ class ClusterForm extends EntityForm {
       '#options' => array(
         'Basic' => t('Basic'),
         'Digest' => t('Digest'),
-        'NTLM' => t('NTLM')
+        'NTLM' => t('NTLM'),
       ),
       '#default_value' => (!empty($this->entity->options['authentication_type']) ? $this->entity->options['authentication_type'] : 'Basic'),
       '#states' => array(
@@ -268,7 +268,7 @@ class ClusterForm extends EntityForm {
                 $cluster_info['health']['cluster_name'],
                 $cluster_info['health']['status'],
                 $cluster_info['health']['number_of_nodes'],
-              )
+              ),
             );
 
             $element = array(
@@ -277,7 +277,7 @@ class ClusterForm extends EntityForm {
               '#rows' => $rows,
               '#attributes' => array(
                 'class' => array('admin-elasticsearch'),
-                'id' => 'cluster-info'
+                'id' => 'cluster-info',
               ),
             );
           }
@@ -287,7 +287,7 @@ class ClusterForm extends EntityForm {
                 t('Unknown'),
                 t('Unavailable'),
                 '',
-              )
+              ),
             );
 
             $element = array(
@@ -296,7 +296,7 @@ class ClusterForm extends EntityForm {
               '#rows' => $rows,
               '#attributes' => array(
                 'class' => array('admin-elasticsearch'),
-                'id' => 'cluster-info'
+                'id' => 'cluster-info',
               ),
             );
           }

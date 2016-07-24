@@ -114,7 +114,7 @@ class ElasticsearchController extends ControllerBase {
           $row[] = array(
             'data' => format_size(
               $node_properties['indices']['store']['size_in_bytes']
-            )
+            ),
           );
           $total_docs += $node_properties['indices']['docs']['count'];
           $total_size += $node_properties['indices']['store']['size_in_bytes'];
@@ -128,22 +128,22 @@ class ElasticsearchController extends ControllerBase {
           array(
             'data' => $cluster_status['health']['number_of_nodes'] . ' ' . t(
                 'Nodes'
-              )
+              ),
           ),
           array(
             'data' => $cluster_status['health']['active_shards'] + $cluster_status['health']['unassigned_shards'] . ' ' . t(
                 'Total Shards'
-              )
+              ),
           ),
           array(
             'data' => $cluster_status['health']['active_shards'] . ' ' . t(
                 'Successful Shards'
-              )
+              ),
           ),
           array(
             'data' => count(
                 $cluster_status['state']['metadata']['indices']
-              ) . ' ' . t('Indices')
+              ) . ' ' . t('Indices'),
           ),
           array('data' => $total_docs . ' ' . t('Total Documents')),
           array('data' => format_size($total_size) . ' ' . t('Total Size')),

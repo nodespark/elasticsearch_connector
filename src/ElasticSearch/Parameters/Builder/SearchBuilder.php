@@ -151,8 +151,7 @@ class SearchBuilder {
       $query_fields = array();
       foreach ($query_full_text_fields as $full_text_field_name) {
         $full_text_field = $index_fields[$full_text_field_name];
-        $query_fields[] = $full_text_field->getFieldIdentifier(
-          ) . '^' . $full_text_field->getBoost();
+        $query_fields[] = $full_text_field->getFieldIdentifier() . '^' . $full_text_field->getBoost();
       }
 
       // Query string.
@@ -171,7 +170,8 @@ class SearchBuilder {
     // Sort.
     try {
       $sort = $this->getSortSearchQuery();
-    } catch (ElasticsearchException $e) {
+    }
+    catch (ElasticsearchException $e) {
       watchdog_exception('Elasticsearch Search API', $e);
       drupal_set_message($e->getMessage(), 'error');
     }
@@ -185,7 +185,8 @@ class SearchBuilder {
       if (!empty($parsed_query_filters)) {
         $query_search_filter = $parsed_query_filters[0];
       }
-    } catch (ElasticsearchException $e) {
+    }
+    catch (ElasticsearchException $e) {
       watchdog_exception(
         'Elasticsearch Search API',
         $e,
@@ -216,9 +217,9 @@ class SearchBuilder {
    *
    * TODO: better handling of parse modes.
    *
-   * @param array  $keys
+   * @param array $keys
    * @param string $parse_mode
-   * @param array  $full_text_fields
+   * @param array $full_text_fields
    *
    * @return string
    */
@@ -295,8 +296,8 @@ class SearchBuilder {
    * Recursively parse Search API condition group.
    *
    * @param ConditionGroupInterface $condition_group
-   * @param array                   $index_fields
-   * @param string                  $ignored_field_id
+   * @param array $index_fields
+   * @param string $ignored_field_id
    *
    * @return array|null
    * @throws \Exception
@@ -321,8 +322,7 @@ class SearchBuilder {
         // Simple filter [field_id, value, operator].
         if ($condition instanceof Condition) {
 
-          if (!$condition->getField() || !$condition->getValue(
-            ) || !$condition->getOperator()
+          if (!$condition->getField() || !$condition->getValue() || !$condition->getOperator()
           ) {
             // TODO: When using views the sort field is coming as a filter and messing with this section.
             // throw new Exception(t('Incorrect filter criteria is using for searching!'));
@@ -381,7 +381,7 @@ class SearchBuilder {
   /**
    * Helper function thaht set filters conjunction
    *
-   * @param array  $filters
+   * @param array $filters
    * @param string $conjunction
    *
    * @return array|null
@@ -401,7 +401,7 @@ class SearchBuilder {
             'Undefined conjunction :conjunction! Available values are :avail_conjunction! Incorrect filter criteria is using for searching!',
             [
               ':conjunction!' => $conjunction,
-              ':avail_conjunction' => $conjunction
+              ':avail_conjunction' => $conjunction,
             ]
           )
         );

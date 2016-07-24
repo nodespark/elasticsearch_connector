@@ -13,6 +13,7 @@ interface ClientManagerInterface {
 
   /**
    * @param \Drupal\elasticsearch_connector\Entity\Cluster $cluster
+   *
    * @return \nodespark\DESConnector\ClientInterface
    */
   public function getClientForCluster(Cluster $cluster);

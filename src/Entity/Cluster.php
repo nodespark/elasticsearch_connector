@@ -16,7 +16,8 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *   id = "elasticsearch_cluster",
  *   label = @Translation("Elasticsearch Cluster"),
  *   handlers = {
- *     "list_builder" = "Drupal\elasticsearch_connector\Controller\ClusterListBuilder",
+ *     "list_builder" =
+ *   "Drupal\elasticsearch_connector\Controller\ClusterListBuilder",
  *     "form" = {
  *       "default" = "Drupal\elasticsearch_connector\Form\ClusterForm",
  *       "delete" = "Drupal\elasticsearch_connector\Form\ClusterDeleteForm",
@@ -107,8 +108,9 @@ class Cluster extends ConfigEntityBase {
    *
    * @return string
    *
-   * TODO: Not sure that getting the default cluster in general should be part of the CLuster entity.
-   * TODO: Maybe check if that is a default Cluster entity - YES, but in general - NO.
+   * TODO: Not sure that getting the default cluster in general should be part
+   *   of the CLuster entity. TODO: Maybe check if that is a default Cluster
+   *   entity - YES, but in general - NO.
    */
   public static function getDefaultCluster() {
     return \Drupal::state()->get(
@@ -159,20 +161,21 @@ class Cluster extends ConfigEntityBase {
     $url_parsed = parse_url($this->url);
     if ($options['use_authentication']) {
       return $url_parsed['scheme'] . '://'
-            . $options['username'] . ':****@'
-            . $url_parsed['host']
-            . (isset($url_parsed['port']) ? ':' . $url_parsed['port'] : '');
+      . $options['username'] . ':****@'
+      . $url_parsed['host']
+      . (isset($url_parsed['port']) ? ':' . $url_parsed['port'] : '');
     }
     else {
       return $url_parsed['scheme'] . '://'
-        . (isset($url_parsed['user']) ? $url_parsed['user'] . ':****@' : '')
-        . $url_parsed['host']
-        . (isset($url_parsed['port']) ? ':' . $url_parsed['port'] : '');
+      . (isset($url_parsed['user']) ? $url_parsed['user'] . ':****@' : '')
+      . $url_parsed['host']
+      . (isset($url_parsed['port']) ? ':' . $url_parsed['port'] : '');
     }
   }
 
   /**
    * Get the raw url.
+   *
    * @return string
    */
   public function getRawUrl() {

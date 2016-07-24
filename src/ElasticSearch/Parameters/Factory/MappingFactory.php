@@ -17,14 +17,14 @@ class MappingFactory {
    *
    * @return array|null
    */
-  public static function mappingFromField(FieldInterface $field){
+  public static function mappingFromField(FieldInterface $field) {
     try {
       $type = $field->getType();
 
       switch ($type) {
         case 'text':
           return [
-            'type'  => 'string',
+            'type' => 'string',
             'boost' => $field->getBoost(),
             'analyzer' => 'snowball',
           ];
@@ -33,7 +33,7 @@ class MappingFactory {
         case 'string':
         case 'token':
           return [
-            'type'  => 'string',
+            'type' => 'string',
             'index' => 'not_analyzed',
           ];
 
@@ -55,11 +55,12 @@ class MappingFactory {
 
         case 'date':
           return [
-            'type'   => 'date',
+            'type' => 'date',
             'format' => 'epoch_second',
           ];
       }
-    } catch (ElasticsearchException $e) {
+    }
+    catch (ElasticsearchException $e) {
       watchdog_exception('Elasticsearch Backend', $e);
     }
 

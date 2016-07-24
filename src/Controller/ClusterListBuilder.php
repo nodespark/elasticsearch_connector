@@ -121,7 +121,8 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     elseif ($entity instanceof Index) {
       $cluster = Cluster::load($entity->server);
       $client_connector = $this->clientManager->getClientForCluster($cluster);
-    } else {
+    }
+    else {
       throw new NotFoundHttpException();
     }
 

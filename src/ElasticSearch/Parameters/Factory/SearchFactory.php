@@ -30,7 +30,7 @@ class SearchFactory {
    * TODO: Add excerpt handling
    *
    * @param \Drupal\search_api\Query\QueryInterface $query
-   * @param array                                   $response
+   * @param array $response
    *
    * @return \Drupal\search_api\Query\ResultSetInterface
    */
@@ -56,7 +56,7 @@ class SearchFactory {
           }
           $field = $index->getField($elasticsearch_property_id);
           if (!$field instanceof FieldInterface) {
-            $field   = SearchApiUtility::createField(
+            $field = SearchApiUtility::createField(
               $index,
               $elasticsearch_property_id,
               [

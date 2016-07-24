@@ -14,13 +14,16 @@ class IndexFactory {
    * Build parameters required to index
    *
    * TODO: We need to handle the following params as well:
-   * ['consistency'] = (enum) Explicit write consistency setting for the operation
-   * ['refresh']     = (boolean) Refresh the index after performing the operation
+   * ['consistency'] = (enum) Explicit write consistency setting for the
+   * operation
+   * ['refresh']     = (boolean) Refresh the index after performing the
+   * operation
    * ['replication'] = (enum) Explicitly set the replication type
-   * ['fields']      = (list) Default comma-separated list of fields to return in the response for updates
+   * ['fields']      = (list) Default comma-separated list of fields to return
+   * in the response for updates
    *
    * @param IndexInterface $index
-   * @param bool           $with_type
+   * @param bool $with_type
    *
    * @return array
    */
@@ -59,7 +62,7 @@ class IndexFactory {
    * Build parameters to bulk delete indexes
    *
    * @param \Drupal\search_api\IndexInterface $index
-   * @param array                             $ids
+   * @param array $ids
    *
    * @return array
    */
@@ -71,7 +74,7 @@ class IndexFactory {
           '_index' => $params['index'],
           '_type' => $params['type'],
           '_id' => $id,
-        ]
+        ],
       ];
     }
 
@@ -81,7 +84,7 @@ class IndexFactory {
   /**
    * Build parameters to bulk delete indexes
    *
-   * @param \Drupal\search_api\IndexInterface       $index
+   * @param \Drupal\search_api\IndexInterface $index
    * @param \Drupal\search_api\Item\ItemInterface[] $items
    *
    * @return array
@@ -120,7 +123,7 @@ class IndexFactory {
       'id' => [
         'type' => 'string',
         'index' => 'not_analyzed',
-        'include_in_all' => FALSE
+        'include_in_all' => FALSE,
       ],
     ];
 
