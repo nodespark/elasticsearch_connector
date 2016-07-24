@@ -13,10 +13,12 @@ use \Elasticsearch\Client;
 function elasticsearch_connector_help($route_name) {
   switch ($route_name) {
     case 'admin/help#elasticsearch_connector':
-      return '<p>' . t('Abstraction of making connection to the elasticsearch
+      return '<p>' . t(
+        'Abstraction of making connection to the elasticsearch
         server. This module is API for a whole bunch of functionality connected
         with this module. Provides an interface to connect to a elasticsearch
-        cluster and implements the official Elasticsearch-php library.') . '</p>';
+        cluster and implements the official Elasticsearch-php library.'
+      ) . '</p>';
   }
 }
 
@@ -202,8 +204,8 @@ function _elasticsearch_ec_index_process(array $element, array &$form_state, arr
     '#default_value' => isset($element['#default_value'])
     && is_array($element['#default_value'])
     && isset($element['#default_value']['cluster_id'])
-    ? $element['#default_value']['cluster_id']
-    : '',
+      ? $element['#default_value']['cluster_id']
+      : '',
     // TODO: Allow this option to be overwritten and #value if we had such.
     '#description' => t('Select the cluster.'),
     '#ajax' => array(
@@ -258,21 +260,21 @@ function _elasticsearch_ec_index_process(array $element, array &$form_state, arr
     '#default_value' => isset($element['#default_value'])
     && is_array($element['#default_value'])
     && isset($element['#default_value']['index'])
-    ? $element['#default_value']['index']
-    : '',
+      ? $element['#default_value']['index']
+      : '',
     '#description' => t('Select the index.'),
     '#options' => $index_options,
     '#prefix' => '<div id="' . $wrapper_id . '">',
     '#suffix' => '<div class="dialog-links ' . $element['#id'] . '">'
-    . theme(
-      'links__es_index_links', array(
-        'links' => $links,
-        'attributes' => array(
-          'class' => 'index-dialog-links',
-        ),
+      . theme(
+        'links__es_index_links', array(
+          'links' => $links,
+          'attributes' => array(
+            'class' => 'index-dialog-links',
+          ),
+        )
       )
-    )
-    . '</div></div>',
+      . '</div></div>',
   );
 
   unset($element['#title']);
@@ -321,8 +323,8 @@ function elasticsearch_connector_close_on_redirect($cluster_id, $index_name) {
   // in the form. It is a hack, but it is very effective, since we don't have
   // to be worried about getting overrun by other form submit handlers.
   $_GET['destination'] = 'elasticsearch-dialog/redirect/' .
-      $cluster_id . '/' . $index_name .
-      '?elasticsearch-dialog-close=1&render=elasticsearch-dialog';
+    $cluster_id . '/' . $index_name .
+    '?elasticsearch-dialog-close=1&render=elasticsearch-dialog';
 
   if (isset($_GET['cluster_element_id'])) {
     $_GET['destination'] .= '&index_element_id=' . $_GET['index_element_id'];
@@ -345,14 +347,14 @@ function elasticsearch_connector_redirect_page($cluster, $index_name) {
     drupal_add_js(
       array(
         'elasticsearch' =>
-        array(
-          'dialog' => array(
-            'cluster_id' => $cluster->cluster_id,
-            'index_name' => $index_name,
-            'index_element_id' => (string) $_GET['index_element_id'],
-            'cluster_element_id' => (string) $_GET['cluster_element_id'],
+          array(
+            'dialog' => array(
+              'cluster_id' => $cluster->cluster_id,
+              'index_name' => $index_name,
+              'index_element_id' => (string) $_GET['index_element_id'],
+              'cluster_element_id' => (string) $_GET['cluster_element_id'],
+            ),
           ),
-        ),
       ),
       'setting'
     );

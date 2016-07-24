@@ -349,9 +349,9 @@ class ElasticsearchTest extends BackendTest {
 
     $query = $this->buildSearch(
       $keys, array(), array(
-      $this->getFieldId('name'),
-      $this->getFieldId('body'),
-    )
+        $this->getFieldId('name'),
+        $this->getFieldId('body'),
+      )
     );
     $query->range(0, 0);
     $results = $query->execute();
@@ -400,9 +400,9 @@ class ElasticsearchTest extends BackendTest {
     );
     $query = $this->buildSearch(
       $keys, array(), array(
-      $this->getFieldId('name'),
-      $this->getFieldId('body'),
-    )
+        $this->getFieldId('name'),
+        $this->getFieldId('body'),
+      )
     );
     $query->sort($this->getFieldId('id'), 'ASC');
     $results = $query->execute();
@@ -520,10 +520,10 @@ class ElasticsearchTest extends BackendTest {
 
     entity_create(
       'entity_test', array(
-      'id' => 6,
-      'prices' => array('3.5', '3.25', '3.75', '3.5'),
-      'type' => 'item',
-    )
+        'id' => 6,
+        'prices' => array('3.5', '3.25', '3.75', '3.5'),
+        'type' => 'item',
+      )
     )->save();
 
     $this->indexItems($this->indexId);

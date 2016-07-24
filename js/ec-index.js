@@ -2,22 +2,22 @@
 
   Drupal.behaviors.ECIndexDialog = {
     attach: function (context, settings) {
-        $('a.ec-index-dialog').once('ec-index-dialog', function () {
-          $(this).click(function() {
+      $('a.ec-index-dialog').once('ec-index-dialog', function () {
+        $(this).click(function () {
 
-            Drupal.ECIndexDialog.open($(this).attr('href'), $(this).html());
-            Drupal.ECIndexDialog.populateIndex = function(cluster_id, index_name, settings) {
-              // Add new option and select it.
-              $('#' + settings.index_element_id)
+          Drupal.ECIndexDialog.open($(this).attr('href'), $(this).html());
+          Drupal.ECIndexDialog.populateIndex = function (cluster_id, index_name, settings) {
+            // Add new option and select it.
+            $('#' + settings.index_element_id)
                 .append('<option value="' + index_name + '">' + index_name + '</option>')
                 .val(index_name);
 
-              // Trigger change to update the form cache.
-              $('#' + settings.cluster_element_id).trigger('change');
-            }
+            // Trigger change to update the form cache.
+            $('#' + settings.cluster_element_id).trigger('change');
+          }
 
-            return false;
-          }, context);
+          return false;
+        }, context);
       });
     }
   };
@@ -40,12 +40,12 @@
    * Open a dialog window.
    * @param string href the link to point to.
    */
-  Drupal.ECIndexDialog.open = function(href, title) {
+  Drupal.ECIndexDialog.open = function (href, title) {
     if (!this.dialog_open) {
       // Get the current window size and do 75% of the width and 90% of the height.
       // @todo Add settings for this so that users can configure this by themselves.
-      var window_width = $(window).width() / 100*75;
-      var window_height = $(window).height() / 100*90;
+      var window_width = $(window).width() / 100 * 75;
+      var window_height = $(window).height() / 100 * 90;
       this.open_dialog = $('<iframe class="elasticsearch-dialog-iframe" src="' + href + '"></iframe>').dialog({
         width: window_width,
         height: window_height,
@@ -53,13 +53,14 @@
         resizable: false,
         position: ["center", 50],
         title: title,
-        close: function() { Drupal.ECIndexDialog.dialog_open = false; }
-      }).width(window_width-10).height(window_height)
-      $(window).bind("resize scroll", function() {
+        close: function () {
+          Drupal.ECIndexDialog.dialog_open = false;
+        }
+      }).width(window_width - 10).height(window_height)
+      $(window).bind("resize scroll", function () {
         // Move the dialog the main window moves.
         if (typeof Drupal.ECIndexDialog == "object" && Drupal.ECIndexDialog.open_dialog != null) {
-          Drupal.ECIndexDialog.open_dialog.
-            dialog("option", "position", ["center", 10]);
+          Drupal.ECIndexDialog.open_dialog.dialog("option", "position", ["center", 10]);
           Drupal.ECIndexDialog.setDimensions();
         }
       });
@@ -71,14 +72,11 @@
    * Set dimensions of the dialog dependning on the current winow size
    * and scroll position.
    */
-  Drupal.ECIndexDialog.setDimensions = function() {
+  Drupal.ECIndexDialog.setDimensions = function () {
     if (typeof Drupal.ECIndexDialog == "object") {
-      var window_width = $(window).width() / 100*75;
-      var window_height = $(window).height() / 100*90;
-      this.open_dialog.
-        dialog("option", "width", window_width).
-        dialog("option", "height", window_height).
-        width(window_width-10).height(window_height);
+      var window_width = $(window).width() / 100 * 75;
+      var window_height = $(window).height() / 100 * 90;
+      this.open_dialog.dialog("option", "width", window_width).dialog("option", "height", window_height).width(window_width - 10).height(window_height);
     }
   }
 
@@ -86,7 +84,7 @@
    * Close the dialog and provide an entity id and a title
    * that we can use in various ways.
    */
-  Drupal.ECIndexDialog.close = function(cluster_id, index_name, settings) {
+  Drupal.ECIndexDialog.close = function (cluster_id, index_name, settings) {
     this.open_dialog.dialog('close');
     this.open_dialog.dialog('destroy');
     this.open_dialog = null;
