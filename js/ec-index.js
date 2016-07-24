@@ -38,7 +38,9 @@
 
   /**
    * Open a dialog window.
-   * @param string href the link to point to.
+   *
+   * @param href
+   * @param title
    */
   Drupal.ECIndexDialog.open = function (href, title) {
     if (!this.dialog_open) {

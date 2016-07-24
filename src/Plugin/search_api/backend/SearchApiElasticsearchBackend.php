@@ -616,7 +616,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * @param mixed $facet_id
    * @param array $facet
    *
-   * @return
+   * @return array.
    */
   protected function createDateFieldFacet($facet_id, array $facet) {
     $result = $facet[$facet_id];
