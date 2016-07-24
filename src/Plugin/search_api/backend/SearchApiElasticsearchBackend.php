@@ -4,7 +4,8 @@
  * @file
  * Contains the SearchApiElasticsearchBackend object.
  *
- * TODO: Check for dependencies and remove them in order to properly test the code.
+ * TODO: Check for dependencies and remove them in order to properly test the
+ *   code.
  */
 
 namespace Drupal\elasticsearch_connector\Plugin\search_api\backend;
@@ -69,14 +70,14 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /**
    * SearchApiElasticsearchBackend constructor.
    *
-   * @param array                                                       $configuration
-   * @param string                                                      $plugin_id
-   * @param array                                                       $plugin_definition
-   * @param \Drupal\Core\Form\FormBuilderInterface                      $form_builder
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface               $module_handler
-   * @param ClientManagerInterface                                      $client_manager
-   * @param \Drupal\Core\Config\Config                                  $elasticsearch_settings
-   * * @param LoggerInterface                                           $logger
+   * @param array $configuration
+   * @param string $plugin_id
+   * @param array $plugin_definition
+   * @param \Drupal\Core\Form\FormBuilderInterface $form_builder
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   * @param ClientManagerInterface $client_manager
+   * @param \Drupal\Core\Config\Config $elasticsearch_settings
+   * * @param LoggerInterface $logger
    */
   public function __construct(
     array $configuration,
@@ -90,10 +91,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
-    $this->formBuilder           = $form_builder;
-    $this->moduleHandler         = $module_handler;
-    $this->clientManager         = $client_manager;
-    $this->logger                = $logger;
+    $this->formBuilder = $form_builder;
+    $this->moduleHandler = $module_handler;
+    $this->clientManager = $client_manager;
+    $this->logger = $logger;
     $this->elasticsearchSettings = $elasticsearch_settings;
 
     if (empty($this->configuration['cluster_settings']['cluster'])) {
@@ -135,18 +136,18 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    */
   public function defaultConfiguration() {
     return [
-      'cluster_settings'          => [
-        'cluster' => ''
+      'cluster_settings' => [
+        'cluster' => '',
       ],
-      'scheme'                    => 'http',
-      'host'                      => 'localhost',
-      'port'                      => '9200',
-      'path'                      => '',
-      'excerpt'                   => FALSE,
-      'retrieve_data'             => FALSE,
-      'highlight_data'            => FALSE,
-      'http_method'               => 'AUTO',
-      'autocorrect_spell'         => TRUE,
+      'scheme' => 'http',
+      'host' => 'localhost',
+      'port' => '9200',
+      'path' => '',
+      'excerpt' => FALSE,
+      'retrieve_data' => FALSE,
+      'highlight_data' => FALSE,
+      'http_method' => 'AUTO',
+      'autocorrect_spell' => TRUE,
       'autocorrect_suggest_words' => TRUE,
     ];
   }
@@ -159,31 +160,31 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $server_link = $this->cluster->getSafeUrl();
       // Editing this server
       $form['server_description'] = [
-        '#type'        => 'item',
-        '#title'       => $this->t('Elasticsearch Cluster'),
+        '#type' => 'item',
+        '#title' => $this->t('Elasticsearch Cluster'),
         '#description' => Link::fromTextAndUrl($server_link, Url::fromUri($server_link)),
       ];
     }
     $form['cluster_settings'] = [
-      '#type'  => 'fieldset',
+      '#type' => 'fieldset',
       '#title' => t('Elasticsearch settings'),
     ];
 
     //We are not displaying disabled clusters
     $clusters = Cluster::loadAllClusters(FALSE);
-    $options  = [];
+    $options = [];
     foreach ($clusters as $key => $cluster) {
       $options[$key] = $cluster->cluster_id;
     }
 
     $options[Cluster::getDefaultCluster()] = t('Default cluster: ' . Cluster::getDefaultCluster());
-    $form['cluster_settings']['cluster']   = [
-      '#type'          => 'select',
-      '#title'         => t('Cluster'),
-      '#required'      => TRUE,
-      '#options'       => $options,
+    $form['cluster_settings']['cluster'] = [
+      '#type' => 'select',
+      '#title' => t('Cluster'),
+      '#required' => TRUE,
+      '#options' => $options,
       '#default_value' => $this->configuration['cluster_settings']['cluster'] ? $this->configuration['cluster_settings']['cluster'] : '',
-      '#description'   => t('Select the cluster you want to handle the connections.'),
+      '#description' => t('Select the cluster you want to handle the connections.'),
     ];
     return $form;
   }
@@ -232,9 +233,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $info = [];
 
     $server_link = $this->cluster->getSafeUrl();
-    $info[]      = [
+    $info[] = [
       'label' => $this->t('Elasticsearch server URI'),
-      'info'  => Link::fromTextAndUrl($server_link, Url::fromUri($server_link)),
+      'info' => Link::fromTextAndUrl($server_link, Url::fromUri($server_link)),
     ];
 
     if ($this->server->status()) {
@@ -247,8 +248,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         $msg = $this->t('The Elasticsearch server could not be reached. Further data is therefore unavailable.');
       }
       $info[] = [
-        'label'  => $this->t('Connection'),
-        'info'   => $msg,
+        'label' => $this->t('Connection'),
+        'info' => $msg,
         'status' => $ping ? 'ok' : 'error',
       ];
     }
@@ -281,7 +282,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
         // Update mapping.
         $this->fieldsUpdated($index);
-      } catch (ElasticsearchException $e) {
+      }
+      catch (ElasticsearchException $e) {
         drupal_set_message($e->getMessage(), 'error');
       }
     }
@@ -291,7 +293,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * {@inheritdoc}
    */
   public function fieldsUpdated(IndexInterface $index) {
-    $params     = IndexFactory::index($index, TRUE);
+    $params = IndexFactory::index($index, TRUE);
 
     try {
       if ($this->client->indices()->existsType($params)) {
@@ -309,7 +311,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       if (!$this->client->CheckResponseAck($response)) {
         drupal_set_message(t('Cannot create the mapping of the fields!'), 'error');
       }
-    } catch (ElasticsearchException $e) {
+    }
+    catch (ElasticsearchException $e) {
       drupal_set_message($e->getMessage(), 'error');
       return FALSE;
     }
@@ -324,10 +327,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $params = IndexFactory::index($index);
 
     try {
-      if ($this->client->indices()->exists($params)){
+      if ($this->client->indices()->exists($params)) {
         $this->client->indices()->delete($params);
       }
-    } catch (ElasticsearchException $e) {
+    }
+    catch (ElasticsearchException $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
   }
@@ -356,7 +360,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
         throw new SearchApiException($this->t('An error occurred during indexing. Check your watchdog for more information.'));
       }
-    } catch (ElasticsearchException $e) {
+    }
+    catch (ElasticsearchException $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
 
@@ -375,7 +380,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * {@inheritdoc}
    */
   public function deleteItems(IndexInterface $index = NULL, array $ids) {
-    if(!count($ids)){
+    if (!count($ids)) {
       return;
     }
 
@@ -383,7 +388,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       $this->client->bulk(
         IndexFactory::bulkDelete($index, $ids)
       );
-    } catch (ElasticsearchException $e) {
+    }
+    catch (ElasticsearchException $e) {
       drupal_set_message($e->getMessage(), 'error');
     }
   }
@@ -414,7 +420,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     try {
       return SearchFactory::parseResult($query, $response);
     }
-    catch(\Exception $e){
+    catch (\Exception $e) {
       watchdog_exception('Elasticsearch API', $e);
       return $search_result;
     }
@@ -431,7 +437,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $params = IndexFactory::index($index, TRUE);
     try {
       return $this->client->indices()->existsType($params);
-    } catch (ElasticsearchException $e) {
+    }
+    catch (ElasticsearchException $e) {
       drupal_set_message($e->getMessage(), 'error');
       return FALSE;
     }
@@ -465,8 +472,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    *
    * @see facetapi_get_timestamp_gap()
    *
-   * @param int  $min
-   * @param int  $max
+   * @param int $min
+   * @param int $max
    * @param bool $timestamp
    *
    * @return string
@@ -501,20 +508,20 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function build facets in search.
    *
-   * @param array          $params
+   * @param array $params
    * @param QueryInterface $query
    */
   protected function addSearchFacets(array &$params, QueryInterface $query) {
 
     // SEARCH API FACETS.
-    $facets       = $query->getOption('search_api_facets');
+    $facets = $query->getOption('search_api_facets');
     $index_fields = $this->getIndexFields($query);
 
     if (!empty($facets)) {
       // Loop trough facets.
       foreach ($facets as $facet_id => $facet_info) {
         $field_id = $facet_info['field'];
-        $facet    = [$field_id => []];
+        $facet = [$field_id => []];
 
         // Skip if not recognized as a known field.
         if (!isset($index_fields[$field_id])) {
@@ -525,11 +532,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         // TODO: handle different types (GeoDistance and so on). See the
         // supportedFeatures todo.
         if ($field_type === 'date') {
-          $facet_type       = 'date_histogram';
+          $facet_type = 'date_histogram';
           $facet[$field_id] = $this->createDateFieldFacet($field_id, $facet);
         }
         else {
-          $facet_type                                 = 'terms';
+          $facet_type = 'terms';
           $facet[$field_id][$facet_type]['all_terms'] = (bool) $facet_info['missing'];
         }
 
@@ -537,7 +544,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
         if (!empty($facet[$field_id])) {
           // Add facet options.
           $facet_info['facet_type'] = $facet_type;
-          $facet[$field_id]         = $this->addFacetOptions($facet[$field_id], $query, $facet_info);
+          $facet[$field_id] = $this->addFacetOptions($facet[$field_id], $query, $facet_info);
         }
         $params['body']['facets'][$field_id] = $facet[$field_id];
       }
@@ -547,14 +554,14 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function that add options and return facet.
    *
-   * @param array          $facet
+   * @param array $facet
    * @param QueryInterface $query
-   * @param string         $facet_info
+   * @param string $facet_info
    *
    * @return array
    */
   protected function addFacetOptions(array &$facet, QueryInterface $query, $facet_info) {
-    $facet_limit         = $this->getFacetLimit($facet_info);
+    $facet_limit = $this->getFacetLimit($facet_info);
     $facet_search_filter = $this->getFacetSearchFilter($query, $facet_info);
 
     // Set the field.
@@ -580,7 +587,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * Helper function return Facet filter.
    *
    * @param QueryInterface $query
-   * @param array          $facet_info
+   * @param array $facet_info
    *
    * @return array|null|string
    */
@@ -615,7 +622,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   protected function createDateFieldFacet($facet_id, array $facet) {
     $result = $facet[$facet_id];
 
-    $date_interval                        = $this->getDateFacetInterval($facet_id);
+    $date_interval = $this->getDateFacetInterval($facet_id);
     $result['date_histogram']['interval'] = $date_interval;
     // TODO: Check the timezone cause this way of hardcoding doesn't seem right.
     $result['date_histogram']['time_zone'] = 'UTC';
@@ -694,8 +701,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   public function getDateGranularity($adapter, $facet_id) {
     // Date gaps.
     $gap_weight = ['YEAR' => 2, 'MONTH' => 1, 'DAY' => 0];
-    $gaps       = [];
-    $date_gap   = 'YEAR';
+    $gaps = [];
+    $date_gap = 'YEAR';
 
     // Get the date granularity.
     if (isset($adapter)) {
@@ -726,23 +733,23 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /**
    * Helper function that parse facets.
    *
-   * @param array          $response
+   * @param array $response
    * @param QueryInterface $query
    *
    * @return array
    */
   protected function parseSearchFacets(array $response, QueryInterface $query) {
 
-    $result       = [];
+    $result = [];
     $index_fields = $this->getIndexFields($query);
-    $facets       = $query->getOption('search_api_facets');
+    $facets = $query->getOption('search_api_facets');
     if (!empty($facets) && isset($response['facets'])) {
       foreach ($response['facets'] as $facet_id => $facet_data) {
         if (isset($facets[$facet_id])) {
-          $facet_info      = $facets[$facet_id];
+          $facet_info = $facets[$facet_id];
           $facet_min_count = $facet_info['min_count'];
 
-          $field_id   = $facet_info['field'];
+          $field_id = $facet_info['field'];
           $field_type = search_api_extract_inner_type($index_fields[$field_id]['type']);
 
           // TODO: handle different types (GeoDistance and so on).
@@ -752,7 +759,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
                 // Divide time by 1000 as we want seconds from epoch
                 // not milliseconds.
                 $result[$facet_id][] = [
-                  'count'  => $entry['count'],
+                  'count' => $entry['count'],
                   'filter' => '"' . ($entry['time'] / 1000) . '"',
                 ];
               }
@@ -762,7 +769,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
             foreach ($facet_data['terms'] as $term) {
               if ($term['count'] >= $facet_min_count) {
                 $result[$facet_id][] = [
-                  'count'  => $term['count'],
+                  'count' => $term['count'],
                   'filter' => '"' . $term['term'] . '"',
                 ];
               }

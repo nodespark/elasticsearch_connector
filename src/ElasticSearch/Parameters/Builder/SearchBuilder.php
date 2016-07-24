@@ -107,7 +107,7 @@ class SearchBuilder {
       $query_body['match_all'] = [];
     }
 
-    // Preserve the options for futher manipulation if necessary.
+    // Preserve the options for further manipulation if necessary.
     $this->query->setOption('ElasticParams', $params);
 
     return $params;
