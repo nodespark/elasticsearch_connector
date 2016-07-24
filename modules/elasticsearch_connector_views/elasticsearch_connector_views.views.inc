@@ -27,10 +27,17 @@ function elasticsearch_connector_views_views_data() {
         foreach ($indices['indices'] as $index_name => $index_info) {
           // In elasticsearch the table is actually the document type.
           // So get all types and build data array.
-          $mapping = $elasticsearchClient->indices()->getMapping(array('index' => $index_name));
+          $mapping = $elasticsearchClient->indices()
+                                         ->getMapping(array('index' => $index_name));
           if (!empty($mapping[$index_name]['mappings'])) {
             foreach ($mapping[$index_name]['mappings'] as $type_name => $type_settings) {
-              $name = new FormattableMarkup('@cluster (@index_name:@type)', array('@cluster' => $cluster->name, '@index_name' => $index_name, '@type' => $type_name));
+              $name = new FormattableMarkup(
+                '@cluster (@index_name:@type)', array(
+                '@cluster' => $cluster->name,
+                '@index_name' => $index_name,
+                '@type' => $type_name,
+              )
+              );
               $base_table = 'elsv__' . $cluster->cluster_id . '__' . $index_name . '__' . $type_name;
 
               $data[$base_table]['table']['group'] = t('Elasticsearch');
@@ -40,7 +47,7 @@ function elasticsearch_connector_views_views_data() {
                 'type' => $type_name,
                 'title' => t('Cluster !name', array('!name' => $name)),
                 'help' => t('Searches the site with the Elasticsearch search engine for !name', array('!name' => $name)),
-                'query_id' => 'elasticsearch_connector_views_query'
+                'query_id' => 'elasticsearch_connector_views_query',
               );
 
               // Get the list of the fields in index directly from Elasticsearch.
@@ -130,7 +137,9 @@ function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fiel
         case 'string':
           // TODO: Handle the analyser and non_analized fields.
           // TODO: For analysed fields we need to do fulltext search.
-          if(\Drupal::moduleHandler()->moduleExists('views_autocomplete_filters')) {
+          if (\Drupal::moduleHandler()
+                     ->moduleExists('views_autocomplete_filters')
+          ) {
             // TODO: Handle autocomplete.
             //$filter_handler = 'elasticsearch_connector_views_handler_filter_string_autocomplete';
           }
