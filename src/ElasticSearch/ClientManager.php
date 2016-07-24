@@ -20,7 +20,7 @@ class ClientManager implements ClientManagerInterface {
   protected $moduleHandler;
 
   /**
-   * The classname that implements
+   * The class that implements
    * \nodespark\DESConnector\ClientFactoryInterface
    *
    * @var string

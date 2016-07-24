@@ -182,11 +182,11 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
 
   /**
    * Ensure a table exists in the queue; if it already exists it won't
-   * do anything, but if it doesn't it will add the table queue. It will ensure
+   * do anything, but if it does not it will add the table queue. It will ensure
    * a path leads back to the relationship table.
    *
    * @param $table
-   *   The unaliased name of the table to ensure.
+   *   The not aliased name of the table to ensure.
    * @param $relationship
    *   The relationship to ensure the table links to. Each relationship will
    *   get a unique instance of the table being added. If not specified,
@@ -481,7 +481,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
   /**
    * Aborts this search query.
    *
-   * Used by handlers to flag a fatal error which shouldn't be displayed but
+   * Used by handlers to flag a fatal error which should not be displayed but
    * still lead to the view returning empty and the search not being executed.
    *
    * @param string|null $msg

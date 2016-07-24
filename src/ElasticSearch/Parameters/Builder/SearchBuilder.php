@@ -330,7 +330,7 @@ class SearchBuilder {
 
           $field_id = $condition->getField();
           if (!isset($index_fields[$field_id])) {
-            // TODO: propper exception
+            // TODO: proper exception.
             throw new \Exception(
               t(
                 ':field_id Undefined field ! Incorrect filter criteria is using for searching!',
@@ -341,7 +341,7 @@ class SearchBuilder {
 
           // Check operator.
           if (!$condition->getOperator()) {
-            // TODO: propper exception
+            // TODO: proper exception.
             throw new \Exception(
               t(
                 'Empty filter operator for :field_id field! Incorrect filter criteria is using for searching!',
@@ -379,7 +379,7 @@ class SearchBuilder {
 
 
   /**
-   * Helper function thaht set filters conjunction
+   * Helper function that set filters conjunction
    *
    * @param array $filters
    * @param string $conjunction

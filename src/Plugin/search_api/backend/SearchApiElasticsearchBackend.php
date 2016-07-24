@@ -275,7 +275,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
             IndexFactory::create($index)
           );
           if (!$this->client->CheckResponseAck($response)) {
-            drupal_set_message($this->t('The elasticsearch client wasn\'t able to create index'), 'error');
+            drupal_set_message($this->t('The elasticsearch client was not able to create index'), 'error');
           }
         }
 
@@ -566,7 +566,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     // Set the field.
     $facet[$facet_info['facet_type']]['field'] = $facet_info['field'];
 
-    // OR facet. We remove filters affecting the assiociated field.
+    // OR facet. We remove filters affecting the associated field.
     // TODO: distinguish between normal filters and facet filters.
     // See http://drupal.org/node/1390598.
     // Filter the facet.
@@ -623,7 +623,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     $date_interval = $this->getDateFacetInterval($facet_id);
     $result['date_histogram']['interval'] = $date_interval;
-    // TODO: Check the timezone cause this way of hardcoding doesn't seem right.
+    // TODO: Check the timezone cause this hardcoded way doesn't seem right.
     $result['date_histogram']['time_zone'] = 'UTC';
     // Use factor 1000 as we store dates as seconds from epoch
     // not milliseconds.
@@ -659,7 +659,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     // Active search corresponding to this index.
     $searcher = key(facetapi_get_active_searchers());
 
-    // Get the FacetApiAdpater for this searcher.
+    // Get the FacetApiAdapter for this searcher.
     $adapter = isset($searcher) ? facetapi_adapter_load($searcher) : NULL;
 
     // Get the date granularity.

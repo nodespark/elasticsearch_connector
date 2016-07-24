@@ -32,7 +32,7 @@
 
   /**
    * If this property is set to be a function, it
-   * will be called when an entity is recieved from an overlay.
+   * will be called when an entity is received from an overlay.
    */
   Drupal.ECIndexDialog.populateIndex = null;
 
@@ -69,7 +69,7 @@
   };
 
   /**
-   * Set dimensions of the dialog dependning on the current winow size
+   * Set dimensions of the dialog depending on the current window size
    * and scroll position.
    */
   Drupal.ECIndexDialog.setDimensions = function () {

@@ -132,7 +132,7 @@ function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fiel
 
         case 'text':
         case 'string':
-          // TODO: Handle the analyser and non_analized fields.
+          // TODO: Handle the analyser and non_analyzed fields.
           // TODO: For analysed fields we need to do fulltext search.
           if (\Drupal::moduleHandler()
                      ->moduleExists('views_autocomplete_filters')

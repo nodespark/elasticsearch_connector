@@ -154,7 +154,7 @@ class ElasticsearchViewsEntity extends ElasticsearchViewsStandard {
    * Return the entity type ID of the entity this field handler should display.
    *
    * @return string|null
-   *   The entity type ID, or NULL if it couldn't be found.
+   *   The entity type ID, or NULL if it could not be found.
    */
   public function getTargetEntityTypeId() {
     $field_definition = $this->getFieldDefinition();

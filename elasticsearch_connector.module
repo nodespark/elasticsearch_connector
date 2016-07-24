@@ -233,7 +233,7 @@ function _elasticsearch_ec_index_process(array $element, array &$form_state, arr
     $element['cluster_id']['#options'] = $clusters;
   }
 
-  // TODO: We need to handle the incomming tree name if such.
+  // TODO: We need to handle the incoming tree name if such.
   $links = array();
   $index_options = array('' => t('Select index'));
   if (is_array($element['#value']) && !empty($element['#value']['cluster_id'])) {
@@ -315,7 +315,7 @@ function elasticsearch_connector_in_dialog() {
 }
 
 /**
- * Check if we should close the dialog upon submition.
+ * Check if we should close the dialog upon submission.
  */
 function elasticsearch_connector_close_on_submit() {
   return (!isset($_GET['closeonsubmit']) || $_GET['closeonsubmit']);
