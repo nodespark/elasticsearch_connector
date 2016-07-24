@@ -47,7 +47,7 @@ class ElasticsearchViewsEntityField extends Field {
     // Prepare our fallback handler.
     $fallback_handler_id = !empty($this->definition['fallback_handler']) ? $this->definition['fallback_handler'] : 'elasticsearch_connector_views_standard';
     $this->fallbackHandler = Views::handlerManager('field')
-      ->getHandler($options, $fallback_handler_id);
+                                  ->getHandler($options, $fallback_handler_id);
     $options += array('fallback_options' => array());
     $fallback_options = $options['fallback_options'] + $options;
     $this->fallbackHandler->init($view, $display, $fallback_options);

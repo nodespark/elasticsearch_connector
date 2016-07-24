@@ -58,27 +58,27 @@ class ElasticsearchViewsFulltextSearch extends FilterPluginBase {
    * @return array fields
    */
   private function getFulltextFields() {
-//    $view_id = $this->view->storage->get('base_table');
-//    $data = Views::viewsData()->get($view_id);
-//
-//    var_dump($data);exit;
-//
-//    $index = $data['table']['base']['index'];
-//    $type = implode(',', $data['table']['base']['type']);
-//
-//    $client = $this->view->query->getElasticsearchClient();
-//
-//    $params = array(
-//      'index' => $index,
-//      'type' => $type,
-//    );
-//
-//    $mapping = $client->indices()->getMapping($params);
-//
-//    $fulltext_fields = array_keys(array_filter($mapping[$index]['mappings'][$type]['properties'], function($v) {
-//      return $v['type'] == 'string' && (!isset($v['index']) || $v['index'] != 'not_analyzed');
-//    }));
-//
-//    return array_combine($fulltext_fields, $fulltext_fields);
+    //    $view_id = $this->view->storage->get('base_table');
+    //    $data = Views::viewsData()->get($view_id);
+    //
+    //    var_dump($data);exit;
+    //
+    //    $index = $data['table']['base']['index'];
+    //    $type = implode(',', $data['table']['base']['type']);
+    //
+    //    $client = $this->view->query->getElasticsearchClient();
+    //
+    //    $params = array(
+    //      'index' => $index,
+    //      'type' => $type,
+    //    );
+    //
+    //    $mapping = $client->indices()->getMapping($params);
+    //
+    //    $fulltext_fields = array_keys(array_filter($mapping[$index]['mappings'][$type]['properties'], function($v) {
+    //      return $v['type'] == 'string' && (!isset($v['index']) || $v['index'] != 'not_analyzed');
+    //    }));
+    //
+    //    return array_combine($fulltext_fields, $fulltext_fields);
   }
 }

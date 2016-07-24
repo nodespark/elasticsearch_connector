@@ -33,10 +33,10 @@ function elasticsearch_connector_views_views_data() {
             foreach ($mapping[$index_name]['mappings'] as $type_name => $type_settings) {
               $name = new FormattableMarkup(
                 '@cluster (@index_name:@type)', array(
-                '@cluster' => $cluster->name,
-                '@index_name' => $index_name,
-                '@type' => $type_name,
-              )
+                  '@cluster' => $cluster->name,
+                  '@index_name' => $index_name,
+                  '@type' => $type_name,
+                )
               );
               $base_table = 'elsv__' . $cluster->cluster_id . '__' . $index_name . '__' . $type_name;
 

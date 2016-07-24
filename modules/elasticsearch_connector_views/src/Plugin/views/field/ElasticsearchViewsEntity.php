@@ -46,7 +46,7 @@ class ElasticsearchViewsEntity extends ElasticsearchViewsStandard {
    *   The entity entity display repository.
    */
   public function getEntityDisplayRepository() {
-    return $this->entityDisplayRepository ?: \Drupal::service('entity_display.repository');
+    return $this->entityDisplayRepository ? : \Drupal::service('entity_display.repository');
   }
 
   /**
@@ -92,7 +92,7 @@ class ElasticsearchViewsEntity extends ElasticsearchViewsStandard {
       }
       foreach ($bundles as $bundle => $info) {
         $view_modes[$bundle] = $this->getEntityDisplayRepository()
-          ->getViewModeOptionsByBundle($entity_type_id, $bundle);
+                                    ->getViewModeOptionsByBundle($entity_type_id, $bundle);
       }
     }
 
@@ -195,8 +195,8 @@ class ElasticsearchViewsEntity extends ElasticsearchViewsStandard {
     }
 
     $entities = $this->getEntityManager()
-      ->getStorage($this->getTargetEntityTypeId())
-      ->loadMultiple(array_keys($to_load));
+                     ->getStorage($this->getTargetEntityTypeId())
+                     ->loadMultiple(array_keys($to_load));
     $account = $this->getQuery()->getAccessAccount();
     foreach ($entities as $id => $entity) {
       foreach ($to_load[$id] as list($i, $j)) {
@@ -273,8 +273,8 @@ class ElasticsearchViewsEntity extends ElasticsearchViewsStandard {
 
     $view_mode = $this->options['display_methods'][$bundle]['view_mode'];
     $build = $this->getEntityManager()
-      ->getViewBuilder($entity->getEntityTypeId())
-      ->view($entity, $view_mode);
+                  ->getViewBuilder($entity->getEntityTypeId())
+                  ->view($entity, $view_mode);
     return array(
       'value' => $build,
     );

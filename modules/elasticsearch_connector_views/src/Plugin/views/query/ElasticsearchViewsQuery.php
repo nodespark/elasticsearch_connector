@@ -18,7 +18,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @ViewsQuery(
  *   id = "elasticsearch_connector_views_query",
  *   title = @Translation("Elasticsearch Connector Views Query"),
- *   help = @Translation("The query will be generated and run using the Elasticsearch API.")
+ *   help = @Translation("The query will be generated and run using the
+ *   Elasticsearch API.")
  * )
  */
 class ElasticsearchViewsQuery extends QueryPluginBase {
@@ -119,7 +120,8 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
     $plugin = parent::create($container, $configuration, $plugin_id, $plugin_definition);
 
     /** @var \Psr\Log\LoggerInterface $logger */
-    $logger = $container->get('logger.factory')->get('elasticsearch_connector_views');
+    $logger = $container->get('logger.factory')
+                        ->get('elasticsearch_connector_views');
     $plugin->setLogger($logger);
 
     return $plugin;
@@ -132,7 +134,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
    *   The logger to use.
    */
   public function getLogger() {
-    return $this->logger ?: \Drupal::logger('elasticsearch_connector_views');
+    return $this->logger ? : \Drupal::logger('elasticsearch_connector_views');
   }
 
   /**
@@ -252,18 +254,18 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       '#default_value' => $this->options['parse_mode'],
     );
 
-//    foreach ($this->query->parseModes() as $key => $mode) {
-//      $form['parse_mode']['#options'][$key] = $mode['name'];
-//      if (!empty($mode['description'])) {
-//        $states['visible'][':input[name="query[options][parse_mode]"]']['value'] = $key;
-//        $form["parse_mode_{$key}_description"] = array(
-//          '#type' => 'item',
-//          '#title' => $mode['name'],
-//          '#description' => $mode['description'],
-//          '#states' => $states,
-//        );
-//      }
-//    }
+    //    foreach ($this->query->parseModes() as $key => $mode) {
+    //      $form['parse_mode']['#options'][$key] = $mode['name'];
+    //      if (!empty($mode['description'])) {
+    //        $states['visible'][':input[name="query[options][parse_mode]"]']['value'] = $key;
+    //        $form["parse_mode_{$key}_description"] = array(
+    //          '#type' => 'item',
+    //          '#title' => $mode['name'],
+    //          '#description' => $mode['description'],
+    //          '#states' => $states,
+    //        );
+    //      }
+    //    }
   }
 
   /**
@@ -300,7 +302,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
 
         $params['query']['multi_match'] = array(
           'query' => $this->params['q'],
-          'fields' => array_values($this->params['fulltext_fields'])
+          'fields' => array_values($this->params['fulltext_fields']),
         );
       }
       else {
@@ -396,7 +398,12 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
    * {@inheritdoc}
    */
   public function alter(ViewExecutable $view) {
-    \Drupal::moduleHandler()->invokeAll('views_query_alter', array($view, $this));
+    \Drupal::moduleHandler()->invokeAll(
+      'views_query_alter', array(
+        $view,
+        $this,
+      )
+    );
   }
 
   /**
@@ -420,11 +427,13 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       }
 
       // Execute search.
-      $response = $client->search(array(
-        'index' => $index,
-        'type'  => $type,
-        'body'  => $this->query_params
-      ));
+      $response = $client->search(
+        array(
+          'index' => $index,
+          'type' => $type,
+          'body' => $this->query_params,
+        )
+      );
 
       // Store results.
       if (!empty($response['hits']['hits'])) {
@@ -505,10 +514,10 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
    *   Or NULL to use the currently logged-in user.
    */
   public function getAccessAccount() {
-//    $account = $this->getOption('elasticsearch_connector_views_access_account');
-//    if ($account && is_scalar($account)) {
-//      $account = User::load($account);
-//    }
+    //    $account = $this->getOption('elasticsearch_connector_views_access_account');
+    //    if ($account && is_scalar($account)) {
+    //      $account = User::load($account);
+    //    }
     return FALSE;
   }
 
