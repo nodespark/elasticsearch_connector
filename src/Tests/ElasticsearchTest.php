@@ -511,20 +511,23 @@ class ElasticsearchTest extends BackendTest {
     $this->assertTrue($success, 'The index field settings were successfully changed.');
 
     // Reset the static cache so the new values will be available.
-    \Drupal::entityManager()
+    \Drupal::entityTypeManager()
            ->getStorage('search_api_server')
            ->resetCache(array($this->serverId));
-    \Drupal::entityManager()
+    \Drupal::entityTypeManager()
            ->getStorage('search_api_index')
            ->resetCache(array($this->serverId));
 
-    entity_create(
-      'entity_test', array(
-        'id' => 6,
-        'prices' => array('3.5', '3.25', '3.75', '3.5'),
-        'type' => 'item',
-      )
-    )->save();
+    \Drupal::entityTypeManager()
+          ->getStorage('entity_test')
+          ->create(
+            array(
+              'id' => 6,
+              'prices' => array('3.5', '3.25', '3.75', '3.5'),
+              'type' => 'item',
+              )
+          )
+      ->save();
 
     $this->indexItems($this->indexId);
 
