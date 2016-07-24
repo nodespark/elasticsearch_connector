@@ -10,15 +10,21 @@ use \Elasticsearch\Client;
 /**
  * Implements hook_help().
  */
-function elasticsearch_connector_help($route_name) {
+function elasticsearch_connector_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
   switch ($route_name) {
-    case 'admin/help#elasticsearch_connector':
-      return '<p>' . t(
-        'Abstraction of making connection to the elasticsearch
-        server. This module is API for a whole bunch of functionality connected
-        with this module. Provides an interface to connect to a elasticsearch
-        cluster and implements the official Elasticsearch-php library.'
-      ) . '</p>';
+    case 'help.page.elasticsearch_connector':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Abstraction of making connection to the elasticsearch server. This module is API for a whole bunch of functionality connected with this module. Provides an interface to connect to a elasticsearch cluster and implements the official Elasticsearch-php library.') . '</p>';
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<dt>' . t('Create cluster') . '</dt>';
+      $output .= '<dd>' . t('To be described...') . '</dd>';
+      $output .= '<dt>' . t('Create index') . '</dt>';
+      $output .= '<dd>' . t('To be described...') . '</dd>';
+      $output .= '</dl>';
+
+      return $output;
   }
 }
 
