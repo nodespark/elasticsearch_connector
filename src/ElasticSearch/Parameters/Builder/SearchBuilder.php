@@ -5,7 +5,7 @@ namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Builder;
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\elasticsearch_connector\ElasticSearch\Parameters;
+use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\FilterFactory;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory;
 use Drupal\search_api\Entity\Index;
 use Drupal\search_api\Query\Condition;
@@ -351,7 +351,7 @@ class SearchBuilder {
           }
 
           // Check field.
-          $filter = Parameters::filterFromCondition($condition);
+          $filter = FilterFactory::filterFromCondition($condition);
 
           if (!empty($filter)) {
             $filters[] = $filter;
