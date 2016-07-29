@@ -370,7 +370,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function deleteAllIndexItems(IndexInterface $index) {
+  public function deleteAllIndexItems(IndexInterface $index, $datasource_id = NULL) {
     $this->removeIndex($index);
     $this->addIndex($index);
   }
