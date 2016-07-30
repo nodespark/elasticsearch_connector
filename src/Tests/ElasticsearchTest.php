@@ -12,6 +12,8 @@ use Drupal\Core\Field\FieldStorageDefinitionInterface;
 
 /**
  * Tests index and search capabilities using the elasticsearch backend.
+ *
+ * @group elasticsearch_connector
  */
 class ElasticsearchTest extends BackendTest {
 
