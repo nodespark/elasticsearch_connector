@@ -24,7 +24,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class ClusterListBuilder extends ConfigEntityListBuilder {
 
   /**
-   * EntityStorageInterface
+   * EntityStorageInterface.
    */
   protected $indexStorage;
 

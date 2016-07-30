@@ -80,4 +80,5 @@ class ElasticsearchViewsFulltextSearch extends FilterPluginBase {
     //
     //    return array_combine($fulltext_fields, $fulltext_fields);
   }
+
 }

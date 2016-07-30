@@ -6,7 +6,7 @@ use Drupal\search_api\Item\FieldInterface;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
 
 /**
- * Class MappingFactory
+ * Class MappingFactory.
  */
 class MappingFactory {
 

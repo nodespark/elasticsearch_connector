@@ -5,16 +5,17 @@ namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 use Drupal\search_api\Query\Condition;
 
 /**
- * Class FilterFactory
+ * Class FilterFactory.
  */
 class FilterFactory {
 
   /**
-   * Get query by Condition instance
+   * Get query by Condition instance.
    *
    * @param Condition $condition
    *
    * @return array
+   *
    * @throws \Exception
    */
   public static function filterFromCondition(Condition $condition) {

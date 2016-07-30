@@ -18,7 +18,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
-use Drupal\elasticsearch_connector\ElasticSearch\Parameters;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\SearchFactory;
 use Drupal\elasticsearch_connector\Entity\Cluster;
@@ -27,7 +26,6 @@ use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\SearchApiException;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
-use nodespark\DESConnector\ClientInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -157,7 +155,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     if (!$this->server->isNew()) {
       $server_link = $this->cluster->getSafeUrl();
-      // Editing this server
+      // Editing this server.
       $form['server_description'] = [
         '#type' => 'item',
         '#title' => $this->t('Elasticsearch Cluster'),
@@ -169,7 +167,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       '#title' => t('Elasticsearch settings'),
     ];
 
-    //We are not displaying disabled clusters
+    // We are not displaying disabled clusters.
     $clusters = Cluster::loadAllClusters(FALSE);
     $options = [];
     foreach ($clusters as $key => $cluster) {
@@ -400,7 +398,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     // Results.
     $search_result = $query->getResults();
 
-    // Get index
+    // Get index.
     $index = $query->getIndex();
 
     $params = IndexFactory::index($index, TRUE);
@@ -727,7 +725,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     return $date_gap;
   }
-
 
   /**
    * Helper function that parse facets.

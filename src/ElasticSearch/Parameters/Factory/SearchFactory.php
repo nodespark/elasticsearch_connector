@@ -8,12 +8,12 @@ use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\Utility as SearchApiUtility;
 
 /**
- * Class SearchFactory
+ * Class SearchFactory.
  */
 class SearchFactory {
 
   /**
-   * Build search parameters from a query interface
+   * Build search parameters from a query interface.
    *
    * @param \Drupal\search_api\Query\QueryInterface $query
    *
@@ -27,7 +27,7 @@ class SearchFactory {
 
   /**
    * Parse a elastic search response into a ResultSetInterface
-   * TODO: Add excerpt handling
+   * TODO: Add excerpt handling.
    *
    * @param \Drupal\search_api\Query\QueryInterface $query
    * @param array $response

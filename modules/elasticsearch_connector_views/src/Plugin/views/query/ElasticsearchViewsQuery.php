@@ -297,7 +297,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
 
     $params = array();
     if (isset($this->params['q']) && !empty($this->params['q'])) {
-      // If we have more than one field we make a multi match query
+      // If we have more than one field we make a multi match query.
       if (count($this->params['fields']) > 1) {
 
         $params['query']['multi_match'] = array(
@@ -319,7 +319,6 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
     $params['size'] = $view->pager->getItemsPerPage();
     $params['from'] = $view->pager->getCurrentPage() * $view->pager->getItemsPerPage();
 
-
     // If we display all items without pager remove the size limit to return
     // all documents from elasticsearch.
     if ($params['size'] == 0) {
@@ -337,12 +336,12 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
 
     $params['filter'] = $this->buildFilterArray($where);
 
-    // Elastic complains when there is an empty filter array
+    // Elastic complains when there is an empty filter array.
     if (empty($params['filter'])) {
       unset($params['filter']);
     }
 
-    // if a filter and query is set, combine them into a filtered query
+    // If a filter and query is set, combine them into a filtered query.
     if (isset($params['filter']) && isset($params['query'])) {
       $temp = $params['query'];
       unset($params['query']);
@@ -379,6 +378,9 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
     return $sort;
   }
 
+  /**
+   *
+   */
   protected function buildFilterArray($where) {
     $filter = array();
     foreach ($where as $wh) {
@@ -423,7 +425,6 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       if ($client) {
         $view->execute_time = microtime(TRUE) - $start;
         // Execute the search.
-
       }
 
       // Execute search.
@@ -455,7 +456,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
         }
       }
 
-      //$view->result = iterator_to_array($view->result);
+      // $view->result = iterator_to_array($view->result);
       // Store the results.
       $view->pager->total_items = $view->total_rows = $response['hits']['total'];
       $view->pager->updatePageInfo();
@@ -550,14 +551,23 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
     return $this->index;
   }
 
+  /**
+   *
+   */
   public function getClusterId() {
     return $this->elasticsearchCluster->cluster_id;
   }
 
+  /**
+   *
+   */
   public function getSearchTypes() {
     return implode(',', $this->elasticsearchTypes);
   }
 
+  /**
+   *
+   */
   public function getElasticsearchClient() {
     return $this->elasticsearchClient;
   }
@@ -574,4 +584,5 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
   public function addOrderBy($table, $field = NULL, $order = 'ASC', $alias = '', $params = array()) {
     // TODO: Implement the addOrderBy method.
   }
+
 }

@@ -80,6 +80,9 @@ class Index extends ConfigEntityBase {
    */
   public $server;
 
+  /**
+   *
+   */
   public function id() {
     return isset($this->index_id) ? $this->index_id : NULL;
   }

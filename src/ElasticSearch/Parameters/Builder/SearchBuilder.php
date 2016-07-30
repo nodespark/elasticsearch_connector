@@ -14,7 +14,7 @@ use Drupal\search_api\Query\QueryInterface;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
 
 /**
- * Class SearchBuilder
+ * Class SearchBuilder.
  */
 class SearchBuilder {
 
@@ -56,7 +56,7 @@ class SearchBuilder {
     $body['from'] = $query_options['query_offset'];
     $body['size'] = $query_options['query_limit'];
 
-    // Sort
+    // Sort.
     if (!empty($query_options['sort'])) {
       $body['sort'] = $query_options['sort'];
     }
@@ -64,7 +64,7 @@ class SearchBuilder {
     $body['fields'] = [];
     $fields = &$body['fields'];
 
-    // More Like This
+    // More Like This.
     if (!empty($query_options['mlt'])) {
       $mlt_query['more_like_this'] = [];
       $mlt_query['more_like_this']['like_text'] = $query_options['mlt']['id'];
@@ -112,7 +112,6 @@ class SearchBuilder {
 
     return $params;
   }
-
 
   /**
    * Helper function return associative array with query options.
@@ -211,7 +210,6 @@ class SearchBuilder {
     ];
   }
 
-
   /**
    * Return a full text search query.
    *
@@ -266,6 +264,7 @@ class SearchBuilder {
    * Helper function that return Sort for query in search.
    *
    * @return array
+   *
    * @throws \Exception
    */
   protected function getSortSearchQuery() {
@@ -300,6 +299,7 @@ class SearchBuilder {
    * @param string $ignored_field_id
    *
    * @return array|null
+   *
    * @throws \Exception
    */
   protected function getQueryFilters(
@@ -377,14 +377,14 @@ class SearchBuilder {
     }
   }
 
-
   /**
-   * Helper function that set filters conjunction
+   * Helper function that set filters conjunction.
    *
    * @param array $filters
    * @param string $conjunction
    *
    * @return array|null
+   *
    * @throws \Exception
    */
   protected function setFiltersConjunction(array &$filters, $conjunction) {
@@ -410,4 +410,5 @@ class SearchBuilder {
 
     return $filters;
   }
+
 }

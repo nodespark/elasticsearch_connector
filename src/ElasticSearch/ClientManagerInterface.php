@@ -7,8 +7,14 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use nodespark\DESConnector\ClientFactoryInterface;
 
-
+/**
+ *
+ */
 interface ClientManagerInterface {
+
+  /**
+   *
+   */
   public function __construct(ModuleHandlerInterface $module_handler, ClientFactoryInterface $clientManagerFactory);
 
   /**
@@ -17,4 +23,5 @@ interface ClientManagerInterface {
    * @return \nodespark\DESConnector\ClientInterface
    */
   public function getClientForCluster(Cluster $cluster);
+
 }

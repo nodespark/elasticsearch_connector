@@ -7,7 +7,7 @@ use Drupal\elasticsearch_connector\Entity\Cluster;
 use nodespark\DESConnector\ClientFactoryInterface;
 
 /**
- * Class ClientManager
+ * Class ClientManager.
  */
 class ClientManager implements ClientManagerInterface {
 
@@ -21,7 +21,7 @@ class ClientManager implements ClientManagerInterface {
 
   /**
    * The class that implements
-   * \nodespark\DESConnector\ClientFactoryInterface
+   * \nodespark\DESConnector\ClientFactoryInterface.
    *
    * @var string
    */
@@ -84,4 +84,5 @@ class ClientManager implements ClientManagerInterface {
 
     return $this->clients[$hash];
   }
+
 }

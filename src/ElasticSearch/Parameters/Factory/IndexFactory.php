@@ -3,15 +3,14 @@
 namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 
 use Drupal\search_api\IndexInterface;
-use Drupal\search_api\Item\FieldInterface;
 
 /**
- * Class IndexFactory
+ * Class IndexFactory.
  */
 class IndexFactory {
 
   /**
-   * Build parameters required to index
+   * Build parameters required to index.
    *
    * TODO: We need to handle the following params as well:
    * ['consistency'] = (enum) Explicit write consistency setting for the
@@ -20,7 +19,7 @@ class IndexFactory {
    * operation
    * ['replication'] = (enum) Explicitly set the replication type
    * ['fields']      = (list) Default comma-separated list of fields to return
-   * in the response for updates
+   * in the response for updates.
    *
    * @param IndexInterface $index
    * @param bool $with_type
@@ -59,7 +58,7 @@ class IndexFactory {
   }
 
   /**
-   * Build parameters to bulk delete indexes
+   * Build parameters to bulk delete indexes.
    *
    * @param \Drupal\search_api\IndexInterface $index
    * @param array $ids
@@ -82,7 +81,7 @@ class IndexFactory {
   }
 
   /**
-   * Build parameters to bulk delete indexes
+   * Build parameters to bulk delete indexes.
    *
    * @param \Drupal\search_api\IndexInterface $index
    * @param \Drupal\search_api\Item\ItemInterface[] $items

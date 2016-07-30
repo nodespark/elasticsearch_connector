@@ -46,10 +46,10 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  */
 class Cluster extends ConfigEntityBase {
 
-  // Active status
+  // Active status.
   const ELASTICSEARCH_CONNECTOR_STATUS_ACTIVE = 1;
 
-  // Inactive status
+  // Inactive status.
   const ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE = 0;
 
   // Default connection timeout in seconds.
@@ -108,7 +108,7 @@ class Cluster extends ConfigEntityBase {
    *
    * @return string
    *
-   * TODO: Not sure that getting the default cluster in general should be part
+   *   TODO: Not sure that getting the default cluster in general should be part
    *   of the CLuster entity. TODO: Maybe check if that is a default Cluster
    *   entity - YES, but in general - NO.
    */
@@ -181,4 +181,5 @@ class Cluster extends ConfigEntityBase {
   public function getRawUrl() {
     return $this->url;
   }
+
 }

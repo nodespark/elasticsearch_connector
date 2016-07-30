@@ -120,6 +120,7 @@ function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fiel
           }
           $set = FALSE;
           break;
+
         case 'date':
           $filter_handler = 'elasticsearch_connector_views_date';
           $field_handler = 'elasticsearch_connector_views_date';

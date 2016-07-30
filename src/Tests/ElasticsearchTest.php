@@ -527,7 +527,7 @@ class ElasticsearchTest extends BackendTest {
               'id' => 6,
               'prices' => array('3.5', '3.25', '3.75', '3.5'),
               'type' => 'item',
-              )
+            )
           )
       ->save();
 

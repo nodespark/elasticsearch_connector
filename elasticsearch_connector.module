@@ -5,12 +5,13 @@
  * Provides hook implementations and functions accessible from other modules.
  */
 
+use Drupal\Core\Routing\RouteMatchInterface;
 use \Elasticsearch\Client;
 
 /**
  * Implements hook_help().
  */
-function elasticsearch_connector_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+function elasticsearch_connector_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.elasticsearch_connector':
       $output = '';
@@ -210,8 +211,8 @@ function _elasticsearch_ec_index_process(array $element, array &$form_state, arr
     '#default_value' => isset($element['#default_value'])
     && is_array($element['#default_value'])
     && isset($element['#default_value']['cluster_id'])
-      ? $element['#default_value']['cluster_id']
-      : '',
+    ? $element['#default_value']['cluster_id']
+    : '',
     // TODO: Allow this option to be overwritten and #value if we had such.
     '#description' => t('Select the cluster.'),
     '#ajax' => array(
@@ -266,8 +267,8 @@ function _elasticsearch_ec_index_process(array $element, array &$form_state, arr
     '#default_value' => isset($element['#default_value'])
     && is_array($element['#default_value'])
     && isset($element['#default_value']['index'])
-      ? $element['#default_value']['index']
-      : '',
+    ? $element['#default_value']['index']
+    : '',
     '#description' => t('Select the index.'),
     '#options' => $index_options,
     '#prefix' => '<div id="' . $wrapper_id . '">',

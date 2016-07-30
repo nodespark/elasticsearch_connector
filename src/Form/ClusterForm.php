@@ -33,6 +33,9 @@ class ClusterForm extends EntityForm {
     $this->clientManager = $client_manager;
   }
 
+  /**
+   *
+   */
   static public function create(ContainerInterface $container) {
     return new static (
       $container->get('elasticsearch_connector.client_manager')
