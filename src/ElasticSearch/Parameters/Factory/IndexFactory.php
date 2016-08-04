@@ -95,7 +95,25 @@ class IndexFactory {
       $data = ['id' => $id];
       /** @var FieldInterface $field */
       foreach ($item as $name => $field) {
-        $data[$field->getFieldIdentifier()] = $field->getValues();
+        $field_type = $field->getType();
+        if (!empty($field->getValues())) {
+          $values = array();
+          foreach ($field->getValues() as $value) {
+            switch ($field_type) {
+              case 'string':
+                $values[] = (string) $value;
+                break;
+
+              case 'text':
+                $values[] = $value->toText();
+                break;
+
+              default:
+                $values[] = $value;
+            }
+          }
+          $data[$field->getFieldIdentifier()] = $values;
+        }
       }
       $params['body'][] = ['index' => ['_id' => $data['id']]];
       $params['body'][] = $data;
