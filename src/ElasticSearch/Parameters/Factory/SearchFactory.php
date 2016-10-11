@@ -5,7 +5,7 @@ namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Builder\SearchBuilder;
 use Drupal\search_api\Item\FieldInterface;
 use Drupal\search_api\Query\QueryInterface;
-use Drupal\search_api\Utility as SearchApiUtility;
+use Drupal\search_api\Utility\Utility as SearchApiUtility;
 
 /**
  * Class SearchFactory.
