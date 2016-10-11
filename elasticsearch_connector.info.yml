@@ -6,4 +6,3 @@ core: 8.x
 package: Elasticsearch
 type: module
 configure: elasticsearch_connector.config_entity.list
-version: VERSION
