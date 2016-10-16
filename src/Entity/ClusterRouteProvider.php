@@ -32,7 +32,16 @@ class ClusterRouteProvider implements EntityRouteProviderInterface {
           '_title' => 'Cluster Info',
         ]
       )
-      ->setRequirement('_entity_access', 'elasticsearch_cluster.view');
+      ->setRequirement('_entity_access', 'elasticsearch_cluster.view')
+      ->setOptions(
+        [
+          'parameters' => [
+            'elasticsearch_cluster' => [
+              'with_config_overrides' => TRUE,
+            ]
+          ]
+        ]
+      );
     $route_collection->add('entity.elasticsearch_cluster.canonical', $route);
 
     $route = (new Route('/admin/config/search/elasticsearch-connector/cluster/{elasticsearch_cluster}/delete'))
