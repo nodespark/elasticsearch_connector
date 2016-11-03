@@ -8,7 +8,7 @@
 namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -37,11 +37,11 @@ class IndexForm extends EntityForm {
   /**
    * Constructs an IndexForm object.
    *
-   * @param \Drupal\Core\Entity\EntityManager|\Drupal\Core\Entity\EntityTypeManager $entity_manager
+   * @param \Drupal\Core\Entity\EntityManager|\Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager
    *   The entity type manager.
    * @param ClientManagerInterface $client_manager
    */
-  public function __construct(EntityTypeManager $entity_manager, ClientManagerInterface $client_manager) {
+  public function __construct(EntityTypeManagerInterface $entity_manager, ClientManagerInterface $client_manager) {
     // Setup object members.
     $this->entityTypeManager = $entity_manager;
     $this->clientManager = $client_manager;
