@@ -242,7 +242,7 @@ class SearchBuilder {
       }
       elseif (is_string($key)) {
         // If parse mode is not "direct": quote the keyword.
-        if ($parse_mode !== 'direct') {
+        if ($parse_mode->getPluginId() !== 'direct') {
           $key = '"' . $key . '"';
         }
 
