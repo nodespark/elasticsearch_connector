@@ -296,8 +296,18 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       if ($this->client->indices()->existsType($params)) {
         $current_mapping = $this->client->indices()->getMapping($params);
         if (!empty($current_mapping)) {
-          // If the mapping exits, delete it to be able to re-create it.
-          $this->client->indices()->deleteMapping($params);
+          try {
+            // If the mapping exits, delete it to be able to re-create it.
+            $this->client->indices()->deleteMapping($params);
+          }
+          catch (ElasticsearchException $e) {
+            // If the mapping exits, delete the index and recreate it.
+            // In Elasticsearch 2.3 it is not possible to delete a mapping,
+            // so don't use $this->client->indices()->deleteMapping as doing so
+            // will throw an exception.
+            $this->removeIndex($index);
+            $this->addIndex($index);
+          }
         }
       }
 
