@@ -58,6 +58,11 @@ class MappingFactory {
             'type' => 'date',
             'format' => 'epoch_second',
           ];
+
+        case 'attachment':
+          return [
+            'type' => 'attachment',
+          ];
       }
     }
     catch (ElasticsearchException $e) {
