@@ -302,7 +302,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
 
         $params['query']['multi_match'] = array(
           'query' => $this->params['q'],
-          'fields' => array_values($this->params['fulltext_fields']),
+          '_source' => array_values($this->params['fulltext_fields']),
         );
       }
       else {
@@ -327,9 +327,9 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
 
     // Add fields.
     // We are specifying which fields to be visible!
-    $params['fields'] = array();
+    $params['_source'] = array();
     if (isset($this->params['fields'])) {
-      $params['fields'] = array_merge($params['fields'], $this->params['fields']);
+      $params['_source'] = array_merge($params['_source'], $this->params['fields']);
     }
 
     $where = $this->where;
@@ -441,7 +441,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
         $item_index = 0;
         foreach ($response['hits']['hits'] as $doc) {
           $result_doc = array();
-          foreach ($doc['fields'] as $field_name => $field_value) {
+          foreach ($doc['_source'] as $field_name => $field_value) {
             // TODO: Handle this by implementing the Multivalue interface in D8
             // Handle multivalue with concatenation for now.
             $result_doc[$field_name] = implode(' | ', $field_value);
