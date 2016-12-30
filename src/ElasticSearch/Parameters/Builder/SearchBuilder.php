@@ -30,6 +30,8 @@ class SearchBuilder {
    */
   protected $query;
 
+  protected $body;
+
   /**
    * ParameterBuilder constructor.
    *
@@ -38,75 +40,59 @@ class SearchBuilder {
   public function __construct(QueryInterface $query) {
     $this->query = $query;
     $this->index = $query->getIndex();
+    $this->body = array();
   }
 
   /**
    * @return array
    */
   public function build() {
-
     // Query options.
     $params = IndexFactory::index($this->index, TRUE);
     $query_options = $this->getSearchQueryOptions();
 
-    // Main query.
-    $body = &$params['body'];
-
     // Set the size and from parameters.
-    $body['from'] = $query_options['query_offset'];
-    $body['size'] = $query_options['query_limit'];
+    $this->body['from'] = $query_options['query_offset'];
+    $this->body['size'] = $query_options['query_limit'];
 
     // Sort.
     if (!empty($query_options['sort'])) {
-      $body['sort'] = $query_options['sort'];
+      $this->body['sort'] = $query_options['sort'];
     }
-
-    $body['fields'] = [];
-    $fields = &$body['fields'];
 
     // More Like This.
-    if (!empty($query_options['mlt'])) {
-      $mlt_query['more_like_this'] = [];
-      $mlt_query['more_like_this']['like_text'] = $query_options['mlt']['id'];
-      $mlt_query['more_like_this']['fields'] = array_values(
-        $query_options['mlt']['fields']
-      );
-      // TODO: Make this settings configurable in the view.
-      $mlt_query['more_like_this']['max_query_terms'] = 1;
-      $mlt_query['more_like_this']['min_doc_freq'] = 1;
-      $mlt_query['more_like_this']['min_term_freq'] = 1;
-      $fields += array_values($query_options['mlt']['fields']);
-      $body['query'] = $mlt_query;
-    }
+    $this->setMoreLikeThisQuery($query_options);
 
     // Build the query.
     if (!empty($query_options['query_search_string']) && !empty($query_options['query_search_filter'])) {
-      $body['query']['filtered']['query'] = $query_options['query_search_string'];
-      $body['query']['filtered']['filter'] = $query_options['query_search_filter'];
+      $this->body['query']['filtered']['query'] = $query_options['query_search_string'];
+      $this->body['query']['filtered']['filter'] = $query_options['query_search_filter'];
     }
     elseif (!empty($query_options['query_search_string'])) {
-      if (empty($body['query'])) {
-        $body['query'] = [];
+      if (empty($this->body['query'])) {
+        $this->body['query'] = [];
       }
-      $body['query'] += $query_options['query_search_string'];
+      $this->body['query'] += $query_options['query_search_string'];
     }
     elseif (!empty($query_options['query_search_filter'])) {
-      $body['filter'] = $query_options['query_search_filter'];
+      $this->body['filter'] = $query_options['query_search_filter'];
     }
 
     // TODO: Handle fields on filter query.
     if (empty($fields)) {
-      unset($body['fields']);
+      unset($this->body['fields']);
     }
 
-    if (empty($body['filter'])) {
-      unset($body['filter']);
+    if (empty($this->body['filter'])) {
+      unset($this->body['filter']);
     }
 
+    // TODO: Fix the match_all query.
     if (empty($query_body)) {
       $query_body['match_all'] = [];
     }
 
+    $params['body'] = $this->body;
     // Preserve the options for further manipulation if necessary.
     $this->query->setOption('ElasticParams', $params);
 
@@ -119,7 +105,6 @@ class SearchBuilder {
    * @return array
    */
   protected function getSearchQueryOptions() {
-
     // Query options.
     $query_options = $this->query->getOptions();
 
@@ -160,7 +145,6 @@ class SearchBuilder {
         $query_search_string = ['query_string' => []];
         $query_search_string['query_string']['query'] = $search_string;
         $query_search_string['query_string']['fields'] = $query_fields;
-        $query_search_string['query_string']['analyzer'] = 'snowball';
         $query_search_string['query_string']['default_operator'] = 'OR';
       }
     }
@@ -249,6 +233,7 @@ class SearchBuilder {
         $values[] = $key;
       }
     }
+
     if (!empty($values)) {
       return ($negation === TRUE ? 'NOT ' : '') . '(' . implode(
         " {$conjunction} ",
@@ -411,4 +396,20 @@ class SearchBuilder {
     return $filters;
   }
 
+  protected function setMoreLikeThisQuery($query_options) {
+    if (!empty($query_options['mlt'])) {
+      $mlt_query['more_like_this'] = [];
+      $mlt_query['more_like_this']['like_text'] = $query_options['mlt']['id'];
+      $mlt_query['more_like_this']['fields'] = array_values(
+        $query_options['mlt']['fields']
+      );
+      // TODO: Make this settings configurable in the view.
+      $mlt_query['more_like_this']['max_query_terms'] = 1;
+      $mlt_query['more_like_this']['min_doc_freq'] = 1;
+      $mlt_query['more_like_this']['min_term_freq'] = 1;
+
+      $this->body['query'] = $mlt_query;
+      $this->body['fields'] = array_values($query_options['mlt']['fields']);
+    }
+  }
 }
