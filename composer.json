@@ -4,7 +4,7 @@
   "type": "drupal-module",
   "homepage": "https://www.drupal.org/project/elasticsearch_connector",
   "require": {
-    "nodespark/des-connector": "2.x-dev"
+    "nodespark/des-connector": "5.x-dev"
   },
   "license": "GPL-2.0+",
   "authors": [
