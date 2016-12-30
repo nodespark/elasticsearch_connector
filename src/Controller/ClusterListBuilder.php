@@ -249,6 +249,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
 
     $list['#type'] = 'container';
     $list['#attached']['library'][] = 'elasticsearch_connector/drupal.elasticsearch_connector.ec_index';
+    // TODO: Fix the link.
     $list['clusters'] = array(
       '#type' => 'table',
       '#header' => $this->buildHeader(),
