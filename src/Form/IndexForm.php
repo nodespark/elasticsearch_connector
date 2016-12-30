@@ -161,6 +161,10 @@ class IndexForm extends EntityForm {
    * {@inheritdoc}
    */
   public function buildEntityForm(array &$form, FormStateInterface $form_state) {
+    // TODO: Provide check and support for other index modules settings.
+    // TODO: Provide support for the rest of the dynamic settings.
+    // TODO: Make sure that on edit the static settings cannot be changed.
+    // @see https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html
     $form['index'] = array(
       '#type' => 'value',
       '#value' => $this->entity,
@@ -215,6 +219,17 @@ class IndexForm extends EntityForm {
       '#default_value' => 1,
       '#description' => t('Enter the number of shards replicas.'),
     );
+
+    $form['codec'] = array(
+      '#type' => 'select',
+      '#title' => t('Codec'),
+      '#default_value' => (!empty($this->entity->codec) ? $this->entity->codec : 'default'),
+      '#description' => t('Select compression for stored data. Defaults to: LZ4.'),
+      '#options' => array(
+        'default' => 'LZ4',
+        'best_compression' => 'DEFLATE',
+      ),
+    );
   }
 
   /**
@@ -248,7 +263,7 @@ class IndexForm extends EntityForm {
     $index_params['index'] = $this->entity->index_id;
     $index_params['body']['settings']['number_of_shards'] = $form_state->getValue('num_of_shards');
     $index_params['body']['settings']['number_of_replicas'] = $form_state->getValue('num_of_replica');
-    $index_params['body']['settings']['cluster_machine_name'] = $form_state->getValue('server');
+    $index_params['body']['settings']['codec'] = $form_state->getValue('codec');
 
     try {
       $response = $client->indices()->create($index_params);
