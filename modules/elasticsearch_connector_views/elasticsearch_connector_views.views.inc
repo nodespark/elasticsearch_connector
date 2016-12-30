@@ -29,7 +29,7 @@ function elasticsearch_connector_views_views_data() {
           if (!empty($mapping[$index_name]['mappings'])) {
             foreach ($mapping[$index_name]['mappings'] as $type_name => $type_settings) {
               $name = new FormattableMarkup(
-                '@cluster (@index_name:@type)', array(
+                '@cluster (@index_name - @type)', array(
                   '@cluster' => $cluster->name,
                   '@index_name' => $index_name,
                   '@type' => $type_name,
@@ -42,7 +42,7 @@ function elasticsearch_connector_views_views_data() {
                 'index' => $index_name,
                 'cluster_id' => $cluster->cluster_id,
                 'type' => $type_name,
-                'title' => t('Cluster !name', array('!name' => $name)),
+                'title' => t('Cluster :name', array(':name' => $name)),
                 'help' => t('Searches the site with the Elasticsearch search engine for !name', array('!name' => $name)),
                 'query_id' => 'elasticsearch_connector_views_query',
               );
@@ -103,6 +103,7 @@ function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fiel
     foreach ($fields as $field_name => $field) {
       // TODO: Restrict some fields if needed.
       // TODO: Handle boolean.
+      // TODO: Handle the cases with analyzed and not analyzed.
       if (empty($field['type']) && isset($field['properties'])) {
         $field_type = 'object';
       }
