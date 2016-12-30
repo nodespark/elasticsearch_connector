@@ -53,6 +53,12 @@ class FilterFactory {
           ];
           break;
 
+        case 'IN':
+          $filter = [
+            'terms' => [$condition->getField() => array_values($condition->getValue())],
+          ];
+          break;
+
         case '<>':
           $filter = [
             'not' => [
