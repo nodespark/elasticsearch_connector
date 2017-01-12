@@ -1,0 +1,14 @@
+name = Elasticsearch Connector Search API
+description = "The module will integrate Elasticsearch Connector module with Search API. "
+core = 7.x
+package = Elasticsearch
+
+dependencies[] = elasticsearch_connector
+dependencies[] = search_api
+
+files[] = service.inc
+files[] = includes/spellcheck.inc
+files[] = includes/elasticsearch_stats.inc
+files[] = includes/processor_highlight.inc
+files[] = includes/processor_prefix_search.inc
+files[] = includes/more_like_this_handler.inc

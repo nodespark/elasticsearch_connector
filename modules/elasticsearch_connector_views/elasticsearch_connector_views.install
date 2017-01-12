@@ -1,0 +1,50 @@
+<?php
+/**
+ * @file
+ * Install/unstall tasks for the Elasticsearch Connector Views module.
+ * TODO: Implements schema alter!
+ */
+
+/**
+ * Implements hook_install().
+ * @return Ambigous <The, unknown, string, A, Optional>
+ */
+function elasticsearch_connector_views_install() {
+  return elasticsearch_connector_views_update_views_table();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function elasticsearch_connector_views_uninstall() {
+  //TODO: Delete all views created with elasticsearch connector views.
+  //TODO: Revert to default views table field.
+  return elasticsearch_connector_views_update_views_table(TRUE);
+}
+
+/**
+ * Alter the views table to support base table bigger than 64 varchars.
+ */
+function elasticsearch_connector_views_update_7001() {
+  return elasticsearch_connector_views_update_views_table(FALSE);
+}
+
+/**
+ * Altering the views table to handle bigger amount of characters.
+ */
+function elasticsearch_connector_views_update_views_table($revert = FALSE) {
+  // Updating the base_table field to be more than 64 characters
+  // Because of the elasticsearch index name and types lenght.
+  $schema = drupal_get_schema_unprocessed('views', 'views_view');
+  $field = 'base_table';
+  if (!$revert) {
+    $schema['fields'][$field]['length'] = 255;
+    $message = t('The"base_table" field in views table has been updated to use 255 characters.');
+  }
+  else {
+    $message = t('The"base_table" field in views table has been reverted to use @chars characters.', array('@chars' => $schema['fields'][$field]['length']));
+  }
+  db_change_field('views_view', $field, $field, $schema['fields']['base_table']);
+
+  return $message;
+}

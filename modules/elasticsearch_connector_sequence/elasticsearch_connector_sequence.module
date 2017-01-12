@@ -1,0 +1,104 @@
+<?php
+/**
+ * @file
+ * Module implementing a logic to have an sequence functionality,
+ * similar to MySQL sequence and PostgreSQL
+ */
+
+define('ELASTICSEARCH_CONNECTOR_SEQUENCE_DEFAULT_TYPE',     'sequence');
+
+/**
+ * Implements hook_menu().
+ */
+function elasticsearch_connector_sequence_menu() {
+  $settings_path = elasticsearch_connector_main_settings_path();
+
+  $items[$settings_path . '/sequence'] = array(
+    'title'             => 'Elasticsearch Sequence Settings',
+    'description'       => 'Setup the sequence module settings.',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_connector_sequence_settings'),
+    'access arguments'  => array('administer elasticsearch connector'),
+    'file'              => 'elasticsearch_connector_sequence.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Generate a sequence/autoincrement id.
+ * @param string $sequence_id
+ * @return integer
+ */
+function elasticsearch_connector_sequence_get_next($sequence_id) {
+  $cluster_id = elasticsearch_connector_sequence_get_cluster_id();
+  if ($cluster_id) {
+    $client = elasticsearch_connector_get_client_by_id($cluster_id);
+    $index_name = elasticsearch_connector_sequence_get_index_name();
+    $type = variable_get('elasticsearch_connector_sequence_type', ELASTICSEARCH_CONNECTOR_SEQUENCE_DEFAULT_TYPE);
+    if ($client && $index_name) {
+      $doc['index'] = $index_name;
+      $doc['type']  = $type;
+      $doc['id']  = $sequence_id;
+      $doc['body'] = array();
+
+      try {
+        $response = $client->index($doc);
+        return $response['_version'];
+      }
+      catch (Exception $e) {
+        watchdog('ec_sequence', $e->getMessage(), array(), WATCHDOG_ERROR);
+        return FALSE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Return the cluster_id based on the settings.
+ * @return array
+ */
+function elasticsearch_connector_sequence_get_cluster_id() {
+  $cluster_info = variable_get('elasticsearch_connector_sequence_cluster', array());
+  if (isset($cluster_info['cluster_id'])) {
+    return $cluster_info['cluster_id'];
+  }
+
+  return FALSE;
+}
+
+/**
+ * Return the index name based on the settings.
+ * @return array
+ */
+function elasticsearch_connector_sequence_get_index_name() {
+  $cluster_info = variable_get('elasticsearch_connector_sequence_cluster', array());
+  if (isset($cluster_info['index'])) {
+    return $cluster_info['index'];
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implemens hook_elasticsearch_connector_edit_lock().
+ */
+function elasticsearch_connector_sequence_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
+  $client_id = elasticsearch_connector_sequence_get_cluster_id();
+  if (!empty($client_id) && $client_id == $cluster->cluster_id) {
+    if ($type == 'cluster') {
+      return TRUE;
+    }
+    elseif ($type == 'index') {
+      $index_name = elasticsearch_connector_sequence_get_index_name();
+      if ($index == $index_name) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+

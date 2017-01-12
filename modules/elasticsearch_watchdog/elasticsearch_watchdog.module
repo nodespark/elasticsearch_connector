@@ -1,0 +1,301 @@
+<?php
+/**
+ * @file
+ * Created on Jan 06, 2014
+ *
+ * TODO: Think of building a functionality that log only a specific message
+ * severity e.g., only errors.
+ *
+ */
+
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE',     'watchdog_message');
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_INDEX',    'elasticsearch_watchdog');
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_SHARDS',   3);
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_REPLICA',  0);
+define('ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL', '31d');
+
+/**
+ * Implements hook_theme().
+ */
+function elasticsearch_watchdog_theme() {
+  return array(
+    'elasticsearch_watchdog_message' => array(
+      'variables' => array('event_id' => NULL, 'event' => NULL, 'link' => FALSE),
+      'file' => 'elasticsearch_watchdog.admin.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function elasticsearch_watchdog_menu() {
+  $settings_path = elasticsearch_connector_main_settings_path();
+
+  $items[$settings_path . '/watchdog'] = array(
+    'title'             => 'Elasticsearch Watchdog Settings',
+    'description'       => 'Showing all available clusters',
+    'page callback'      => 'drupal_get_form',
+    'page arguments'     => array('elasticsearch_watchdog_settings'),
+    'access arguments'  => array('administer elasticsearch connector'),
+    'file'              => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  $items['admin/reports/elasticlog'] = array(
+    'title' => 'Recent log messages',
+    'description' => 'View events that have recently been logged.',
+    'page callback' => 'elasticsearch_watchdog_overview',
+    'access arguments' => array('access site reports'),
+    'file' => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  $items['admin/reports/elastic-page-not-found'] = array(
+    'title' => "Top 100 'page not found' errors",
+    'description' => "View 'page not found' errors (404s).",
+    'page callback' => 'elasticsearch_watchdog_top',
+    'page arguments' => array('page not found'),
+    'access arguments' => array('access site reports'),
+    'file' => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  $items['admin/reports/elastic-access-denied'] = array(
+    'title' => "Top 100 'access denied' errors",
+    'description' => "View 'access denied' errors (403s).",
+    'page callback' => 'elasticsearch_watchdog_top',
+    'page arguments' => array('access denied'),
+    'access arguments' => array('access site reports'),
+    'file' => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  $items['admin/reports/elasticlog/elastic-message/%'] = array(
+    'title' => 'Details',
+    'page callback' => 'elasticsearch_watchdog_event',
+    'page arguments' => array(4),
+    'access arguments' => array('access site reports'),
+    'file' => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  $items['admin/reports/elasticlog/delete-filter'] = array(
+    'title' => 'Delete log by filter',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('elasticsearch_watchdog_filter_delete_confirm'),
+    'access arguments' => array('access site reports'),
+    'file' => 'elasticsearch_watchdog.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Get the cluster_id from settings.
+ * @return string
+ */
+function elasticsearch_watchdog_get_cluster_id() {
+  $client_info = variable_get('elasticsearch_watchdog_cluster_id', array());
+  if (isset($client_info['cluster_id'])) {
+    return $client_info['cluster_id'];
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_watchdog().
+ */
+function elasticsearch_watchdog_watchdog(array $log_entry) {
+  global $base_url;
+
+  $user = $GLOBALS['user'];
+
+  $client_id = elasticsearch_watchdog_get_cluster_id();
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      $doc = array();
+      $doc['index'] = elasticsearch_watchdog_get_index_name();
+      $doc['type']  = elasticsearch_watchdog_get_type_name();
+
+      // Workaround to order the logs if the same timestamp based on microtime.
+      $microtime_float = explode('.', microtime(TRUE));
+      if (empty($microtime_float[1])) {
+        $microtime = '0.0';
+      }
+      else {
+        $microtime = '0.' . $microtime_float[1];
+      }
+
+      $doc['body']  = array(
+        'uid'           => $log_entry['uid'],
+        'username'      => user_is_logged_in() ? $user->name : 'Anonymous',
+        'type'          => substr($log_entry['type'], 0, 64),
+        'message'       => $log_entry['message'],
+        'full_massage'  => format_string($log_entry['message'], (array)$log_entry['variables']),
+        'variables'     => serialize($log_entry['variables']),
+        'severity'      => $log_entry['severity'],
+        'link'          => substr($log_entry['link'], 0, 255),
+        'location'      => $log_entry['request_uri'],
+        'referer'       => $log_entry['referer'],
+        'hostname'      => substr($log_entry['ip'], 0, 128),
+        'timestamp'     => $log_entry['timestamp'],
+        'microtime'     => (float)$microtime,
+        'domain'        => $base_url,
+        'date'          => date('c', $log_entry['timestamp']),
+      );
+
+      $doc['ttl'] = variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL);
+
+      // Indexing document.
+      try {
+        $ret = $client->index($doc);
+      }
+      catch (Exception $e) {
+        error_log($e->getMessage());
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for system_logging_settings().
+ */
+function elasticsearch_watchdog_form_system_logging_settings_alter(&$form, $form_state) {
+  $form['elasticsearch_watchdog_ttl'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Elasticsearch TTL Interval'),
+    '#default_value' => variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL),
+    '#element_validate' => array('_elasticsearch_connector_validate_ttl_field'),
+    '#description' => t('Use format like 1d. Suffix can be d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks).'
+        . ' You can dynamically update the default interval.'
+        . ' However it won\'t change the TTL of already indexed messages but will be used for future logs.'),
+  );
+  $form['actions']['#weight'] = 1;
+}
+
+/**
+ * Return message types FACET.
+ * @return array
+ */
+function _elasticsearch_watchdog_get_facets($facet_field, $facet_type) {
+  $watchdog_facets = &drupal_static(__FUNCTION__);
+
+  $result = array();
+
+  if (!isset($watchdog_facets)) {
+    $facet_name_prefix = 'facetname_';
+    $facets = array(
+      $facet_name_prefix . 'type'     => array('type' => 'terms', 'field' => 'type'),
+      $facet_name_prefix . 'domain'   => array('type' => 'terms', 'field' => 'domain'),
+      $facet_name_prefix . 'severity' => array('type' => 'terms', 'field' => 'severity'),
+      $facet_name_prefix . 'username' => array('type' => 'terms', 'field' => 'username'),
+    );
+
+    $params = array();
+    $params['index'] = elasticsearch_watchdog_get_index_name();
+    $params['type']  = elasticsearch_watchdog_get_type_name_for_view();
+    $params['search_type'] = 'count';
+
+    foreach ($facets as $facet_name => $facet_params) {
+      $watchdog_facets[$facet_params['field'] . '_' . $facet_params['type']] = array();
+      $params['body']['aggs'][$facet_name][$facet_params['type']]['field'] = $facet_params['field'];
+      $params['body']['aggs'][$facet_name][$facet_params['type']]['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
+    }
+    $client_id = elasticsearch_watchdog_get_cluster_id();
+    if (!empty($client_id)) {
+      $client = elasticsearch_connector_get_client_by_id($client_id);
+      if ($client) {
+        try {
+          $search_result = $client->search($params);
+          if (!empty($search_result['aggregations'])) {
+
+            foreach ($search_result['aggregations'] as $result_facet_name => $result_params) {
+              $type = $facets[$result_facet_name]['type'];
+              $field = str_replace($facet_name_prefix, '', $result_facet_name);
+              $result = array();
+
+              foreach ($result_params['buckets'] as $facet) {
+                $result[$facet['key']] = $facet;
+              }
+              $watchdog_facets[$field . '_' . $type] = $result;
+            }
+          }
+        }
+        catch (Exception $e) {
+          error_log($e->getMessage());
+        }
+      }
+    }
+  }
+  return $watchdog_facets[$facet_field . '_' . $facet_type];
+}
+
+/**
+ * Return the real index name.
+ *
+ * @return string
+ */
+function elasticsearch_watchdog_get_realindex_name($index_name = NULL) {
+  if (!isset($index_name)) {
+    $cluster_info = variable_get('elasticsearch_watchdog_cluster_id', array());
+    $index_name = $cluster_info['index'];
+  }
+
+  return $index_name;
+}
+
+/**
+ * Return the index name (the alias name).
+ *
+ * @return string
+ */
+function elasticsearch_watchdog_get_index_name($index_name = NULL) {
+  if (!isset($index_name)) {
+    $cluster_info = variable_get('elasticsearch_watchdog_cluster_id', array());
+    $index_name = $cluster_info['index'];
+  }
+
+  return $index_name . '_alias';
+}
+
+/**
+ * Return the name of the Elasticsearch type for the view page and facets.
+ * This can be different from the current page type if you are building a log warehouse.
+ *
+ * @return string
+ */
+function elasticsearch_watchdog_get_type_name_for_view() {
+  return variable_get('elasticsearch_watchdog_types_view', ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+}
+
+/**
+ * Return the name of the Elasticsearch type.
+ *
+ * @return string
+ */
+function elasticsearch_watchdog_get_type_name($type = NULL) {
+  if (isset($type)) {
+    return $type;
+  }
+  else {
+    return variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
+  }
+}
+
+/**
+ * Implemens hook_elasticsearch_connector_edit_lock().
+ */
+function elasticsearch_watchdog_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
+  $client_id = elasticsearch_watchdog_get_cluster_id();
+  if (!empty($client_id) && $client_id == $cluster->cluster_id) {
+    if ($type == 'cluster') {
+      return TRUE;
+    }
+    elseif ($type == 'index') {
+      $index_name = elasticsearch_watchdog_get_realindex_name();
+      if ($index == $index_name) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}

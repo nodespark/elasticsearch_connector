@@ -1,0 +1,455 @@
+<?php
+/**
+ * @file
+ * Provides a elasticsearch-based service class for the Search API.
+ */
+
+/**
+ * Implements hook_search_api_service_info().
+ */
+function elasticsearch_connector_search_api_search_api_service_info() {
+  $services = array();
+  $services['search_api_elasticsearch_connector'] = array(
+    'name' => t('Elasticsearch Connector service'),
+    'description' => t('
+    <p>Index items using a !url_elasticsearch search server.</p>
+    <ul>
+    <li>All field types are supported.</li>
+    <li>Search API facets are supported.</li>
+    <li>Will use internal elasticsearch preprocessors, so Search API preprocessors should for the most part be deactivated.</li>
+    <li>See the README.txt file provided with this module for details.</li>
+    </ul>',
+        array(
+          // Use directly the <a> tag because l() function break the building at some point.
+          '!url_elasticsearch' => '<a href="' . url('http://www.elasticsearch.org/') . '">' . t('Elasticsearch') . '</a>',
+        )),
+    'class' => 'SearchApiElasticsearchConnector',
+  );
+
+  // If the ElasticSearch library isn't available, use a dummy service class.
+  if (!class_exists('\nodespark\DESConnector\ClientFactory') && module_exists('composer_manager')) {
+    // When using search_api_autocomplete the composer manager doesn't handle the class loading.
+    // This can be an issue with composer manager and should be checked.
+    composer_manager_register_autoloader();
+
+    if (!class_exists('\nodespark\DESConnector\ClientFactory')) {
+      $services['search_api_elasticsearch_connector']['class'] = 'SearchApiElasticsearchConnectorMissing';
+    }
+  }
+
+  return $services;
+}
+
+/**
+ * Implements hook_search_api_processor_info().
+ */
+function elasticsearch_connector_search_api_search_api_processor_info() {
+  $processors['search_api_elasticsearch_highlighting'] = array(
+    'name' => t('Elasticsearch Highlighting'),
+    'description' => t('Adds highlighting for search results for Elasticsearch server. This will throw error if the server your are using is not'),
+    'class' => 'ElasticsearchConnectorSearchApiHighlight',
+    'weight' => 35,
+  );
+
+  $processors['search_api_elasticsearch_prefix_search'] = array(
+    'name' => t('Elasticsearch Prefix Search'),
+    'description' => t('By enabling this processor you will allows users to search the fields using the Elasticsearch prefix query.'),
+    'class' => 'ElasticsearchConnectorSearchApiPrefixSearch',
+    'weight' => 35,
+  );
+
+  return $processors;
+}
+
+/**
+ * Implements hook_search_api_autocomplete_suggestions_alter().
+ */
+function elasticsearch_connector_search_api_search_api_autocomplete_suggestions_alter(&$ret, &$alter_params) {
+  // Change the key of the autocomplete.
+  $new_ret = array();
+  foreach ($ret as $key => $suggestion) {
+    if (isset($suggestion['key'])) {
+      $new_ret[$suggestion['key']] = $ret[$key];
+    }
+  }
+
+  $ret = $new_ret;
+}
+
+/**
+ * Implements hook_views_data_alter().
+ */
+function elasticsearch_connector_search_api_views_data_alter(&$data) {
+  foreach ($data as $key => $value) {
+    if (strpos($key, 'search_api_index_') === 0) {
+      $data[$key]['search_api_views_more_like_this']['argument']['handler'] = 'ElasticsearchConnectorSearchApiViewsHandlerArgumentMoreLikeThis';
+    }
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function elasticsearch_connector_search_api_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'search_api_admin_add_index') {
+    elasticsearch_connector_search_api_attach_ajax_callback($form);
+    if (isset($form_state['values']) && !empty($form_state['values'])) {
+      $add_options = elasticsearch_connector_search_api_elasticsearch_server_enabled($form_state['values']['server']);
+      if ($add_options != FALSE) {
+        elasticsearch_connector_search_api_return_form_options($form, $form_state, array(), 'add');
+      }
+    }
+  }
+  elseif ($form_id == 'search_api_admin_index_edit') {
+    $default_values = $form_state['index']->options;
+    elasticsearch_connector_search_api_attach_ajax_callback($form);
+    if (!isset($form_state['values'])) {
+      if (isset($form_state['build_info']['args']) && !empty($form_state['build_info']['args'])) {
+        $index_obj = reset($form_state['build_info']['args']);
+        $add_options = elasticsearch_connector_search_api_elasticsearch_server_enabled($index_obj->server);
+        if ($add_options != FALSE) {
+          elasticsearch_connector_search_api_return_form_options($form, $form_state, $default_values, 'edit');
+        }
+      }
+    }
+    else {
+      $add_options = elasticsearch_connector_search_api_elasticsearch_server_enabled($form_state['values']['server']);
+      if ($add_options != FALSE) {
+        elasticsearch_connector_search_api_return_form_options($form, $form_state, $default_values, 'edit');
+      }
+    }
+  }
+
+  if ('search_api_admin_index_workflow' == $form_id) {
+    // Remove all processors from the form for this server.
+    if (elasticsearch_connector_search_api_elasticsearch_server_enabled($form_state['index']->server)) {
+      foreach (element_children($form['processors']['status']) as $key) {
+        if (strpos($key, 'search_api_elasticsearch') === FALSE) {
+          $form['processors']['status'][$key]['#default'] = 0;
+          $form['processors']['status'][$key]['#value'] = 0;
+          $form['processors']['status'][$key]['#disabled'] = TRUE;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Attach the Ajax attributes.
+ *
+ * @param array $form
+ */
+function elasticsearch_connector_search_api_attach_ajax_callback(&$form) {
+  $form['options']['#prefix'] = '<div id="elasticsearch-add-index">';
+  $form['options']['#suffix'] = '</div>';
+
+  $form['server']['#ajax'] = array(
+    'callback' => 'elasticsearch_connector_search_api_ajax_callback',
+    'wrapper' => 'elasticsearch-add-index',
+    'method' => 'replace',
+    'effect' => 'fade',
+  );
+}
+
+/**
+ * Add options common function.
+ *
+ * @param integer $server_machine_name
+ */
+function elasticsearch_connector_search_api_elasticsearch_server_enabled($server_machine_name) {
+  if (isset($server_machine_name) && !empty($server_machine_name)) {
+    $server_id = elasticsearch_connector_search_api_get_server_id_by_name($server_machine_name);
+    if ($server_id != FALSE) {
+      $server_obj = search_api_server_load($server_id);
+      if (isset($server_obj) && !empty($server_obj)) {
+        // TODO: Think of making this a module invoke or, think of addresing this to the
+        // search_api author as feature request.
+        if ($server_obj->class == 'search_api_elasticsearch_connector') {
+          return TRUE;
+        }
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Get server ID by name.
+ *
+ * @param integer $server_machine_name
+ */
+function elasticsearch_connector_search_api_get_server_id_by_name($server_machine_name) {
+  $query = '';
+  $result = '';
+
+  try {
+    $query = db_select('search_api_server', 'sas');
+    $query->addField('sas', 'id');
+    $query->condition('sas.machine_name', $server_machine_name, '=');
+    $result = $query->execute()->fetchAssoc();
+  }
+  catch (Exception $e) {
+    watchdog('Elastic Search', $e->getMessage(), array(), WATCHDOG_ERROR);
+    return FALSE;
+  }
+
+  if (isset($result) && !empty($result)) {
+    return reset($result);
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * The form options for add/edit index.
+ *
+ * @param array $form
+ * @param array $default_values
+ */
+function elasticsearch_connector_search_api_return_form_options(&$form, &$form_state, $default_values = array(), $flag) {
+  global $databases;
+
+  if (!isset($form_state['values'])) {
+    $server = $form_state['index']->server();
+  }
+  else {
+    $server = search_api_server_load($form_state['values']['server']);
+  }
+
+  if (empty($server)) {
+    watchdog('elasticsearch_connector_search_api', 'System cannot load the server.');
+    return;
+  }
+  $cluster_id = elasticsearch_connector_get_default_connector();
+  if (!empty($server->options['cluster'])) {
+    $cluster_id = $server->options['cluster'];
+  }
+
+  $form['options']['index_name'] = array(
+    '#type' => 'ec_index',
+    '#title' => t('Select cluster'),
+    '#required' => TRUE,
+    '#cluster_id' => $cluster_id,
+    '#default_value' => isset($default_values['index_name']['index']) ? $default_values['index_name'] : array(),
+  );
+
+  $form['options']['collect_index_statistics'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Collect index statistics'),
+    '#default_value' => isset($default_values['collect_index_statistics']) ? $default_values['collect_index_statistics'] : 0,
+    '#description' => t('Enable the statistics collection that will help you to better analys what the users are searching for.')
+  );
+
+  $form['options']['log_only_not_found'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Log only the "Not found" results'),
+    '#default_value' => isset($default_values['log_only_not_found']) ? $default_values['log_only_not_found'] : 0,
+    '#description' => t('Log only the "Not found" results by skipping the rest.')
+  );
+
+  $form['options']['index_statistics_ttl'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Statistics TTL interval'),
+    '#element_validate' => array('_elasticsearch_connector_validate_ttl_field'),
+    '#default_value' => isset($default_values['index_statistics_ttl']) ? $default_values['index_statistics_ttl'] : SearchApiElasticsearchConnectorStats::TTL,
+    '#description' => t('Use format like 1d. Suffix can be d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks).'
+        . ' You can dynamically update the default interval.'
+        . ' However it won\'t change the TTL of already indexed messages but will be used for future logs.')
+  );
+}
+
+function elasticsearch_connector_search_api_index_name_validate($element, &$form_state, $form) {
+  // Make sure the index name contains appropriate characters.
+  if (!preg_match('/^[a-z][a-z0-9_]*$/i', $element['#value'])) {
+    form_error($element, t('Enter an index name that begins with a letter and contains only letters, numbers, and underscores.'));
+  }
+}
+
+/**
+ * Implementation of hook_entity_presave().
+ * @param object $entity
+ * @param string $entity_type
+ */
+function elasticsearch_connector_search_api_entity_presave($entity, $entity_type) {
+  if ('search_api_index' == $entity_type) {
+    // If we are saving an index with elasticsearch server, unset all processors.
+    $server = $entity->server();
+    if (!empty($server) && $server->class == 'search_api_elasticsearch_connector') {
+      if (!empty($entity->options['processors'])) {
+        foreach($entity->options['processors'] as $proc_key => $proc_options) {
+          if (strpos($proc_key, 'search_api_elasticsearch') === FALSE) {
+            $entity->options['processors'][$proc_key]['status'] = 0;
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_search_api_index_update().
+ *
+ * @param SearchApiIndex $index
+ *   The edited index.
+ */
+function elasticsearch_connector_search_api_search_api_index_update(SearchApiIndex $index) {
+  $original_server = $index->original->server();
+  $current_server = $index->server();
+  if (!empty($original_server) && $original_server->class == 'search_api_elasticsearch_connector' && (empty($current_server) || $current_server->class != 'search_api_elasticsearch_connector')) {
+    // We need to remove the index data from the index if we are going to change
+    // the server.
+  }
+
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function elasticsearch_connector_search_api_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'form_views_exposed_form_alter') {
+    unset($implementations['search_api_autocomplete']);
+  }
+  elseif ($hook == 'form_search_api_page_search_form') {
+    unset($implementations['search_api_autocomplete']);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Adds autocompletion to the keywords field on search pages, if enabled by the
+ * user.
+ */
+function elasticsearch_connector_search_api_form_search_api_page_search_form_alter(array &$form, array &$form_state) {
+  if (module_exists('search_api_autocomplete')) {
+    if (isset($form['form'])) {
+      $form = &$form['form'];
+    }
+
+    $id = 'search_api_page_' . $form_state['build_info']['args'][0]->machine_name;
+    $search = search_api_autocomplete_search_load($id);
+
+    if (!$search || !search_api_autocomplete_access($search)) {
+      return;
+    }
+
+    $search->alterElement($form['keys_' . $form['id']['#value']]);
+    if (!empty($search->options['custom']['link_suggestions'])) {
+      $form['keys_' . $form['id']['#value']]['#attached']['js'][] =
+        drupal_get_path('module', 'elasticsearch_connector_search_api') . '/js/elasticsearch_connector_search_api_autocomplete.js';
+
+      $form['keys_' . $form['id']['#value']]['#attributes'] = array(
+        'class' => array('elasticsearch-autocomplete')
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Adds autocompletion to input fields for fulltext keywords on views with
+ * exposed filters.
+ */
+function elasticsearch_connector_search_api_form_views_exposed_form_alter(array &$form, array &$form_state) {
+  if (module_exists('search_api_autocomplete')) {
+    $view = $form_state['view'];
+    if (substr($view->base_table, 0, 17) != 'search_api_index_') {
+      return;
+    }
+    $search_id = 'search_api_views_' . $view->name;
+    $search = search_api_autocomplete_search_load($search_id);
+    if (!$search || !search_api_autocomplete_access($search)) {
+      return;
+    }
+    $index_id = substr($view->base_table, 17);
+    $index = search_api_index_load($index_id);
+    if (empty($index->options['fields'])) {
+      return;
+    }
+    $fields = $index->getFulltextFields(TRUE);
+    // Add the "Search: Fulltext search" filter as another text field.
+    $fields[] = 'search_api_views_fulltext';
+    // We need the _entity_views_field_identifier() function to translate Search
+    // API field names into Views identifiers.
+    module_load_include('views.inc', 'entity', 'views/entity');
+    foreach ($fields as $search_field) {
+      $field = _entity_views_field_identifier($search_field, array());
+      if (!empty($view->filter[$field]->options['expose']['identifier'])) {
+        $key = $view->filter[$field]->options['expose']['identifier'];
+        if (isset($form[$key]) && $form[$key]['#type'] == 'textfield') {
+          if ($field == 'search_api_views_fulltext') {
+            $fields = $view->filter[$field]->options['fields'];
+          }
+          else {
+            $fields = array($search_field);
+          }
+          $search->alterElement($form[$key], $fields);
+          if (!empty($search->options['custom']['link_suggestions'])) {
+            $form[$key]['#attributes']['class'] = array('elasticsearch-autocomplete');
+            $form[$key]['#attached']['js'][] =
+              drupal_get_path('module', 'elasticsearch_connector_search_api') . '/js/elasticsearch_connector_search_api_autocomplete.js';
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function elasticsearch_connector_search_api_form_search_api_autocomplete_admin_search_edit_alter(&$form, &$form_state, $form_id) {
+  $search = $form_state['search'];
+
+  $form['options']['custom']['link_suggestions'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Elasticsearch direct link'),
+    '#default_value' => isset($search->options['custom']['link_suggestions']) ? $search->options['custom']['link_suggestions'] : 0,
+    '#description' => t('Link the result directly to the result because the suggestion is a single result.'),
+  );
+}
+
+/**
+ * Ajax callback.
+ *
+ * @param array $form
+ * @param array $form_state
+ *
+ * @return array
+ */
+function elasticsearch_connector_search_api_ajax_callback($form, &$form_state) {
+  return $form['options'];
+}
+
+/**
+ * Implemens hook_elasticsearch_connector_edit_lock().
+ */
+function elasticsearch_connector_search_api_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
+  if ('cluster' == $type) {
+    $servers = search_api_server_load_multiple(FALSE);
+    foreach ($servers as $id => $server) {
+      if ('search_api_elasticsearch_connector' == $server->class) {
+        $server_cluster = $server->options['cluster'];
+        if (empty($server_cluster)) {
+          $server_cluster = elasticsearch_connector_get_default_connector();
+        }
+        if ($server_cluster == $cluster->cluster_id) {
+          return TRUE;
+        }
+      }
+    }
+  }
+  elseif ('index' == $type) {
+    $indexes = search_api_index_load_multiple(FALSE);
+    foreach($indexes as $id => $search_api_index) {
+      if (!empty($search_api_index->options['index_name']['index']) && $search_api_index->options['index_name']['index'] == $index) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}

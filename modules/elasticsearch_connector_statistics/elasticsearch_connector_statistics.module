@@ -1,0 +1,695 @@
+<?php
+/**
+ * @file
+ * Logs and displays access statistics for a site.
+ */
+
+define('ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_INTERVAL', '365d');
+define('ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE', 'statlogs');
+define('ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW', 'page_view');
+
+/**
+ * Implements hook_help().
+ */
+function elasticsearch_connector_statistics_help($path, $arg) {
+  $settings_path = elasticsearch_connector_main_settings_path();
+  switch ($path) {
+    case 'admin/help#elasticsearch_connector_statistics':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Elasticsearch Connector Statistics module shows you how often a given page is viewed, who viewed it, the previous page the user visited (referrer URL), and when it was viewed. These statistics are useful in determining how users are visiting and navigating your site.') . '</p>';
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<dt>' . t('Managing logs') . '</dt>';
+      $output .= '<dd>' . t('To enable collection of statistics, the <em>Enable access log</em> checkbox on the <a href="@statistics-settings">Elasticsearch Connector Statistics settings page</a> must be checked. The <em>Elasticsearch TTL Interval</em> setting on the settings page specifies the TTL of entries before they are deleted.', array('@statistics-settings' => url($settings_path . '/statistics'))) . '</dd>';
+      $output .= '<dt>' . t('Viewing site usage') . '</dt>';
+      $output .= '<dd>' . t('The Statistics module can help you break down details about your users and how they are using the site. The module offers five reports:');
+      $output .= '<ul><li>' . t('<a href="@recent-hits">Recent hits</a> displays information about the latest activity on your site, including the URL and title of the page that was accessed, the user name (if available) and the IP address of the viewer.', array('@recent-hits' => url('admin/reports/ecs-hits'))) . '</li>';
+      $output .= '<li>' . t('<a href="@top-referrers">Top referrers</a> displays where visitors came from (referrer URL).', array('@top-referrers' => url('admin/reports/ecs-referrers'))) . '</li>';
+      $output .= '<li>' . t('<a href="@top-pages">Top pages</a> displays a list of pages ordered by how often they were viewed.', array('@top-pages' => url('admin/reports/ecs-pages'))) . '</li>';
+      $output .= '<li>' . t('<a href="@top-ip">Top IP</a> displays a list of most hit IPs.', array('@top-ip' => url('admin/reports/ecs-ip'))) . '</li>';
+      $output .= '<li>' . t('<a href="@top-visitors">Top visitors</a> shows you the most active visitors for your site and allows you to ban abusive visitors.', array('@top-visitors' => url('admin/reports/ecs-visitors'))) . '</li></ul>';
+      return $output;
+
+    case $settings_path . '/statistics':
+      return '<p>' . t('Settings for the statistical information that Drupal will keep about the site. See <a href="@statistics">site statistics</a> for the actual information.', array('@statistics' => url('admin/reports/ecs-hits'))) . '</p>';
+    case 'admin/reports/ecs-hits':
+      return '<p>' . t("This page displays the site's most recent hits.") . '</p>';
+    case 'admin/reports/ecs-ip':
+      return '<p>' . t("This Top IP displays the site's most recent hits groupped by IP.") . '</p>';
+    case 'admin/reports/ecs-referrers':
+      return '<p>' . t('This page displays all external referrers, or external references to your website.') . '</p>';
+    case 'admin/reports/ecs-visitors':
+      return '<p>' . t("When you ban a visitor, you prevent the visitor's IP address from accessing your site. Unlike blocking a user, banning a visitor works even for anonymous users. This is most commonly used to block resource-intensive bots or web crawlers.") . '</p>';
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function elasticsearch_connector_statistics_permission() {
+  return array(
+    'administer elasticsearch_connector_statistics' => array(
+      'title' => t('Administer elasticsearch connector statistics'),
+    ),
+    'access elasticsearch_connector_statistics' => array(
+      'title' => t('View content access elasticsearch connector statistics'),
+    ),
+    'view post access counter statistic' => array(
+      'title' => t('View content hits'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_init().
+ */
+function elasticsearch_connector_statistics_init() {
+  global $user, $language;
+
+  if (path_is_admin($_GET['q']) && !variable_get('elasticsearch_connector_statistics_enable_access_log_admin', 0)) {
+    return;
+  }
+
+  $settings = array(
+    'elasticsearch_connector' => array(
+      'statistics' => array(
+        'image_src' =>
+        url(
+          drupal_get_path('module', 'elasticsearch_connector_statistics') . '/elasticsearch_connector_statistics.php',
+          array(
+            'absolute' => TRUE,
+            // Transfer some of the information of the current page to the stats collector.
+            'query' => array(
+              // TODO: log also all get parameters.
+              'current_path' => current_path(),
+              'title' => drupal_get_title(),
+              'uid' => $user->uid,
+              'page_language' => $language->language,
+              'referer' => $_SERVER['HTTP_REFERER']
+            )
+          )
+        ),
+      )
+    )
+  );
+
+  drupal_add_js($settings, 'setting');
+  drupal_add_js(
+    drupal_get_path('module', 'elasticsearch_connector_statistics') . '/js/elasticsearch-connector-statistics-load.js',
+    array('type' => 'file', 'scope' => 'footer')
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function elasticsearch_connector_statistics_menu() {
+  $settings_path = elasticsearch_connector_main_settings_path();
+
+  $items[$settings_path . '/statistics'] = array(
+    'title' => 'Elasticsearch Statistics Settings',
+    'description' => 'Control details about what and how your site logs access elasticsearch_connector_statistics.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('elasticsearch_connector_statistics_settings_form'),
+    'access arguments' => array('administer elasticsearch_connector_statistics'),
+    'file' => 'elasticsearch_connector_statistics.admin.inc',
+  );
+  $items['admin/reports/ecs-hits'] = array(
+    'title' => 'Recent hits',
+    'description' => 'View pages that have recently been visited.',
+    'page callback' => 'elasticsearch_connector_statistics_recent_hits',
+    'access arguments' => array('access elasticsearch_connector_statistics'),
+    'file' => 'elasticsearch_connector_statistics.admin.inc',
+  );
+  $items['admin/reports/ecs-pages'] = array(
+    'title' => 'Top pages',
+    'description' => 'View pages that have been hit frequently.',
+    'page callback' => 'elasticsearch_connector_statistics_top_pages',
+    'access arguments' => array('access elasticsearch_connector_statistics'),
+    'file' => 'elasticsearch_connector_statistics.admin.inc',
+  );
+  $items['admin/reports/ecs-ip'] = array(
+    'title' => 'Top IP',
+    'description' => 'View ip that have been hit frequently.',
+    'page callback' => 'elasticsearch_connector_statistics_top_ip',
+    'access arguments' => array('access elasticsearch_connector_statistics'),
+    'file' => 'elasticsearch_connector_statistics.admin.inc',
+  );
+  $items['admin/reports/ecs-visitors'] = array(
+    'title' => 'Top visitors',
+    'description' => 'View visitors that hit many pages.',
+    'page callback' => 'elasticsearch_connector_statistics_top_visitors',
+    'access arguments' => array('access elasticsearch_connector_statistics'),
+    'file' => 'elasticsearch_connector_statistics.admin.inc',
+  );
+  $items['admin/reports/ecs-referrers'] = array(
+    'title' => 'Top referrers',
+    'description' => 'View top referrers.',
+    'page callback' => 'elasticsearch_connector_statistics_top_referrers',
+    'access arguments' => array('access elasticsearch_connector_statistics'),
+    'file' => 'elasticsearch_connector_statistics.admin.inc',
+  );
+  $items['admin/reports/ecs-access/%'] = array(
+    'title' => 'Details',
+    'description' => 'View access log.',
+    'page callback' => 'elasticsearch_connector_statistics_access_log',
+    'page arguments' => array(3),
+    'access arguments' => array('access elasticsearch_connector_statistics'),
+    'file' => 'elasticsearch_connector_statistics.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_user_cancel().
+ */
+function elasticsearch_connector_statistics_user_cancel($edit, $account, $method) {
+  // TODO: Think of removing the logs if we delete an user.
+  // It is a philosophy question because if delete a user this doesn't mean
+  // that we need to remove the statistics for this user also.
+}
+
+/**
+ * Implements hook_user_delete().
+ */
+function elasticsearch_connector_statistics_user_delete($account) {
+  // TODO: Think of removing the logs if we delete an user.
+  // It is a philosophy question because if delete a user this doesn't mean
+  // that we need to remove the statistics for this user also.
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function elasticsearch_connector_statistics_node_delete($node) {
+  elasticsearch_connector_statistics_delete_node_logs($node->nid);
+}
+
+/**
+ * Delete the node logs based on NID.
+ * @param int $nid
+ */
+function elasticsearch_connector_statistics_delete_node_logs($nid) {
+  $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
+      $params['index'] = $index_name;
+      $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
+      $params['body']['query'] = array(
+          'filtered' => array(
+            'query' => array(
+              'match_all' => array()
+            ),
+            'filter' => array(
+              'and' => array(
+                array(
+                  'term' => array(
+                    'entity.entity_nid' => $nid
+                  )
+                ),
+                array(
+                  'term' => array(
+                    'entity.entity_type' => 'node'
+                  )
+                ),
+              )
+            ),
+          )
+        );
+
+      try {
+        $response = $client->deleteByQuery($params);
+      }
+      catch (Exception $e) {
+        watchdog('elasticsearch_connector_statistics', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
+
+    }
+  }
+}
+
+/**
+ * Check if everything is OK and log the statistics.
+ * @return void
+ */
+function elasticsearch_connector_statistics_log_statistics() {
+  if (variable_get('elasticsearch_connector_statistics_enable_access_log', 0)) {
+    $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+    if (!empty($client_id)) {
+      $client = elasticsearch_connector_get_client_by_id($client_id);
+      if ($client) {
+        elasticsearch_connector_statistics_log_data($client);
+      }
+    }
+  }
+}
+
+/**
+ * Try to match the entity based on the internal path.
+ *
+ * @param unknown $path
+ */
+function _elasticsearch_connector_statistics_match_entity(&$path, $account) {
+  $entity = new stdClass();
+
+  if (arg(0, $path) == 'node' && arg(1, $path) > 0) {
+    $entity->entity_type = 'node';
+    $entity->entity_id = arg(1, $path);
+    $entity->page = ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW;
+    if (arg(2, $path)) {
+      $entity->page = arg(2, $path);
+    }
+  }
+  elseif (arg(0, $path) == 'taxonomy' && arg(1, $path) == 'term' && arg(2, $path) > 0) {
+    $entity->entity_type = 'term';
+    $entity->entity_id = arg(2, $path);
+    $entity->page = ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW;
+    if (arg(3, $path)) {
+      $entity->page = arg(3, $path);
+    }
+  }
+  elseif (arg(0, $path) == 'user') {
+    if (arg(1, $path) && preg_match('/[\d]+/', arg(1, $path)) && $account->uid != arg(1, $path)) {
+      $entity->entity_type = 'user';
+      $entity->entity_id = arg(1, $path);
+      $entity->page = ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW;
+      if (arg(2, $path)) {
+        $entity->page = arg(2, $path);
+      }
+    }
+  }
+
+  return $entity;
+}
+
+/**
+ *
+ * @param \nodespark\DESConnector\ClientInterface $client
+ * @param array $access_log
+ */
+function elasticsearch_connector_statistics_log_data(\nodespark\DESConnector\ClientInterface $client) {
+  global $user;
+
+  $cluster_settings = variable_get('elasticsearch_connector_statistics_cluster', array());
+  $ret = FALSE;
+  $doc = array();
+  $doc['index'] = $cluster_settings['index'];
+  $doc['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
+  $ttl = variable_get('elasticsearch_connector_statistics_ttl', ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_INTERVAL);
+
+  if (!$client->indices()->existsType(array('index' => $doc['index'], 'type' => $doc['type']))) {
+    elasticsearch_connector_statistics_create_type($client, $doc['index'], $doc['type'], $ttl);
+  }
+
+  $path = $_GET['current_path'];
+  $entity = _elasticsearch_connector_statistics_match_entity($path, $user);
+  $doc['body']  = array(
+    'title'           => $_GET['title'],
+    'path'             => $path,
+    'domain'          => $_SERVER['SERVER_NAME'],
+    'ip'              => ip_address(),
+    'uid'             => $user->uid,
+    'username'        => ($user->uid > 0 ? $user->name : ''),
+    'page_language'   => $_GET['page_language'],
+    'entity'          => $entity,
+    'referer'         => $_GET['referer'],
+    'timestamp'      => time(),
+  );
+
+  $doc['ttl'] = $ttl;
+
+  // Alter the document, or add more fields.
+  drupal_alter('elasticsearch_connector_statistics_log_data', $doc, $client);
+
+  // Indexing document.
+  try {
+    $ret = $client->index($doc);
+    module_invoke_all('elasticsearch_connector_statistics_log', 'index', $doc);
+    return $ret;
+  }
+  catch (Exception $e) {
+    watchdog('elasticsearch_connector_statistics', $e->getMessage(), array(), WATCHDOG_ERROR);
+  }
+}
+
+/**
+ * Default index mapping for the elasticsearch watchdog index.
+ * @param  integer $ttl
+ *   Time To Live setting.
+ *
+ * @return array
+ *   The mapping index array.
+ */
+function elasticsearch_connector_statistics_get_mapping($ttl = NULL) {
+  if (!isset($ttl)) {
+    $ttl = variable_get('elasticsearch_connector_statistics_ttl', ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_INTERVAL);
+  }
+
+  // Index Mapping
+  $my_type_mapping = array(
+    '_source' => array(
+      'enabled' => TRUE
+    ),
+    '_all' => array(
+      'enabled' => TRUE
+    ),
+    '_ttl' => array(
+      'enabled' => TRUE,
+      'default' => $ttl,
+    ),
+    'properties' => array(
+      'title' => array(
+        'type' => 'string',
+      ),
+      'path' => array(
+        'type' => 'string',
+        'index' => 'not_analyzed'
+      ),
+      'domain' => array(
+        'type' => 'string',
+        'index' => 'not_analyzed'
+      ),
+      'ip' => array(
+        'type' => 'string',
+        'index' => 'not_analyzed'
+      ),
+      'uid' => array(
+        'type' => 'long',
+      ),
+      'timestamp' => array(
+        'type' => 'date',
+      ),
+      'username' => array(
+        'type' => 'string',
+        'index' => 'not_analyzed'
+      ),
+      'page_language' => array(
+        'type' => 'string',
+        'index' => 'not_analyzed'
+      ),
+      'referer' => array(
+        'type' => 'string',
+        'index' => 'not_analyzed'
+      ),
+      'entity' => array(
+        'type' => 'object',
+      ),
+    )
+  );
+
+  // Alter the mapping if necessary.
+  drupal_alter('elasticsearch_connector_statistics_get_mapping', $my_type_mapping);
+
+  return $my_type_mapping;
+}
+
+/**
+ * Create Elasticsearch connector statistics type.
+ * @param \nodespark\DESConnector\ClientInterface $client
+ * @param string
+ * @patam string
+ * @return array
+ */
+function elasticsearch_connector_statistics_create_type(\nodespark\DESConnector\ClientInterface $client, $index, $type, $ttl = NULL) {
+  $mapping_params['index'] = $index;
+  $mapping_params['type'] = $type;
+  $my_type_mapping = elasticsearch_connector_statistics_get_mapping($ttl);
+  $mapping_params['body'][$type] = $my_type_mapping;
+  return $client->indices()->putMapping(
+      $mapping_params
+  );
+}
+
+/**
+ * Get the cluster_id from settings.
+ * @return string
+ */
+function elasticsearch_connector_statistics_get_cluster_vars($key = 'cluster_id') {
+  $client_info = variable_get('elasticsearch_connector_statistics_cluster', array());
+  if (isset($client_info[$key])) {
+    return $client_info[$key];
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function elasticsearch_connector_statistics_block_info() {
+  $blocks = array();
+
+  $blocks['popular']['info'] = t('Popular content');
+  // Too dynamic to cache.
+  $blocks['popular']['cache'] = DRUPAL_NO_CACHE;
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function elasticsearch_connector_statistics_block_configure($delta = '') {
+  // Popular content block settings
+  $numbers = array('0' => t('Disabled')) + drupal_map_assoc(array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40));
+  $form['elasticsearch_connector_statistics_block_top_day_num'] = array('#type' => 'select', '#title' => t("Number of day's top views to display"), '#default_value' => variable_get('elasticsearch_connector_statistics_block_top_day_num', 0), '#options' => $numbers, '#description' => t('How many content items to display in "day" list.'));
+  $form['elasticsearch_connector_statistics_block_top_all_num'] = array('#type' => 'select', '#title' => t('Number of all time views to display'), '#default_value' => variable_get('elasticsearch_connector_statistics_block_top_all_num', 0), '#options' => $numbers, '#description' => t('How many content items to display in "all time" list.'));
+  return $form;
+}
+
+/**
+ * Implements hook_block_save().
+ */
+function elasticsearch_connector_statistics_block_save($delta = '', $edit = array()) {
+  variable_set('elasticsearch_connector_statistics_block_top_day_num', $edit['elasticsearch_connector_statistics_block_top_day_num']);
+  variable_set('elasticsearch_connector_statistics_block_top_all_num', $edit['elasticsearch_connector_statistics_block_top_all_num']);
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function elasticsearch_connector_statistics_block_view($delta = '') {
+  if (user_access('access content')) {
+    $content = array();
+
+    $daytop = variable_get('elasticsearch_connector_statistics_block_top_day_num', 0);
+    if ($daytop && ($result = elasticsearch_connector_statistics_title_list_today($daytop)) && ($node_title_list = node_title_list($result, t("Today's:")))) {
+      $content['top_day'] = $node_title_list;
+      $content['top_day']['#suffix'] = '<br />';
+    }
+
+    $alltimetop = variable_get('elasticsearch_connector_statistics_block_top_all_num', 0);
+    if ($alltimetop && ($result = elasticsearch_connector_statistics_title_list_alltime($alltimetop)) && ($node_title_list = node_title_list($result, t('All time:')))) {
+      $content['top_all'] = $node_title_list;
+      $content['top_all']['#suffix'] = '<br />';
+    }
+
+    if (count($content)) {
+      $block['content'] = $content;
+      $block['subject'] = t('Popular content');
+      return $block;
+    }
+  }
+}
+
+/**
+ * Returns the most viewed content for today.
+ *
+ * @param $rows
+ *   The number of rows to be returned.
+ *
+ * @return array|FALSE
+ */
+function elasticsearch_connector_statistics_title_list_today($rows) {
+  $result = array();
+  $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      try {
+        $params = array();
+        $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
+        $params['index'] = $index_name;
+        $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
+        $params['search_type'] = 'count';
+
+        $date = new DateTime();
+        $date->setTime('0', '0', '0');
+        $from_date = $date->getTimestamp();
+        $date->setTime('23', '59', '59');
+        $to_date = $date->getTimestamp();
+        $params['body']['query'] = array(
+          'filtered' => array(
+            'query' => array(
+              'match_all' => array()
+            ),
+            'filter' => array(
+              'and' => array(
+                array(
+                  'term' => array(
+                    'entity.entity_type' => 'node'
+                  )
+                ),
+                array(
+                  'term' => array(
+                    'entity.page' => ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW
+                  )
+                ),
+                array(
+                  'range' => array(
+                    'timestamp' => array(
+                      'from' => $from_date,
+                      'to' => $to_date,
+                    )
+                  )
+                )
+              )
+            ),
+          )
+        );
+
+        $field_faceting = 'entity.entity_id';
+        $facet_name = 'facet_' . $field_faceting;
+        $params['body']['facets'][$facet_name]['terms']['field'] = $field_faceting;
+        $params['body']['facets'][$facet_name]['terms']['size'] = $rows;
+
+        $search_result = $client->search($params);
+        if (!empty($search_result['facets'])) {
+          foreach ($search_result['facets'][$facet_name]['terms'] as $facet) {
+            $node = node_load($facet['term']);
+            $result[] = $node;
+          }
+        }
+      }
+      catch (Exception $e) {
+        watchdog('elasticsearch_connector_statistics', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
+    }
+  }
+
+  return $result;
+}
+
+/**
+ * Returns the most viewed content for today.
+ *
+ * @param $rows
+ *   The number of rows to be returned.
+ *
+ * @return array|FALSE
+ */
+function elasticsearch_connector_statistics_title_list_alltime($rows) {
+  $result = array();
+  $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      try {
+        $params = array();
+        $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
+        $params['index'] = $index_name;
+        $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
+        $params['search_type'] = 'count';
+
+        $params['body']['query'] = array(
+          'filtered' => array(
+            'query' => array(
+              'match_all' => array()
+            ),
+            'filter' => array(
+              'and' => array(
+                array(
+                  'term' => array(
+                    'entity.entity_type' => 'node'
+                  )
+                ),
+                array(
+                  'term' => array(
+                    'entity.page' => ELASTICSEARCH_CONNECTOR_STATS_PAGE_VIEW
+                  )
+                ),
+              )
+            ),
+          )
+        );
+
+        $field_faceting = 'entity.entity_id';
+        $facet_name = 'facet_' . $field_faceting;
+        $params['body']['facets'][$facet_name]['terms']['field'] = $field_faceting;
+        $params['body']['facets'][$facet_name]['terms']['size'] = $rows;
+
+        $search_result = $client->search($params);
+        if (!empty($search_result['facets'])) {
+          foreach ($search_result['facets'][$facet_name]['terms'] as $facet) {
+            $node = node_load($facet['term']);
+            $result[] = $node;
+          }
+        }
+      }
+      catch (Exception $e) {
+        watchdog('elasticsearch_connector_statistics', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
+    }
+  }
+
+  return $result;
+}
+
+/**
+ * Generates a link to a path, truncating the displayed text to a given width.
+ *
+ * @param $path
+ *   The path to generate the link for.
+ * @param $width
+ *   The width to set the displayed text of the path.
+ *
+ * @return
+ *   A string as a link, truncated to the width, linked to the given $path.
+ */
+function _elasticsearch_connector_statistics_link($path, $width = 35) {
+  $title = drupal_get_path_alias($path);
+  $title = truncate_utf8($title, $width, FALSE, TRUE);
+  return l($title, $path);
+}
+
+/**
+ * Formats an item for display, including both the item title and the link.
+ *
+ * @param $title
+ *   The text to link to a path; will be truncated to a maximum width of 35.
+ * @param $path
+ *   The path to link to; will default to '/'.
+ *
+ * @return
+ *   An HTML string with $title linked to the $path.
+ */
+function _elasticsearch_connector_statistics_format_item($title, $path) {
+  $path = ($path ? $path : '/');
+  $output  = ($title ? "$title<br />" : '');
+  $output .= _elasticsearch_connector_statistics_link($path);
+  return $output;
+}
+
+/**
+ * Implemens hook_elasticsearch_connector_edit_lock().
+ */
+function elasticsearch_connector_statistics_elasticsearch_connector_edit_lock($type, $cluster, $index = NULL) {
+  $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+  if (!empty($client_id) && $client_id == $cluster->cluster_id) {
+    if ($type == 'cluster') {
+      return TRUE;
+    }
+    elseif ($type == 'index') {
+      $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
+      if ($index == $index_name) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
