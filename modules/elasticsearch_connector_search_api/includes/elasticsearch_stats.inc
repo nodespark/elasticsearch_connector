@@ -18,6 +18,7 @@
 
 // TODO: Use time based indexes and format, suitable for Kibana!
 // TODO: Use settings for time based indexes.
+// TODO: Maybe we should remove the statistics when Search API index has been deleted.
 
 class SearchApiElasticsearchConnectorStatsException extends Exception {}
 
@@ -173,7 +174,7 @@ class SearchApiElasticsearchConnectorStats {
    */
   protected function getIndexParam() {
     $params = $this->connector->getIndexParam($this->index, FALSE);
-    $params['index'] .= '_' . implode('_', array(self::TYPE_EXT, date('m')));
+    $params['index'] .= '_' . implode('_', array(self::TYPE_EXT, date('Ym')));
     $params['type'] = self::TYPE_EXT;
     return $params;
   }
