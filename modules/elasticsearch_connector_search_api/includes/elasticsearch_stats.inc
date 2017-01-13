@@ -16,16 +16,17 @@
  *
  */
 
-// TODO: Remove the TTL as it has been depricated in 2.x
 // TODO: Use time based indexes and format, suitable for Kibana!
+// TODO: Use settings for time based indexes.
 
 class SearchApiElasticsearchConnectorStatsException extends Exception {}
 
 class SearchApiElasticsearchConnectorStats {
 
   // Define the TTL constant of the stats.
-  const TTL = '365d';
-  const TYPE_EXT = '_stats';
+  const NUM_OF_SHARDS = 1;
+  const NUM_OF_REPLICAS = 0;
+  const TYPE_EXT = 'stats';
 
   // The server object container.
   private $server;
@@ -41,7 +42,12 @@ class SearchApiElasticsearchConnectorStats {
   /**
    * Class constructure.
    *
-   * @param SearchApiElasticsearchConnector $server
+   * @param SearchApiQueryInterface $query
+   *   The query.
+   * @param SearchApiElasticsearchConnector $connector
+   *   The server connector object.
+   *
+   * @throws \SearchApiElasticsearchConnectorStatsException
    */
   public function __construct(SearchApiQueryInterface $query, SearchApiElasticsearchConnector $connector) {
     $this->query = $query;
@@ -64,8 +70,8 @@ class SearchApiElasticsearchConnectorStats {
   /**
    * Return the mapping required by the statistics module.
    *
-   * @param string $ttl
    * @return array
+   *   The mapping for the statistics document.
    */
   private function getStatsMapping() {
     // Index Mapping
@@ -75,10 +81,6 @@ class SearchApiElasticsearchConnectorStats {
       ),
       '_all' => array(
         'enabled' => TRUE
-      ),
-      '_ttl' => array(
-        'enabled' => TRUE,
-        'default' => $this->ttl,
       ),
       'properties' => array(
         'server_name' => array(
@@ -117,6 +119,7 @@ class SearchApiElasticsearchConnectorStats {
         ),
         'timestamp' => array(
           'type' => 'date',
+          'format' => 'epoch_second',
         ),
       )
     );
@@ -127,16 +130,35 @@ class SearchApiElasticsearchConnectorStats {
   /**
    * Create Elasticsearch connector search api statistics type.
    *
-   * @param string
-   * @patam string
+   * @param array $params
+   *   The index name and the type name for the index creation.
+   *
    * @return array
+   *   Result of the create index execution.
+   *
+   * @throws \Exception
    */
-  protected function createStatsType($params) {
+  protected function createStatsIndex($params) {
     $client = $this->connector->getConnectorObject();
-    $params['body'][$params['type']] = $this->getStatsMapping();
+    $index_params = array(
+      'index' => $params['index'],
+      'body' => array(
+        'settings' => array(
+          'number_of_shards' =>
+            !empty($this->index->options['index_statistics_num_of_shards']) ?
+              $this->index->options['index_statistics_num_of_shards'] : self::NUM_OF_SHARDS,
+          'number_of_replicas' =>
+            !empty($this->index->options['index_statistics_num_of_replicas']) ?
+              $this->index->options['index_statistics_num_of_replicas'] : self::NUM_OF_REPLICAS,
+        ),
+        'mappings' => array(
+          $params['type'] => $this->getStatsMapping()
+        )
+      )
+    );
     try {
-      return $client->indices()->putMapping(
-          $params
+      return $client->indices()->create(
+        $index_params
       );
     }
     catch (Exception $e) {
@@ -145,29 +167,42 @@ class SearchApiElasticsearchConnectorStats {
   }
 
   /**
+   * Get the index and type parameters.
+   *
+   * @return array
+   */
+  protected function getIndexParam() {
+    $params = $this->connector->getIndexParam($this->index, FALSE);
+    $params['index'] .= '_' . implode('_', array(self::TYPE_EXT, date('m')));
+    $params['type'] = self::TYPE_EXT;
+    return $params;
+  }
+
+  /**
    * Logging the statistics into the stats type in elasticsearch index.
    *
-   * @param \nodespark\DESConnector\ClientInterface $client
-   * @param array $access_log
+   * @param array $response
+   *   The response array from elasticsearch client.
+   *
+   * @return array
+   *   The result of the elasticsearch client execution.
    */
   public function logStat($response) {
     global $user;
 
     // Skip the log if the results matched.
     if (!empty($this->index->options['log_only_not_found']) && !empty($response['hits']['total'])) {
-      return;
+      return array();
     }
 
     $client = $this->connector->getConnectorObject();
-    $ret = FALSE;
-    $doc = $this->connector->getIndexParam($this->index, TRUE);
-    $doc['type'] .= self::TYPE_EXT;
-    // Indexing document.
+
+    $doc = $this->getIndexParam();
 
     try {
-      // TODO: Use new index instead of a type for this!
-      if (!$client->indices()->existsType(array('index' => $doc['index'], 'type' => $doc['type']))) {
-        $this->createStatsType($doc);
+      // Indexing document.
+      if (!$client->indices()->exists(array('index' => $doc['index']))) {
+        $this->createStatsIndex($doc);
       }
 
       $doc['body']  = array(
@@ -183,13 +218,12 @@ class SearchApiElasticsearchConnectorStats {
         'timestamp'         => time(),
       );
 
-      $doc['ttl'] = $this->ttl;
-
       $ret = $client->index($doc);
       return $ret;
     }
     catch (Exception $e) {
       watchdog('elasticsearch_connector_statistics', $e->getMessage(), array(), WATCHDOG_ERROR);
+      return array();
     }
   }
 

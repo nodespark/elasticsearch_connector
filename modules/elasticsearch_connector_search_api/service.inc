@@ -65,7 +65,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
   /**
    * Get the Elasticsearch connector object.
-   * @return object <\nodespark\DESConnector\ClientInterface, boolean, >
+   * @return \nodespark\DESConnector\ClientInterface
    */
   public function getConnectorObject() {
     return $this->elasticsearchClient;

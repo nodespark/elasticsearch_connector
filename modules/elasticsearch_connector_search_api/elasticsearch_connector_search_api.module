@@ -249,14 +249,20 @@ function elasticsearch_connector_search_api_return_form_options(&$form, &$form_s
     '#description' => t('Log only the "Not found" results by skipping the rest.')
   );
 
-  $form['options']['index_statistics_ttl'] = array(
+  $form['options']['index_statistics_num_of_shards'] = array(
     '#type' => 'textfield',
-    '#title' => t('Statistics TTL interval'),
-    '#element_validate' => array('_elasticsearch_connector_validate_ttl_field'),
-    '#default_value' => isset($default_values['index_statistics_ttl']) ? $default_values['index_statistics_ttl'] : SearchApiElasticsearchConnectorStats::TTL,
-    '#description' => t('Use format like 1d. Suffix can be d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks).'
-        . ' You can dynamically update the default interval.'
-        . ' However it won\'t change the TTL of already indexed messages but will be used for future logs.')
+    '#title' => t('Number of shards for statistics index'),
+    '#element_validate' => array('element_validate_number'),
+    '#default_value' => isset($default_values['index_statistics_num_of_shards']) ? $default_values['index_statistics_num_of_shards'] : SearchApiElasticsearchConnectorStats::NUM_OF_SHARDS,
+    '#description' => t('Enter the number of shards for the statistics index.')
+  );
+
+  $form['options']['index_statistics_num_of_replicas'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Number of replicas for statistics index'),
+    '#element_validate' => array('element_validate_number'),
+    '#default_value' => isset($default_values['index_statistics_num_of_replicas']) ? $default_values['index_statistics_num_of_replicas'] : SearchApiElasticsearchConnectorStats::NUM_OF_REPLICAS,
+    '#description' => t('Enter the number of replicas for the statistics index.')
   );
 }
 
