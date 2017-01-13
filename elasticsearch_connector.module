@@ -824,7 +824,8 @@ function elasticsearch_connector_load_library($cluster) {
 
         drupal_alter('elasticsearch_connector_load_library_options', $options, $cluster);
 
-        $clients[$cluster->cluster_id] = \nodespark\DESConnector\ClientFactory::create($options);
+        $client_factory = new \nodespark\DESConnector\ClientFactory();
+        $clients[$cluster->cluster_id] = $client_factory->create($options);
       }
       catch (Exception $e) {
         drupal_set_message($e->getMessage(), 'error');
