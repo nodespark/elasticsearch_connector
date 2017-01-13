@@ -1344,17 +1344,18 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     // Build the query.
     if (!empty($query_options['query_search']) && !empty($query_options['query_search_filter'])) {
-      $body['query']['filtered']['query'] = $query_options['query_search'];
-      $body['query']['filtered']['filter'] = $query_options['query_search_filter'];
+      $body['query']['bool']['must'] = $query_options['query_search'];
+      $body['query']['bool']['filter'] = $query_options['query_search_filter'];
     }
     elseif (!empty($query_options['query_search'])) {
       if (empty($body['query'])) {
         $body['query'] = array();
       }
-      $body['query'] += $query_options['query_search'];
+      $body['query']['bool']['must'] = $query_options['query_search'];
     }
     elseif (!empty($query_options['query_search_filter'])) {
-      $body['filter'] = $query_options['query_search_filter'];
+      $body['query']['bool']['must'] = array('match_all' => (object)array());
+      $body['query']['bool']['filter'] = $query_options['query_search_filter'];
     }
 
     // TODO: Handle fields on filter query.
@@ -1366,12 +1367,9 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       unset($body['filter']);
     }
 
-    if (empty($query_body)) {
-      $query_body['match_all'] = array();
-    }
-
-    // Preserve the options for futher manipulation if necessary.
+    // Preserve the options for further manipulation if necessary.
     $query->setOption('ElasticParams', $params);
+
     return $params;
   }
 
