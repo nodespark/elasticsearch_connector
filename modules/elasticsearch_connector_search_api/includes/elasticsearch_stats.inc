@@ -16,6 +16,9 @@
  *
  */
 
+// TODO: Remove the TTL as it has been depricated in 2.x
+// TODO: Use time based indexes and format, suitable for Kibana!
+
 class SearchApiElasticsearchConnectorStatsException extends Exception {}
 
 class SearchApiElasticsearchConnectorStats {
@@ -162,6 +165,7 @@ class SearchApiElasticsearchConnectorStats {
     // Indexing document.
 
     try {
+      // TODO: Use new index instead of a type for this!
       if (!$client->indices()->existsType(array('index' => $doc['index'], 'type' => $doc['type']))) {
         $this->createStatsType($doc);
       }

@@ -312,7 +312,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $params = $this->getIndexParam($index, TRUE);
 
     $properties = array(
-      'id' => array('type' => 'string', 'include_in_all' => FALSE),
+      'id' => array('type' => 'keyword', 'include_in_all' => FALSE),
     );
 
     // Map index fields.
@@ -1061,27 +1061,34 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     switch ($type) {
       case 'text':
         return array(
-        'type' => 'string',
-        'boost' => $field['boost'],
+          'type' => 'text',
+          'boost' => $field['boost'],
+          // Index also FIELD.raw in order to have also the field
+          // not analyzed if needed.
+          // TODO: This should be decided via settings.
+          'fields' => array(
+            'raw' => array(
+              'type' => 'keyword',
+            )
+          )
         );
 
       case 'uri':
       case 'string':
       case 'token':
         return array(
-        'type' => 'string',
-        'index' => 'not_analyzed',
+          'type' => 'keyword',
         );
 
       case 'integer':
       case 'duration':
         return array(
-        'type' => 'integer',
+          'type' => 'integer',
         );
 
       case 'boolean':
         return array(
-        'type' => 'boolean',
+          'type' => 'boolean',
         );
 
       case 'decimal':
@@ -1747,7 +1754,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     if (!empty($facets)) {
       // Loop trough facets.
-      $aggs = \nodespark\DESConnector\Elasticsearch\Aggregations\Aggregations::getInstance();
+      $aggs = $this->elasticsearchClient->aggregations();
       foreach ($facets as $facet_id => $facet_info) {
         $field_id = $facet_info['field'];
         $facet = array($field_id => array());
