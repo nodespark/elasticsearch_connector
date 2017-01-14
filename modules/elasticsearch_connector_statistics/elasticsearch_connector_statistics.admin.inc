@@ -39,16 +39,6 @@ function elasticsearch_connector_statistics_settings_form() {
     '#description' => t('Log every admin page access'),
   );
 
-  $form['access']['elasticsearch_connector_statistics_ttl'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Elasticsearch TTL Interval'),
-    '#default_value' => variable_get('elasticsearch_connector_statistics_ttl', ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_INTERVAL),
-    '#element_validate' => array('_elasticsearch_connector_validate_ttl_field'),
-    '#description' => t('Use format like 1d. Suffix can be d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks).'
-        . ' You can dynamically update the default interval.'
-        . ' However it won\'t change the TTL of already indexed messages but will be used for future logs.'),
-  );
-
   $form['#validate'] = array('elasticsearch_connector_statistics_settings_form_validate');
   $form['#submit'] = array('elasticsearch_connector_statistics_settings_form_submit');
 
@@ -93,7 +83,7 @@ function elasticsearch_connector_statistics_settings_form_submit($form, &$form_s
 
   if ($client) {
     if (!$client->indices()->existsType(array('index' => $index_name, 'type' => $type_name))) {
-      elasticsearch_connector_statistics_create_type($client, $index_name, $type_name, $values['elasticsearch_connector_statistics_ttl']);
+      elasticsearch_connector_statistics_create_type($client, $index_name, $type_name);
     }
   }
 }
