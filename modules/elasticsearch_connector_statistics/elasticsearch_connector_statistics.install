@@ -21,9 +21,12 @@ function elasticsearch_connector_statistics_uninstall() {
     if ($client) {
       $index = elasticsearch_connector_statistics_get_cluster_vars('index');
 
-      $client->indices()->delete(array(
-        'index' => $index,
-      ));
+      try {
+        $client->indices()->delete(array(
+          'index' => $index,
+        ));
+      }
+      catch (Exception $e) {}
     }
   }
 

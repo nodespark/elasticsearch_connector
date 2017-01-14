@@ -21,9 +21,12 @@ function elasticsearch_watchdog_uninstall() {
     if ($client) {
       $index = elasticsearch_watchdog_get_index_name();
 
-      $client->indices()->delete(array(
-        'index' => $index,
-      ));
+      try {
+        $client->indices()->delete(array(
+          'index' => $index,
+        ));
+      }
+      catch (Exception $e) {}
     }
   }
 

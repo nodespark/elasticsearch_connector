@@ -131,7 +131,7 @@ function elasticsearch_connector_statistics_recent_hits() {
 
           // Filter the results if there are filters specified.
           $params['body']['query'] = array(
-            'match_all' => array()
+            'match_all' => (object)array(),
           );
 
           $results = $client->search($params);
@@ -197,14 +197,16 @@ function elasticsearch_connector_statistics_top_pages() {
         $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
         $params['index'] = $index_name;
         $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
-        $params['search_type'] = 'count';
-        $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
-        $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_connector_statistics_facet_size', 1000);
+
+        $aggr = new \nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms($global_facet_name, $field_faceting);
+        $aggr->setSize(variable_get('elasticsearch_connector_statistics_facet_size', 1000));
+        $client->aggregations()->setAggregation($aggr);
+
         $search_result = $client->search($params);
-        if (!empty($search_result['facets'])) {
-          foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
-            $facet['term'] = l(url($facet['term'], array('absolute' => FALSE)), $facet['term']);
-            $rows[] = array($facet['count'], $facet['term']);
+        if (!empty($search_result['aggregations'])) {
+          foreach ($search_result['aggregations'][$global_facet_name]['buckets'] as $bucket) {
+            $bucket['key'] = l(url($bucket['key'], array('absolute' => FALSE)), $bucket['key']);
+            $rows[] = array($bucket['doc_count'], $bucket['key']);
           }
         }
       }
@@ -246,14 +248,16 @@ function elasticsearch_connector_statistics_top_ip() {
         $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
         $params['index'] = $index_name;
         $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
-        $params['search_type'] = 'count';
-        $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
-        $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_connector_statistics_facet_size', 1000);
+
+        $aggr = new \nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms($global_facet_name, $field_faceting);
+        $aggr->setSize(variable_get('elasticsearch_connector_statistics_facet_size', 1000));
+        $client->aggregations()->setAggregation($aggr);
+
         $search_result = $client->search($params);
-        if (!empty($search_result['facets'])) {
-          foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
-            $ban_link = l(t('block IP address'), "admin/config/people/ip-blocking/" . $facet['term'], array('query' => drupal_get_destination()));
-            $rows[] = array($facet['count'], $facet['term'], (user_access('block IP addresses') ? $ban_link : ''));
+        if (!empty($search_result['aggregations'])) {
+          foreach ($search_result['aggregations'][$global_facet_name]['buckets'] as $bucket) {
+            $ban_link = l(t('block IP address'), "admin/config/people/ip-blocking/" . $bucket['key'], array('query' => drupal_get_destination()));
+            $rows[] = array($bucket['doc_count'], $bucket['key'], (user_access('block IP addresses') ? $ban_link : ''));
           }
         }
       }
@@ -304,14 +308,16 @@ function elasticsearch_connector_statistics_top_visitors() {
         $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
         $params['index'] = $index_name;
         $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
-        $params['search_type'] = 'count';
-        $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
-        $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_connector_statistics_facet_size', 1000);
+
+        $aggr = new \nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms($global_facet_name, $field_faceting);
+        $aggr->setSize(variable_get('elasticsearch_connector_statistics_facet_size', 1000));
+        $client->aggregations()->setAggregation($aggr);
+
         $search_result = $client->search($params);
-        if (!empty($search_result['facets'])) {
-          foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
-            $account = user_load($facet['term']);
-            $rows[] = array($facet['count'], theme('username', array('account' => $account)));
+        if (!empty($search_result['aggregations'])) {
+          foreach ($search_result['aggregations'][$global_facet_name]['buckets'] as $facet) {
+            $account = user_load($facet['key']);
+            $rows[] = array($facet['doc_count'], theme('username', array('account' => $account)));
           }
         }
       }
@@ -359,16 +365,18 @@ function elasticsearch_connector_statistics_top_referrers() {
         $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
         $params['index'] = $index_name;
         $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
-        $params['search_type'] = 'count';
-        $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
-        $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_connector_statistics_facet_size', 1000);
+
+        $aggr = new \nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms($global_facet_name, $field_faceting);
+        $aggr->setSize(variable_get('elasticsearch_connector_statistics_facet_size', 1000));
+        $client->aggregations()->setAggregation($aggr);
+
         $search_result = $client->search($params);
-        if (!empty($search_result['facets'])) {
-          foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
-            if (!empty($facet['term'])) {
-              $facet['term'] = l($facet['term'], $facet['term']);
+        if (!empty($search_result['aggregations'])) {
+          foreach ($search_result['aggregations'][$global_facet_name]['buckets'] as $bucket) {
+            if (!empty($bucket['key'])) {
+              $bucket['key'] = l($bucket['key'], $bucket['key']);
             }
-            $rows[] = array($facet['count'], $facet['term']);
+            $rows[] = array($bucket['doc_count'], $bucket['key']);
           }
         }
       }

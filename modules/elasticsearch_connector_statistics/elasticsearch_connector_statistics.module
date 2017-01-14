@@ -382,6 +382,17 @@ function elasticsearch_connector_statistics_get_mapping() {
       ),
       'entity' => array(
         'type' => 'object',
+        'properties' => array(
+          'entity_id' => array(
+            'type' => 'keyword',
+          ),
+          'entity_type' => array(
+            'type' => 'keyword',
+          ),
+          'page' => array(
+            'type' => 'keyword',
+          ),
+        )
       ),
     )
   );
@@ -582,12 +593,11 @@ function elasticsearch_connector_statistics_title_list_alltime($rows) {
         $index_name = elasticsearch_connector_statistics_get_cluster_vars('index');
         $params['index'] = $index_name;
         $params['type']  = variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
-        $params['search_type'] = 'count';
 
         $params['body']['query'] = array(
           'bool' => array(
             'must' => array(
-              'match_all' => array()
+              'match_all' => (object) array()
             ),
             'filter' => array(
               array(
