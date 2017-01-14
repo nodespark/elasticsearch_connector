@@ -19,43 +19,16 @@ function elasticsearch_watchdog_uninstall() {
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
     if ($client) {
-      $index = elasticsearch_watchdog_get_realindex_name();
-      $type = elasticsearch_watchdog_get_type_name();
-      $alias_name = elasticsearch_watchdog_get_index_name();
+      $index = elasticsearch_watchdog_get_index_name();
 
-      $index_exists = $client->indices()->exists(array(
+      $client->indices()->delete(array(
         'index' => $index,
       ));
-
-      if ($index_exists) {
-        $client->indices()->deleteAlias(array(
-          'index' => $index,
-          'name' => $alias_name
-        ));
-
-        $client->indices()->deleteMapping(array(
-          'index' => $index,
-          'type'  => $type
-        ));
-
-        $result = $client->indices()->getMapping(array(
-          'index' => $index,
-        ));
-
-        if (empty($result)) {
-          $client->indices()->delete(array(
-            'index' => $index,
-          ));
-        }
-      }
     }
   }
 
   variable_del('elasticsearch_watchdog_cluster_id');
-  variable_del('elasticsearch_watchdog_ttl');
-  variable_del('elasticsearch_watchdog_index');
-  variable_del('elasticsearch_watchdog_type');
-  variable_del('elasticsearch_watchdog_types_view');
+  variable_del('elasticsearch_watchdog_view_additional_indexes');
 }
 
 /**
@@ -157,46 +130,4 @@ function elasticsearch_watchdog_requirements($phase) {
   }
 
   return array();
-}
-
-/**
- * Updating the watchdog settings to handle the new
- */
-function elasticsearch_watchdog_update_7001() {
-  $new_val['cluster_id'] = variable_get('elasticsearch_watchdog_cluster_id', '');
-  if (!empty($new_val['cluster_id'])) {
-    module_load_include('inc', 'elasticsearch_watchdog', 'elasticsearch_watchdog.admin');
-
-    $old_alias = variable_get('elasticsearch_watchdog_index', 'elasticsearch_watchdog');
-    $old_template = variable_get('elasticsearch_watchdog_index', 'elasticsearch_watchdog') . '_template';
-
-    $new_val['index'] = variable_get('elasticsearch_watchdog_index', 'elasticsearch_watchdog') . '_index';
-    variable_set('elasticsearch_watchdog_cluster_id', $new_val);
-
-    $index_name = elasticsearch_watchdog_get_realindex_name();
-    $alias_name = elasticsearch_watchdog_get_index_name();
-
-    $client = elasticsearch_connector_get_client_by_id($new_val['cluster_id']);
-    if ($client) {
-      try {
-        $client->indices()->deleteAlias(array(
-          'index' => $index_name,
-          'name' => $old_alias
-        ));
-
-        $client->indices()->putAlias(array(
-          'index' => $index_name,
-          'name' => $alias_name,
-        ));
-
-        $client->indices()->deleteTemplate(array(
-          'name' => $old_template
-        ));
-
-      }
-      catch (Exception $e) {
-        throw $e;
-      }
-    }
-  }
 }

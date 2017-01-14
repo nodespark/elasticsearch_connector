@@ -142,33 +142,15 @@ function elasticsearch_watchdog_watchdog(array $log_entry) {
         'date'          => date('c', $log_entry['timestamp']),
       );
 
-      $doc['ttl'] = variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL);
-
       // Indexing document.
       try {
-        $ret = $client->index($doc);
+        $client->index($doc);
       }
       catch (Exception $e) {
         error_log($e->getMessage());
       }
     }
   }
-}
-
-/**
- * Implements hook_form_FORM_ID_alter() for system_logging_settings().
- */
-function elasticsearch_watchdog_form_system_logging_settings_alter(&$form, $form_state) {
-  $form['elasticsearch_watchdog_ttl'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Elasticsearch TTL Interval'),
-    '#default_value' => variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL),
-    '#element_validate' => array('_elasticsearch_connector_validate_ttl_field'),
-    '#description' => t('Use format like 1d. Suffix can be d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks).'
-        . ' You can dynamically update the default interval.'
-        . ' However it won\'t change the TTL of already indexed messages but will be used for future logs.'),
-  );
-  $form['actions']['#weight'] = 1;
 }
 
 /**
@@ -229,21 +211,7 @@ function _elasticsearch_watchdog_get_facets($facet_field, $facet_type) {
 }
 
 /**
- * Return the real index name.
- *
- * @return string
- */
-function elasticsearch_watchdog_get_realindex_name($index_name = NULL) {
-  if (!isset($index_name)) {
-    $cluster_info = variable_get('elasticsearch_watchdog_cluster_id', array());
-    $index_name = $cluster_info['index'];
-  }
-
-  return $index_name;
-}
-
-/**
- * Return the index name (the alias name).
+ * Return the index name.
  *
  * @return string
  */
@@ -253,7 +221,7 @@ function elasticsearch_watchdog_get_index_name($index_name = NULL) {
     $index_name = $cluster_info['index'];
   }
 
-  return $index_name . '_alias';
+  return $index_name;
 }
 
 /**
@@ -267,17 +235,30 @@ function elasticsearch_watchdog_get_type_name_for_view() {
 }
 
 /**
+ * Add additional indexes if any.
+ *
+ * @param string $index
+ *   Watchdog index name.
+ *
+ * @return string
+ *   The indexes to search in.
+ */
+function elasticsearch_watchdog_add_additional_indexes($index) {
+  $additional = variable_get('elasticsearch_watchdog_view_additional_indexes', '');
+  if (!empty($additional)) {
+    return implode(',', array($index, $additional));
+  }
+
+  return $index;
+}
+
+/**
  * Return the name of the Elasticsearch type.
  *
  * @return string
  */
-function elasticsearch_watchdog_get_type_name($type = NULL) {
-  if (isset($type)) {
-    return $type;
-  }
-  else {
-    return variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
-  }
+function elasticsearch_watchdog_get_type_name() {
+  return variable_get('elasticsearch_watchdog_type',  ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE);
 }
 
 /**
@@ -290,7 +271,7 @@ function elasticsearch_watchdog_elasticsearch_connector_edit_lock($type, $cluste
       return TRUE;
     }
     elseif ($type == 'index') {
-      $index_name = elasticsearch_watchdog_get_realindex_name();
+      $index_name = elasticsearch_watchdog_get_index_name();
       if ($index == $index_name) {
         return TRUE;
       }

@@ -2,11 +2,6 @@
 /**
  * @file
  * Created on Jan 06, 2014
- *
- * TODO: Elasticsearch doesn't support pager on facets!
- *       So limiting the results to 100. We need to research the elastic aggregation
- *       http://www.elasticsearch.org/guide/en/elasticsearch/reference/master/search-aggregations.html
- *
  */
 
 /**
@@ -26,21 +21,12 @@ function elasticsearch_watchdog_settings() {
     '#description' => t('Select the settings in order to be able to hold the logs.')
   );
 
-  $form['elasticsearch_watchdog_type'] = array(
+  $form['elasticsearch_watchdog_view_additional_indexes'] = array(
     '#type' => 'textfield',
-    '#title' => t('Type name'),
-    '#required' => TRUE,
-    '#element_validate' => array('elasticsearch_connector_validate_type_field'),
-    '#default_value' => variable_get('elasticsearch_watchdog_type', ELASTICSEARCH_WATCHDOG_DEFAULT_TYPE),
-    '#description' => t('Enter the elasticsearch type name you want to store the logs')
-  );
-
-  $form['elasticsearch_watchdog_types_view'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Types for view page'),
-    '#required' => TRUE,
-    '#default_value' => variable_get('elasticsearch_watchdog_types_view', 'watchdog_message'),
-    '#description' => t('Comma separated list of watchdog types you want to monitor.')
+    '#title' => t('Additional indexes to monitor'),
+    '#required' => FALSE,
+    '#default_value' => variable_get('elasticsearch_watchdog_view_additional_indexes', ''),
+    '#description' => t('Comma separated list of watchdog indexes you want to monitor.')
   );
 
   $form['#validate'] = array('elasticsearch_watchdog_settings_validate');
@@ -61,11 +47,8 @@ function elasticsearch_watchdog_settings_validate($form, &$form_state) {
   }
 
   $client = elasticsearch_connector_get_client_by_id($values['elasticsearch_watchdog_cluster_id']['cluster_id']);
-
-  $index_name = elasticsearch_watchdog_get_realindex_name($values['elasticsearch_watchdog_cluster_id']['index']);
-  $alias_name = elasticsearch_watchdog_get_index_name($values['elasticsearch_watchdog_cluster_id']['index']);
-  $old_type_name = variable_get('elasticsearch_watchdog_type', NULL);
-  $type_name = elasticsearch_watchdog_get_type_name($values['elasticsearch_watchdog_type']);
+  $index_name = elasticsearch_watchdog_get_index_name($values['elasticsearch_watchdog_cluster_id']['index']);
+  $type_name = elasticsearch_watchdog_get_type_name();
 
   if ($client) {
     if (!$client->indices()->exists(array('index' => $index_name))) {
@@ -74,29 +57,6 @@ function elasticsearch_watchdog_settings_validate($form, &$form_state) {
     else {
       if (!$client->indices()->existsType(array('index' => $index_name, 'type' => $type_name))) {
         elasticsearch_watchdog_create_type($client, $index_name, $type_name);
-      }
-
-      // Alias
-      if (!$client->indices()->existsAlias(array('index' => $index_name, 'name' => $alias_name))) {
-        try {
-          elasticsearch_watchdog_create_alias($client, $index_name, $alias_name);
-        }
-        catch (Exception $e) {
-          error_log($e->getMessage());
-        }
-      }
-
-      if (isset($old_type_name) && $old_type_name != $type_name) {
-        try {
-          $client->indices()->deleteMapping(array(
-            'index' => $index_name,
-            'type'  => $old_type_name
-          ));
-          drupal_set_message(t('The old type @type has been successfully deleted.', array('@type' => $old_type_name)));
-        }
-        catch (Exception $e) {
-          error_log($e->getMessage());
-        }
       }
     }
   }
@@ -107,17 +67,11 @@ function elasticsearch_watchdog_settings_validate($form, &$form_state) {
 
 /**
  * Default index mapping for the elasticsearch watchdog index.
- * @param  integer $ttl
- *   Time To Live setting.
  *
  * @return array
  *   The mapping index array.
  */
-function elasticsearch_watchdog_get_mapping($ttl = NULL) {
-  if (!isset($ttl)) {
-    $ttl = variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL);
-  }
-
+function elasticsearch_watchdog_get_mapping() {
   // Index Mapping
   $my_type_mapping = array(
     '_source' => array(
@@ -126,56 +80,42 @@ function elasticsearch_watchdog_get_mapping($ttl = NULL) {
     '_all' => array(
       'enabled' => FALSE
     ),
-    '_ttl' => array(
-      'enabled' => TRUE,
-      'default' => $ttl,
-    ),
     'properties' => array(
       'uid' => array(
         'type' => 'integer',
       ),
       'username' => array(
-        'type' => 'string',
-        'index' => 'not_analyzed'
+        'type' => 'keyword'
       ),
       'type' => array(
-        'type' => 'string',
-        'index' => 'not_analyzed'
+        'type' => 'keyword',
       ),
       'message' => array(
-        'type' => 'string',
-        'index' => 'not_analyzed'
+        'type' => 'keyword',
       ),
       'full_massage' => array(
-        'type' => 'string',
+        'type' => 'text',
       ),
       'variables' => array(
-        'type' => 'string',
-        'index' => 'not_analyzed'
+        'type' => 'keyword',
       ),
       'severity' => array(
-        'type' => 'string',
-        'index' => 'not_analyzed'
+        'type' => 'keyword',
       ),
       'link' => array(
-        'type' => 'string',
-        'index' => 'not_analyzed'
+        'type' => 'keyword',
       ),
       'location' => array(
-        'type' => 'string',
-        'index' => 'not_analyzed'
+        'type' => 'keyword',
       ),
       'referer' => array(
-        'type' => 'string',
-        'index' => 'not_analyzed'
+        'type' => 'keyword',
       ),
       'hostname' => array(
-        'type' => 'string',
-        'index' => 'not_analyzed'
+        'type' => 'keyword',
       ),
       'domain' => array(
-        'type' => 'string',
-        'index' => 'not_analyzed',
+        'type' => 'keyword',
       ),
       'timestamp' => array(
         'type' => 'long',
@@ -190,28 +130,6 @@ function elasticsearch_watchdog_get_mapping($ttl = NULL) {
   );
 
   return $my_type_mapping;
-}
-
-/**
- * Creates alias to the provided index.
- *
- * @param  stdClass $client
- *   The ElasticSearch client object.
- * @param  string $index_name
- *   Name of the index to which the alias will be created.
- * @param  string $alias_name
- *   Name of the alias that will be created to the provided index.
- */
-function elasticsearch_watchdog_create_alias($client, $index_name, $alias_name) {
-  try {
-    $client->indices()->putAlias(array(
-      'name' => $alias_name,
-      'index' => $index_name,
-    ));
-  }
-  catch (Exception $e) {
-    throw $e;
-  }
 }
 
 /**
@@ -261,7 +179,7 @@ function elasticsearch_watchdog_overview() {
       try {
         $params = array();
         $index_name = elasticsearch_watchdog_get_index_name();
-        $params['index'] = $index_name;
+        $params['index'] = elasticsearch_watchdog_add_additional_indexes($index_name);
         $params['type']  = elasticsearch_watchdog_get_type_name_for_view();
 
         if ($client->indices()->exists(array('index' => $index_name))) {
