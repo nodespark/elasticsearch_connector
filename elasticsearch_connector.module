@@ -994,3 +994,43 @@ function elasticsearch_connector_validate_type_field($element, &$form_state, $fo
     form_error($element, t('Enter a type name that begins with a letter and contains only letters, numbers, and underscores.'));
   }
 }
+
+/**
+ * Recreate an index by droping it and create it again with the old settings.
+ *
+ * @param \nodespark\DESConnector\ClientInterface $client
+ *   The connection to the Elasticsearch cluster.
+ * @param string $index_name
+ *   The name of the index we want to recreate.
+ *
+ * @return bool
+ *   If the recreation was successful or not.
+ */
+function elasticsearch_connector_recreate_index(\nodespark\DESConnector\ClientInterface $client, $index_name) {
+  //
+  try {
+    $params = array('index' => $index_name);
+    if ($client->indices()->exists($params)) {
+      $settings = $client->indices()->getSettings($params);
+      $mappings = $client->indices()->getMapping($params);
+      $client->indices()->delete($params);
+
+      $params['body']['settings']['index']['number_of_shards'] = $settings[$index_name]['settings']['index']['number_of_shards'];
+      $params['body']['settings']['index']['number_of_replicas'] = $settings[$index_name]['settings']['index']['number_of_replicas'];
+      $params['body']['mappings'] = $mappings[$index_name]['mappings'];
+
+      $res = $client->indices()->create($params);
+      if ($client->CheckResponseAck($res)) {
+        return TRUE;
+      }
+    }
+    else {
+      watchdog('elasticsearch_connector', 'Cannot recreate an index that does not exists.', array(), WATCHDOG_ERROR);
+    }
+  }
+  catch (Exception $e) {
+    watchdog('elasticsearch_connector', $e->getMessage(), array(), WATCHDOG_ERROR);
+  }
+
+  return FALSE;
+}

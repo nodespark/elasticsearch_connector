@@ -196,7 +196,7 @@ function elasticsearch_watchdog_overview() {
 
           // Filter the results if there are filters specified.
           if (!empty($filter)) {
-            $params['body']['query']['filtered'] = $filter;
+            $params['body']['query']['bool'] = $filter;
           }
 
           $results = $client->search($params);
@@ -455,7 +455,7 @@ function elasticsearch_watchdog_build_filter_query() {
       }
 
       if ($has_value) {
-        $query_filter['and'][] = array('terms' => array($filters[$key]['elastic_key'] => $filter_where));
+        $query_filter[] = array('terms' => array($filters[$key]['elastic_key'] => $filter_where));
       }
     }
     elseif ($filters[$key]['type'] == 'textfield' && !empty($filter) && is_scalar($filter)) {
@@ -464,10 +464,10 @@ function elasticsearch_watchdog_build_filter_query() {
   }
 
   if (empty($query)) {
-    $query['match_all'] = array();
+    $query['match_all'] = (object)array();
   }
 
-  $result = array('query' => $query, 'filter' => $query_filter);
+  $result = array('must' => $query, 'filter' => $query_filter);
   return $result;
 }
 
@@ -632,11 +632,6 @@ function elasticsearch_watchdog_filter_form($form) {
       '#type' => 'submit',
       '#value' => t('Reset')
     );
-    $form['filters']['actions']['delete'] = array(
-      '#type' => 'submit',
-      '#value' => t('Delete logs from index by current filter'),
-      '#submit' => array('elasticsearch_watchdog_filter_delete_doc_submit')
-    );
   }
   return $form;
 }
@@ -648,7 +643,7 @@ function elasticsearch_watchdog_filter_form($form) {
  */
 function elasticsearch_watchdog_filter_form_validate($form, &$form_state) {
   if ($form_state['values']['op'] == t('Filter')  && empty($form_state['values']['type']) && empty($form_state['values']['severity'])
-      && empty($form_state['values']['domain']) && empty($form_state['values']['full_massage'])) {
+      && empty($form_state['values']['domain']) && empty($form_state['values']['username']) && empty($form_state['values']['full_massage'])) {
     form_set_error('type', t('You must select something to filter by.'));
   }
 }
@@ -677,84 +672,6 @@ function elasticsearch_watchdog_filter_form_submit($form, &$form_state) {
 }
 
 /**
- * Form submission handler for delete button at elasticsearch_watchdog_filter_form
- * performs a redirect to the confirm_form
- *
- * @see  elasticsearch_watchdog_filter_form_validate()
- */
-function elasticsearch_watchdog_filter_delete_doc_submit($form, &$form_state) {
-  $destination = array();
-  if (isset($_GET['destination'])) {
-    $destination = drupal_get_destination();
-    unset($_GET['destination']);
-  }
-  $form_state['redirect'] = array('admin/reports/elasticlog/delete-filter', array('query' => $destination));
-}
-
-/**
- * Confirm_form for deleting watchdog_docs from the index
- *
- * @see elasticsearch_watchdog_filter_delete_confirm_submit()
- *
- * @ingroup forms
- */
-function elasticsearch_watchdog_filter_delete_confirm($form, &$form_state) {
-  return confirm_form($form,
-    t('Are you sure you want to delete the filtered logs from index?'),
-    'admin/reports/elasticlog',
-    t('This action cannot be undone.'),
-    t('Delete'),
-    t('Cancel')
-  );
-}
-
-/**
- * Form submission handler for confirm_form
- * @param  [type] $form       [description]
- * @param  [type] $form_state [description]
- * @return [type]             [description]
- */
-function elasticsearch_watchdog_filter_delete_confirm_submit($form, &$form_state) {
-  if ($form_state['values']['confirm']) {
-
-    if (empty($_SESSION['elasticsearch_watchdog_overview_filter'])) {
-      drupal_set_message(t('No filter is present. Nothing was deleted.'));
-    }
-    else {
-      $client_id = elasticsearch_watchdog_get_cluster_id();
-      $index = elasticsearch_watchdog_get_index_name();
-      $type = elasticsearch_watchdog_get_type_name_for_view();
-      if (!empty($client_id)) {
-        $client = elasticsearch_connector_get_client_by_id($client_id);
-        if ($client) {
-          try {
-            $deleteParams = array();
-            $deleteParams['index'] = $index;
-            $deleteParams['type'] = $type;
-            // Get the filter.
-            $filter = elasticsearch_watchdog_build_filter_query();
-
-            if (!empty($filter)) {
-              $deleteParams['body']['query']['filtered'] = $filter;
-            }
-            $retDelete = $client->deleteByQuery($deleteParams);
-            // Reset the filters cause when deleting a document the filters are not there anymore.
-            $_SESSION['elasticsearch_watchdog_overview_filter'] = array();
-            drupal_set_message(t('Selected Elasticsearch logs have been deleted.'));
-          }
-          catch (Exception $e) {
-            drupal_set_message($e->getMessage(), 'error');
-          }
-        }
-      }
-    }
-  }
-
-  $form_state['redirect'] = 'admin/reports/elasticlog';
-}
-
-
-/**
  * Form constructor for the form that clears out the log.
  *
  * @see elasticsearch_watchdog_clear_log_submit()
@@ -778,19 +695,6 @@ function elasticsearch_watchdog_clear_log_form($form) {
 }
 
 /**
- * Create Elasticsearch watchdog type.
- */
-function elasticsearch_watchdog_create_type(\nodespark\DESConnector\ClientInterface $client, $index, $type) {
-  $mapping_params['index'] = $index;
-  $mapping_params['type'] = $type;
-  $my_type_mapping = elasticsearch_watchdog_get_mapping();
-  $mapping_params['body'][$type] = $my_type_mapping;
-  $client->indices()->putMapping(
-      $mapping_params
-  );
-}
-
-/**
  * Form submission handler for elasticsearch_watchdog_clear_log_form().
  */
 function elasticsearch_watchdog_clear_log_submit() {
@@ -798,24 +702,9 @@ function elasticsearch_watchdog_clear_log_submit() {
   // Delete the index and recreate it.
   $client_id = elasticsearch_watchdog_get_cluster_id();
   $index = elasticsearch_watchdog_get_index_name();
-  $type = elasticsearch_watchdog_get_type_name_for_view();
   if (!empty($client_id)) {
     $client = elasticsearch_connector_get_client_by_id($client_id);
-    if ($client) {
-      try {
-        $result = $client->indices()->deleteMapping(array(
-          'index' => $index,
-          'type'  => $type
-        ));
 
-        // Create the type if not exists.
-        elasticsearch_watchdog_create_type($client, $index, $type);
-
-        drupal_set_message(t('Elasticsearch logs has been cleared.'));
-      }
-      catch (Exception $e) {
-        drupal_set_message($e->getMessage(), 'error');
-      }
-    }
+    elasticsearch_connector_recreate_index($client, $index);
   }
 }
