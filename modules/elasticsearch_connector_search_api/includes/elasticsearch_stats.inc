@@ -85,28 +85,22 @@ class SearchApiElasticsearchConnectorStats {
       ),
       'properties' => array(
         'server_name' => array(
-          'type' => 'string',
-          'index' => 'not_analyzed'
+          'type' => 'keyword',
         ),
         'index_name' => array(
-          'type' => 'string',
-          'index' => 'not_analyzed'
+          'type' => 'keyword',
         ),
         'keywords_original' => array(
-          'type' => 'string',
-          'index' => 'not_analyzed'
+          'type' => 'keyword',
         ),
         'keywords' => array(
-          'type' => 'string',
-          'index' => 'not_analyzed'
+          'type' => 'keyword',
         ),
         'filters' => array(
-          'type' => 'string',
-          'index' => 'not_analyzed'
+          'type' => 'keyword',
         ),
         'sort' => array(
-          'type' => 'string',
-          'index' => 'not_analyzed'
+          'type' => 'keyword',
         ),
         'uid' => array(
           'type' => 'long',
@@ -115,8 +109,7 @@ class SearchApiElasticsearchConnectorStats {
           'type' => 'long',
         ),
         'username' => array(
-          'type' => 'string',
-          'index' => 'not_analyzed'
+          'type' => 'keyword',
         ),
         'timestamp' => array(
           'type' => 'date',
