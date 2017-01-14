@@ -307,15 +307,16 @@ function elasticsearch_watchdog_top($type) {
         $params = array();
         $params['index'] = elasticsearch_watchdog_get_index_name();
         $params['type']  = elasticsearch_watchdog_get_type_name_for_view();
-        $params['search_type'] = 'count';
-        // TODO: Change this to be filter because this is a term query!
-        $params['body']['query']['term']['type'] = $type;
-        $params['body']['facets'][$global_facet_name]['terms']['field'] = $field_faceting;
-        $params['body']['facets'][$global_facet_name]['terms']['size'] = variable_get('elasticsearch_watchdog_facet_size', 100);
+        $params['body']['query']['bool']['must']['match_all'] = (object)array();
+        $params['body']['query']['bool']['filter']['term']['type'] = $type;
+
+        $aggregation = new \nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms($global_facet_name, $field_faceting);
+        $aggregation->setSize(variable_get('elasticsearch_watchdog_facet_size', 100));
+        $client->aggregations()->setAggregation($aggregation);
         $search_result = $client->search($params);
-        if (!empty($search_result['facets'])) {
-          foreach ($search_result['facets'][$global_facet_name]['terms'] as $facet) {
-            $rows[] = array($facet['count'], $facet['term']);
+        if (!empty($search_result['aggregations'])) {
+          foreach ($search_result['aggregations'][$global_facet_name]['buckets'] as $bucket) {
+            $rows[] = array($bucket['doc_count'], $bucket['key']);
           }
         }
       }
