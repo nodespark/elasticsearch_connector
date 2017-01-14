@@ -111,6 +111,9 @@ class SearchApiElasticsearchConnectorStats {
         'username' => array(
           'type' => 'keyword',
         ),
+        'ip' => array(
+          'type' => 'ip',
+        ),
         'timestamp' => array(
           'type' => 'date',
           'format' => 'epoch_second',
@@ -209,6 +212,7 @@ class SearchApiElasticsearchConnectorStats {
         'uid'               => $user->uid,
         'results'           => isset($response['hits']['total']) ? $response['hits']['total'] : 0,
         'username'          => ($user->uid > 0 ? $user->name : ''),
+        'ip'                => ip_address(),
         'timestamp'         => time(),
       );
 
