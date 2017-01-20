@@ -199,7 +199,7 @@ function elasticsearch_watchdog_overview() {
             $params['body']['query']['bool'] = $filter;
           }
 
-          $results = $client->search($params);
+          $results = $client->search($params)->getRawResponse();
 
           if (!empty($results['hits']['total'])) {
             pager_default_initialize($results['hits']['total'], $limit);
@@ -313,7 +313,7 @@ function elasticsearch_watchdog_top($type) {
         $aggregation = new \nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms($global_facet_name, $field_faceting);
         $aggregation->setSize(variable_get('elasticsearch_watchdog_facet_size', 100));
         $client->aggregations()->setAggregation($aggregation);
-        $search_result = $client->search($params);
+        $search_result = $client->search($params)->getRawResponse();
         if (!empty($search_result['aggregations'])) {
           foreach ($search_result['aggregations'][$global_facet_name]['buckets'] as $bucket) {
             $rows[] = array($bucket['doc_count'], $bucket['key']);

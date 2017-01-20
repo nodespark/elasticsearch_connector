@@ -557,7 +557,7 @@ function elasticsearch_connector_statistics_title_list_today($rows) {
         $aggr->setSize($rows);
         $client->aggregations()->setAggregation($aggr);
 
-        $search_result = $client->search($params);
+        $search_result = $client->search($params)->getRawResponse();
         if (!empty($search_result['aggregations'])) {
           foreach ($search_result['aggregations'][$facet_name]['buckets'] as $bucket) {
             $node = node_load($bucket['key']);
@@ -621,7 +621,7 @@ function elasticsearch_connector_statistics_title_list_alltime($rows) {
         $aggr->setSize($rows);
         $client->aggregations()->setAggregation($aggr);
 
-        $search_result = $client->search($params);
+        $search_result = $client->search($params)->getRawResponse();
         if (!empty($search_result['aggregations'])) {
           foreach ($search_result['aggregations'][$facet_name]['buckets'] as $bucket) {
             $node = node_load($bucket['key']);

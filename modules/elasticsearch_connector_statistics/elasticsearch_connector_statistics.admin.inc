@@ -134,7 +134,7 @@ function elasticsearch_connector_statistics_recent_hits() {
             'match_all' => (object)array(),
           );
 
-          $results = $client->search($params);
+          $results = $client->search($params)->getRawResponse();
 
           if (!empty($results['hits']['hits'])) {
             foreach ($results['hits']['hits'] as $log) {
@@ -202,7 +202,7 @@ function elasticsearch_connector_statistics_top_pages() {
         $aggr->setSize(variable_get('elasticsearch_connector_statistics_facet_size', 1000));
         $client->aggregations()->setAggregation($aggr);
 
-        $search_result = $client->search($params);
+        $search_result = $client->search($params)->getRawResponse();
         if (!empty($search_result['aggregations'])) {
           foreach ($search_result['aggregations'][$global_facet_name]['buckets'] as $bucket) {
             $bucket['key'] = l(url($bucket['key'], array('absolute' => FALSE)), $bucket['key']);
@@ -253,7 +253,7 @@ function elasticsearch_connector_statistics_top_ip() {
         $aggr->setSize(variable_get('elasticsearch_connector_statistics_facet_size', 1000));
         $client->aggregations()->setAggregation($aggr);
 
-        $search_result = $client->search($params);
+        $search_result = $client->search($params)->getRawResponse();
         if (!empty($search_result['aggregations'])) {
           foreach ($search_result['aggregations'][$global_facet_name]['buckets'] as $bucket) {
             $ban_link = l(t('block IP address'), "admin/config/people/ip-blocking/" . $bucket['key'], array('query' => drupal_get_destination()));
@@ -313,7 +313,7 @@ function elasticsearch_connector_statistics_top_visitors() {
         $aggr->setSize(variable_get('elasticsearch_connector_statistics_facet_size', 1000));
         $client->aggregations()->setAggregation($aggr);
 
-        $search_result = $client->search($params);
+        $search_result = $client->search($params)->getRawResponse();
         if (!empty($search_result['aggregations'])) {
           foreach ($search_result['aggregations'][$global_facet_name]['buckets'] as $facet) {
             $account = user_load($facet['key']);
@@ -370,7 +370,7 @@ function elasticsearch_connector_statistics_top_referrers() {
         $aggr->setSize(variable_get('elasticsearch_connector_statistics_facet_size', 1000));
         $client->aggregations()->setAggregation($aggr);
 
-        $search_result = $client->search($params);
+        $search_result = $client->search($params)->getRawResponse();
         if (!empty($search_result['aggregations'])) {
           foreach ($search_result['aggregations'][$global_facet_name]['buckets'] as $bucket) {
             if (!empty($bucket['key'])) {

@@ -650,7 +650,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     try {
       // Do search.
-      $response = $this->elasticsearchClient->search($params);
+      $search_response = $this->elasticsearchClient->search($params);
+      $response = $search_response->getRawResponse();
 
       // TODO: Fix the logging to be accurate!
       if (!empty($index->options['collect_index_statistics']) && !$suggestions

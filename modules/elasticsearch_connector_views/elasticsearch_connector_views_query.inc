@@ -160,7 +160,7 @@ class elasticsearch_connector_views_query extends views_plugin_query {
         'index' => $index,
         'type'  => $type,
         'body'  => $this->query_params
-      ));
+      ))->getRawResponse();
 
       // Store results.
       if (!empty($response['hits']['hits'])) {

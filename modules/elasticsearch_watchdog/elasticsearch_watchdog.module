@@ -177,7 +177,7 @@ function _elasticsearch_watchdog_get_facets($facet_field, $facet_type) {
       $client = elasticsearch_connector_get_client_by_id($client_id);
       if ($client) {
         try {
-          $search_result = $client->search($params);
+          $search_result = $client->search($params)->getRawResponse();
           if (!empty($search_result['aggregations'])) {
             foreach ($search_result['aggregations'] as $result_facet_name => $result_params) {
               $type = $facets[$result_facet_name]['type'];
