@@ -21,4 +21,8 @@ Example:
      }
 ....
 
+Run the following command in Drupal's root folder:
+
+composer require nodespark/des-connector 5.x-dev
+
 ---------------------------------------------------------------------------------------------
