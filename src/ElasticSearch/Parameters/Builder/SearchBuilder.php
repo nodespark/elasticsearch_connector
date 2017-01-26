@@ -65,8 +65,8 @@ class SearchBuilder {
 
     // Build the query.
     if (!empty($query_options['query_search_string']) && !empty($query_options['query_search_filter'])) {
-      $this->body['query']['filtered']['query'] = $query_options['query_search_string'];
-      $this->body['query']['filtered']['filter'] = $query_options['query_search_filter'];
+      $this->body['query']['bool']['must'] = $query_options['query_search_string'];
+      $this->body['query']['bool']['filter'] = $query_options['query_search_filter'];
     }
     elseif (!empty($query_options['query_search_string'])) {
       if (empty($this->body['query'])) {
@@ -168,7 +168,7 @@ class SearchBuilder {
         $index_fields
       );
       if (!empty($parsed_query_filters)) {
-        $query_search_filter = $parsed_query_filters[0];
+        $query_search_filter = $parsed_query_filters;
       }
     }
     catch (ElasticsearchException $e) {
@@ -375,27 +375,26 @@ class SearchBuilder {
    * @throws \Exception
    */
   protected function setFiltersConjunction(array &$filters, $conjunction) {
-    if (count($filters) > 1) {
-      if ($conjunction === 'OR') {
-        $filters = [['or' => $filters]];
-      }
-      elseif ($conjunction === 'AND') {
-        $filters = [['and' => $filters]];
-      }
-      else {
-        throw new \Exception(
-          t(
-            'Undefined conjunction :conjunction! Available values are :avail_conjunction! Incorrect filter criteria is using for searching!',
-            [
-              ':conjunction!' => $conjunction,
-              ':avail_conjunction' => $conjunction,
-            ]
-          )
-        );
-      }
+
+    if ($conjunction === 'OR') {
+      $filters = ['should' => $filters];
+    }
+    elseif ($conjunction === 'AND') {
+      $filters = ['must' => $filters];
+    }
+    else {
+      throw new \Exception(
+        t(
+          'Undefined conjunction :conjunction! Available values are :avail_conjunction! Incorrect filter criteria is using for searching!',
+          [
+            ':conjunction!' => $conjunction,
+            ':avail_conjunction' => $conjunction,
+          ]
+        )
+      );
     }
 
-    return $filters;
+    return ['bool' => $filters];
   }
 
   protected function setMoreLikeThisQuery($query_options) {

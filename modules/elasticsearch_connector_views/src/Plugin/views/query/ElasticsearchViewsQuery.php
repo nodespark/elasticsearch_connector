@@ -346,8 +346,8 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       $temp = $params['query'];
       unset($params['query']);
 
-      $params['query']['filtered'] = array(
-        'query' => $temp,
+      $params['query']['bool'] = array(
+        'must' => $temp,
         'filter' => $params['filter'],
       );
 
@@ -379,7 +379,13 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
   }
 
   /**
+   * Build the filter parameters for Elasticsearch.
    *
+   * @param array $where
+   *   All where causes for the query.
+   *
+   * @return array
+   *   The ready to use filters in Elasticsearch body.
    */
   protected function buildFilterArray($where) {
     $filter = array();
