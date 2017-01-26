@@ -421,10 +421,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     // Build Elastica query.
     $params = SearchFactory::search($query);
 
-    // Do search.
-    $response = $this->client->search($params);
-
     try {
+      // Do search.
+      $response = $this->client->search($params);
       return SearchFactory::parseResult($query, $response);
     }
     catch (\Exception $e) {

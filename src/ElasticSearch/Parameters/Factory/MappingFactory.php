@@ -24,17 +24,15 @@ class MappingFactory {
       switch ($type) {
         case 'text':
           return [
-            'type' => 'string',
+            'type' => 'text',
             'boost' => $field->getBoost(),
-            'analyzer' => 'snowball',
           ];
 
         case 'uri':
         case 'string':
         case 'token':
           return [
-            'type' => 'string',
-            'index' => 'not_analyzed',
+            'type' => 'keyword',
           ];
 
         case 'integer':

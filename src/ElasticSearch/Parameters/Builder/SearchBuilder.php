@@ -75,7 +75,9 @@ class SearchBuilder {
       $this->body['query'] += $query_options['query_search_string'];
     }
     elseif (!empty($query_options['query_search_filter'])) {
-      $this->body['filter'] = $query_options['query_search_filter'];
+      // TODO: post_filter is a temporary workaround that should be removed
+      // when we have a Query builder class.
+      $this->body['post_filter'] = $query_options['query_search_filter'];
     }
 
     // TODO: Handle fields on filter query.
@@ -83,8 +85,8 @@ class SearchBuilder {
       unset($this->body['fields']);
     }
 
-    if (empty($this->body['filter'])) {
-      unset($this->body['filter']);
+    if (empty($this->body['post_filter'])) {
+      unset($this->body['post_filter']);
     }
 
     // TODO: Fix the match_all query.
