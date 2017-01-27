@@ -423,7 +423,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
 
     try {
       // Do search.
-      $response = $this->client->search($params);
+      $response = $this->client->search($params)->getRawResponse();
       return SearchFactory::parseResult($query, $response);
     }
     catch (\Exception $e) {

@@ -440,7 +440,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
           'type' => $type,
           'body' => $this->query_params,
         )
-      );
+      )->getRawResponse();
 
       // Store results.
       if (!empty($response['hits']['hits'])) {
