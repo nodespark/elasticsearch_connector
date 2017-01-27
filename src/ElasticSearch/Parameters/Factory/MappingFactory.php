@@ -26,6 +26,11 @@ class MappingFactory {
           return [
             'type' => 'text',
             'boost' => $field->getBoost(),
+            'fields' => [
+              "raw" => [
+                "type" => 'keyword'
+              ]
+            ]
           ];
 
         case 'uri':

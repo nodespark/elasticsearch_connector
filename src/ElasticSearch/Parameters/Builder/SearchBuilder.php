@@ -258,6 +258,7 @@ class SearchBuilder {
 
     $index_fields = $this->index->getFields();
     $sort = [];
+    $query_full_text_fields = $this->index->getFulltextFields();
     foreach ($this->query->getSorts() as $field_id => $direction) {
       $direction = Unicode::strtolower($direction);
 
@@ -274,6 +275,13 @@ class SearchBuilder {
         // TODO: no silly exceptions...
         throw new \Exception(t('Incorrect sorting!.'));
       }
+
+      if (in_array($field_id, $query_full_text_fields)) {
+        // Set the field that has not been analyzed for sorting.
+        $sort[$field_id . '.raw'] = $sort[$field_id];
+        unset($sort[$field_id]);
+      }
+
     }
     return $sort;
   }
