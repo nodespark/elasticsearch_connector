@@ -952,10 +952,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   protected function setFiltersConjunction(&$filters, $conjunction) {
     if (count($filters) > 1) {
       if ($conjunction === 'OR') {
-        $filters = array(array('or' => $filters));
+        $filters = array('should' => $filters);
       }
       elseif ($conjunction === 'AND') {
-        $filters = array(array('and' => $filters));
+        $filters = array('must' => $filters);
       }
       else {
         throw new Exception(t('Undefined conjunction :conjunction! Available values are :avail_conjunction! Incorrect filter criteria is using for searching!',
@@ -964,7 +964,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       }
     }
 
-    return $filters;
+    return array('bool' => $filters);
   }
 
   /**
@@ -1657,7 +1657,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     // Filters.
     list($parsed_queries, $parsed_query_filters) = $this->parseFilter($query->getFilter(), $index_fields);
     if (!empty($parsed_query_filters)) {
-      $query_search_filter = $parsed_query_filters[0];
+      $query_search_filter = $parsed_query_filters;
     }
 
     if (!empty($parsed_queries)) {
@@ -1823,69 +1823,33 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   protected function getDateFacetInterval($facet_id) {
     // Active search corresponding to this index.
     $searcher = key(facetapi_get_active_searchers());
-
     // Get the FacetApiAdpater for this searcher.
     $adapter = isset($searcher) ? facetapi_adapter_load($searcher) : NULL;
+    $facet = $adapter->getFacet(array('name' => $facet_id));
+    $facet_settings = $facet->getSettings();
 
-    // Get the date granularity.
-    $date_gap = $this->getDateGranularity($adapter, $facet_id);
-
-    switch ($date_gap) {
+    switch ($facet_settings->settings['date_granularity']) {
       // Already a selected YEAR, we want the months.
       case 'YEAR':
         $date_interval = 'month';
         break;
 
-        // Already a selected MONTH, we want the days.
+      // Already a selected MONTH, we want the days.
       case 'MONTH':
         $date_interval = 'day';
         break;
 
-        // Already a selected DAY, we want the hours and so on.
+      // Already a selected DAY, we want the hours and so on.
       case 'DAY':
         $date_interval = 'hour';
         break;
 
-        // By default we return result counts by year.
+      // By default we return result counts by year.
       default:
         $date_interval = 'year';
     }
 
     return $date_interval;
-  }
-
-  /**
-   * Helper function to return date gap.
-   */
-  public function getDateGranularity($adapter, $facet_id) {
-    // Date gaps.
-    $gap_weight = array('YEAR' => 2, 'MONTH' => 1, 'DAY' => 0);
-    $gaps = array();
-    $date_gap = 'YEAR';
-
-    // Get the date granularity.
-    if (isset($adapter)) {
-      // Get the current date gap from the active date filters.
-      $active_items = $adapter->getActiveItems(array('name' => $facet_id));
-      if (!empty($active_items)) {
-        foreach ($active_items as $active_item) {
-          $value = $active_item['value'];
-          if (strpos($value, ' TO ') > 0) {
-            list($date_min, $date_max) = explode(' TO ', str_replace(array('[', ']'), '', $value), 2);
-            $gap = self::getDateGap($date_min, $date_max, FALSE);
-            if (isset($gap_weight[$gap])) {
-              $gaps[] = $gap_weight[$gap];
-            }
-          }
-        }
-        if (!empty($gaps)) {
-          // Minimum gap.
-          $date_gap = array_search(min($gaps), $gap_weight);
-        }
-      }
-    }
-
-    return $date_gap;
   }
 
   /**
