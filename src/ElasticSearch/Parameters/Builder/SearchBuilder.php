@@ -269,17 +269,17 @@ class SearchBuilder {
         $sort['id'] = $direction;
       }
       elseif (isset($index_fields[$field_id])) {
-        $sort[$field_id] = $direction;
+        if (in_array($field_id, $query_full_text_fields)) {
+          // Set the field that has not been analyzed for sorting.
+          $sort[$field_id . '.raw'] = $direction;
+        }
+        else {
+          $sort[$field_id] = $direction;
+        }
       }
       else {
         // TODO: no silly exceptions...
         throw new \Exception(t('Incorrect sorting!.'));
-      }
-
-      if (in_array($field_id, $query_full_text_fields)) {
-        // Set the field that has not been analyzed for sorting.
-        $sort[$field_id . '.raw'] = $sort[$field_id];
-        unset($sort[$field_id]);
       }
 
     }
