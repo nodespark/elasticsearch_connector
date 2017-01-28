@@ -1068,8 +1068,9 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           // not analyzed if needed.
           // TODO: This should be decided via settings.
           'fields' => array(
-            'raw' => array(
+            'keyword' => array(
               'type' => 'keyword',
+              'ignore_above' => 256,
             )
           )
         );
@@ -1698,6 +1699,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
   protected function getSortSearchQuery(SearchApiQueryInterface $query) {
 
     $index_fields = $this->getIndexFields($query);
+    $index = $query->getIndex();
     $sort = array();
 
     // Extract Search API Location fields.
@@ -1709,6 +1711,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       }
     }
 
+    $query_full_text_fields = $index->getFulltextFields(TRUE);
     foreach ($query->getSort() as $field_id => $direction) {
       $direction = drupal_strtolower($direction);
 
@@ -1732,7 +1735,12 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           }
         }
         else {
-          $sort[$field_id] = $direction;
+          if (in_array($field_id, $query_full_text_fields)) {
+            $sort[$field_id . '.keyword'] = $direction;
+          }
+          else {
+            $sort[$field_id] = $direction;
+          }
         }
       }
       else {
