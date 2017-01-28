@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\elasticsearch_connector\Entity\IndexRouteProvider.
- */
-
 namespace Drupal\elasticsearch_connector\Entity;
 
 use Drupal\Core\Entity\EntityTypeInterface;

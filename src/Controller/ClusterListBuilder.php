@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\elasticsearch_connector\Controller\ClusterListBuilder.
- */
-
 namespace Drupal\elasticsearch_connector\Controller;
 
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;

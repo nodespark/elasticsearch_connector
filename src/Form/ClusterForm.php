@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\elasticsearch_connector\Form.
- */
-
 namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;

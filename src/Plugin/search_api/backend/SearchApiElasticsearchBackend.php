@@ -1,8 +1,6 @@
 <?php
 
 /**
- * @file
- * Contains the SearchApiElasticsearchBackend object.
  *
  * TODO: Check for dependencies and remove them in order to properly test the
  *   code.
