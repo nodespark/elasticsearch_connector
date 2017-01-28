@@ -27,8 +27,9 @@ class MappingFactory {
             'type' => 'text',
             'boost' => $field->getBoost(),
             'fields' => [
-              "raw" => [
-                "type" => 'keyword'
+              "keyword" => [
+                "type" => 'keyword',
+                'ignore_above' => 256,
               ]
             ]
           ];
