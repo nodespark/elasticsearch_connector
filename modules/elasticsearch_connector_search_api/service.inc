@@ -1775,7 +1775,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         // TODO: handle different types (GeoDistance and so on). See the supportedFeatures todo.
         if ($field_type === 'date') {
           $interval = $this->getDateFacetInterval($facet_id);
-          $facet[$field_id] = new \nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\DateHistogram($field_id, $field_id, $interval);
+          $facet[$field_id] = new \nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\DateHistogram($field_id, $field_id);
+          $facet[$field_id]->setInterval($interval);
           $aggs->setAggregation($facet[$field_id]);
         }
         else {
