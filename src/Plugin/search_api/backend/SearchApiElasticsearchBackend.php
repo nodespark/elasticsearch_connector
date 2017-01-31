@@ -22,8 +22,11 @@ use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\QueryInterface;
+use Drupal\search_api\Query\ResultSet;
 use Drupal\search_api\SearchApiException;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
+use nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms;
+use nodespark\DESConnector\Elasticsearch\Aggregations\Metrics\Stats;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -72,7 +75,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    * @param ClientManagerInterface $client_manager
    * @param \Drupal\Core\Config\Config $elasticsearch_settings
-   * * @param LoggerInterface $logger
+   * @param LoggerInterface $logger
+   *
+   * @throws SearchApiException
    */
   public function __construct(
     array $configuration,
@@ -207,17 +212,15 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
    * TODO: implement 'search_api_data_type_location',
    * TODO: implement 'search_api_data_type_geohash',
    */
-  public function supportsFeature($feature) {
+  public function getSupportedFeatures() {
     // First, check the features we always support.
-    $supported = [
+    return [
       'search_api_autocomplete',
       'search_api_facets',
       'search_api_facets_operator_or',
       'search_api_grouping',
       'search_api_mlt',
     ];
-
-    return in_array($feature, $supported);
   }
 
   /**
@@ -416,18 +419,93 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       return $search_result;
     }
 
+    // Add the facets to the request.
+    if($query->getOption('search_api_facets')) {
+      $this->addFacets($query);
+    }
+
     // Build Elastica query.
     $params = SearchFactory::search($query);
 
     try {
       // Do search.
       $response = $this->client->search($params)->getRawResponse();
-      return SearchFactory::parseResult($query, $response);
+      $results = SearchFactory::parseResult($query, $response);
+
+      // Handle the facets result when enabled.
+      if ($query->getOption('search_api_facets')) {
+        $this->parseFacets($results, $query);
+      }
+      return $results;
     }
     catch (\Exception $e) {
       watchdog_exception('Elasticsearch API', $e);
       return $search_result;
     }
+  }
+
+  /**
+   * Fill the aggregation array of the request.
+   *
+   * @param \Drupal\search_api\Query\QueryInterface $query
+   */
+  protected function addFacets(QueryInterface $query) {
+    foreach ($query->getOption('search_api_facets') as $key => $facet) {
+      $facet += array('type' => NULL);
+
+      $object = NULL;
+
+      // @todo Add more options.
+      switch ($facet['type']) {
+        case 'stats':
+          $object = new Stats($key, $key);
+
+          break;
+        default:
+          $object = new Terms($key, $key);
+      }
+
+      if (!empty($object)) {
+        $this->client->aggregations()->setAggregation($object);
+      }
+    }
+  }
+
+  /**
+   * Parse the resultset and add the facet values.
+   *
+   * @param \Drupal\search_api\Query\ResultSet $results
+   * @param \Drupal\search_api\Query\QueryInterface $query
+   */
+  protected function parseFacets(ResultSet $results, QueryInterface $query) {
+    $response = $results->getExtraData('elasticsearch_response');
+    $facets = $query->getOption('search_api_facets');
+
+    // Create an empty array that will be attached to the result object.
+    $attach = array();
+
+    // Loop trough all the aggregations items.
+    foreach ($response['aggregations'] as $key => $value) {
+
+      $terms = array();
+
+      // Handle the stats different than the default terms options.
+      if (!empty($facets[$key]['type']) && $facets[$key]['type'] == 'stats') {
+        $terms = $value;
+      }
+      else {
+        array_walk($value['buckets'], function($value) use (&$terms) {
+          $terms[] = array(
+            'count' => $value['doc_count'],
+            'filter' => '"' . $value['key'] . '"'
+          );
+        });
+      }
+
+      $attach[$key] = $terms;
+    }
+
+    $results->setExtraData('search_api_facets', $attach);
   }
 
   /**
