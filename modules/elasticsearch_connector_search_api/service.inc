@@ -2010,6 +2010,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           $matches[$item_title] = array(
             'key' => $index->datasource()->getItemLabel($item),
             'user_input' => '',
+            'suggestion_suffix' => $item_title,
             'render' => l($item_title, $url_item['path'], array('html' => TRUE)),
           );
         }
@@ -2017,6 +2018,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
           $matches[$item_title] = array(
             'key' => $index->datasource()->getItemLabel($item),
             'user_input' => '',
+            'suggestion_suffix' => $item_title,
             'render' => $item_title,
           );
         }
