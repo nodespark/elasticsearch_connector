@@ -21,8 +21,16 @@ Example:
      }
 ....
 
-Run the following command in Drupal's root folder:
+After that you should executed:
 
-composer require nodespark/des-connector 5.x-dev
+sudo composer update nodespark/des-connector --no-dev
+
+Uninstall the library:
+
+
+* Remove the line added into main composer.json added in installation step.
+* Remove the library with composer by running the following command:
+
+sudo composer remove nodespark/des-connector --update-with-dependencies
 
 ---------------------------------------------------------------------------------------------
