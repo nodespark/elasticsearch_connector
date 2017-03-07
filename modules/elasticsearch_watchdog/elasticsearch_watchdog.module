@@ -140,8 +140,9 @@ function elasticsearch_watchdog_watchdog(array $log_entry) {
         'microtime'     => (float)$microtime,
         'domain'        => $base_url,
         'date'          => date('c', $log_entry['timestamp']),
-        '_ttl'          => variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL),
       );
+
+      $doc['ttl'] = variable_get('elasticsearch_watchdog_ttl', ELASTICSEARCH_WATCHDOG_DEFAULT_INTERVAL);
 
       // Indexing document.
       try {

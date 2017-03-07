@@ -65,7 +65,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
   /**
    * Get the Elasticsearch connector object.
-   * @return object <\Elasticsearch\Client, boolean, >
+   * @return object <\nodespark\DESConnector\ClientInterface, boolean, >
    */
   public function getConnectorObject() {
     return $this->elasticsearchClient;
@@ -273,6 +273,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       try {
         $client = $this->elasticsearchClient;
         if (!$client->indices()->exists(array('index' => $index_name))) {
+          // TODO: This needs to be handled differently because the >2.0.0
+          // needs index recreation!
           if (!empty($index->force_create)) {
             $params = array(
               'index' => $index_name,
@@ -370,36 +372,44 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    * Overrides removeIndex().
    */
   public function removeIndex($index) {
-    $params = $this->getIndexParam($index, TRUE);
-
     try {
-      // If there is no connection there is nothing we can do.
-      if (!$this->elasticsearchClient) {
-        return;
-      }
-
-      $this->elasticsearchClient->indices()->deleteMapping($params);
-
-      // Check if there are any other types in the index before deleting it.
-      $safe_delete = FALSE;
-      $result = $this->elasticsearchClient->indices()->getMapping(array(
-        'index' => $params['index'],
-      ));
-
-      // The 'get mapping' API response changed in version 1.4.0.beta1
-      // @see http://www.elasticsearch.org/guide/en/elasticsearch/reference/1.4/indices-get-mapping.html
-      $version = $this->getClusterVersion();
-      if (version_compare($version, '1.4.0', '<')) {
-        $safe_delete = empty($result[$params['index']]);
+      if ($this->versionIs2x()) {
+        $params = $this->getIndexParam($index);
+        if ($this->elasticsearchClient->indices()->exists($params)) {
+          $this->elasticsearchClient->indices()->delete($params);
+        }
       }
       else {
-        $safe_delete = empty($result[$params['index']]['mappings']);
-      }
+        $params = $this->getIndexParam($index, TRUE);
 
-      if ($safe_delete) {
-        $response = $this->elasticsearchClient->indices()->delete(array(
+        // If there is no connection there is nothing we can do.
+        if (!$this->elasticsearchClient) {
+          return;
+        }
+
+        $this->elasticsearchClient->indices()->deleteMapping($params);
+
+        // Check if there are any other types in the index before deleting it.
+        $safe_delete = FALSE;
+        $result = $this->elasticsearchClient->indices()->getMapping(array(
           'index' => $params['index'],
         ));
+
+        // The 'get mapping' API response changed in version 1.4.0.beta1
+        // @see http://www.elasticsearch.org/guide/en/elasticsearch/reference/1.4/indices-get-mapping.html
+        $version = $this->getClusterVersion();
+        if (version_compare($version, '1.4.0', '<')) {
+          $safe_delete = empty($result[$params['index']]);
+        }
+        else {
+          $safe_delete = empty($result[$params['index']]['mappings']);
+        }
+
+        if ($safe_delete) {
+          $response = $this->elasticsearchClient->indices()->delete(array(
+            'index' => $params['index'],
+          ));
+        }
       }
     }
     catch (Exception $e) {
@@ -459,7 +469,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       if (!empty($response['errors'])) {
         foreach($response['items'] as $item) {
           if (!empty($item['index']['status']) && $item['index']['status'] == '400') {
-            watchdog('Elasticsearch Search API', $item['index']['error'], array(), WATCHDOG_ERROR);
+            watchdog('Elasticsearch Search API', '<pre>' . print_r($item['index']['error'], TRUE) . '</pre>', array(), WATCHDOG_ERROR);
           }
         }
 
@@ -473,6 +483,33 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     return array_keys($items);
   }
 
+  public function versionIs2x() {
+    $version = $this->getClusterVersion();
+    if (version_compare($version, '2.0', '>=')) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+  /**
+   * Get the index settings of an Elasticsearch index.
+   * @param $index
+   * @return mixed
+   */
+  public function getElasticsearchIndexSettings($index) {
+    try {
+      $indexName = $this->getIndexName($index);
+      $params = $this->getIndexParam($index);
+      $settings = $this->elasticsearchClient->indices()->getSettings($params);
+      return $settings[$indexName]['settings'];
+    }
+    catch (Exception $e) {
+      drupal_set_message($e->getMessage(), 'error');
+    }
+  }
+
   /**
    * Overrides deleteItems().
    */
@@ -483,23 +520,32 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       }
     }
     elseif ($ids === 'all') {
-      $site_id = $this->getSiteHash();
-      $params = $this->getIndexParam($index, TRUE);
-      if ($site_id) {
-        $params['body'] = array('query' => array('match' => array('search_api_site_hash' => $site_id)));
+      if ($this->versionIs2x()) {
+        $settings = $this->getElasticsearchIndexSettings($index);
+        $index->force_create['number_of_shards'] = $settings['index']['number_of_shards'];
+        $index->force_create['number_of_replicas'] = $settings['index']['number_of_replicas'];
+        $this->removeIndex($index);
+        $this->addIndex($index);
       }
       else {
-        $params['body'] = array('query' => array('match_all' => array()));
-      }
+        $version = $this->getClusterVersion();
+        $params = $this->getIndexParam($index, TRUE);
+        $site_id = $this->getSiteHash();
+        if ($site_id) {
+          $params['body'] = array('query' => array('match' => array('search_api_site_hash' => $site_id)));
+        }
+        else {
+          $params['body'] = array('query' => array('match_all' => array()));
+        }
 
-      // The 'delete by query' API request changed in version 1.0.0RC1.
-      // @see http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-delete-by-query.html
-      $version = $this->getClusterVersion();
-      if (version_compare($version, '1.0.0', '<')) {
-        $params['body'] = $params['body']['query'];
-      }
+        // The 'delete by query' API request changed in version 1.0.0RC1.
+        // @see http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-delete-by-query.html
+        if (version_compare($version, '1.0.0', '<')) {
+          $params['body'] = $params['body']['query'];
+        }
 
-      $this->elasticsearchClient->deleteByQuery($params);
+        $this->elasticsearchClient->deleteByQuery($params);
+      }
     }
     else {
       $this->deleteItemsIds($ids, $index);
@@ -559,7 +605,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
    *
    */
   protected function checkClient($throwError = FALSE) {
-    if (empty($this->elasticsearchClient) || !($this->elasticsearchClient instanceof \Elasticsearch\Client)) {
+    if (empty($this->elasticsearchClient) || !($this->elasticsearchClient instanceof \nodespark\DESConnector\ClientInterface)) {
       if ($throwError) {
         throw new SearchApiElasticsearchConnectorException(t('Elasticsearch library hasn\'t been initialized successfully.' ));
       }
@@ -1040,13 +1086,13 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
       case 'decimal':
         return array(
-        'type' => 'float',
+          'type' => 'float',
         );
 
       case 'date':
         return array(
-        'type' => 'date',
-        'format' => 'date_time',
+          'type' => 'date',
+          'format' => 'epoch_second',
         );
 
       case 'location':
@@ -1701,7 +1747,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
     if (!empty($facets)) {
       // Loop trough facets.
-      $elasticsearch_facets = array();
+      $aggs = \nodespark\DESConnector\Elasticsearch\Aggregations\Aggregations::getInstance();
       foreach ($facets as $facet_id => $facet_info) {
         $field_id = $facet_info['field'];
         $facet = array($field_id => array());
@@ -1714,49 +1760,19 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
         // TODO: handle different types (GeoDistance and so on). See the supportedFeatures todo.
         if ($field_type === 'date') {
-          $facet_type = 'date_histogram';
-          $facet[$field_id] = $this->createDateFieldFacet($field_id, $facet);
+          $interval = $this->getDateFacetInterval($facet_id);
+          $facet[$field_id] = new \nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\DateHistogram($field_id, $field_id, $interval);
+          $aggs->setAggregation($facet[$field_id]);
         }
         else {
-          $facet_type = 'terms';
-          $facet[$field_id][$facet_type]['all_terms'] = (bool)$facet_info['missing'];
+          $facet[$field_id] = new \nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms($field_id, $field_id);
+          $facet[$field_id]->setSize($this->getFacetLimit($facet_info));
+          $aggs->setAggregation($facet[$field_id]);
         }
-
-        // Add the facet.
-        if (!empty($facet[$field_id])) {
-          // Add facet options
-          $facet_info['facet_type'] = $facet_type;
-          $facet[$field_id] = $this->addFacetOptions($facet[$field_id], $query, $facet_info);
-        }
-        $params['body']['facets'][$field_id] = $facet[$field_id];
       }
+
+      $aggs->applyAggregationsToParams($params);
     }
-  }
-
-  /**
-   * Helper function that add options and return facet
-   */
-  protected function addFacetOptions(&$facet, SearchApiQueryInterface $query, $facet_info) {
-    $facet_limit = $this->getFacetLimit($facet_info);
-    $facet_search_filter = $this->getFacetSearchFilter($query, $facet_info);
-
-    // Set the field.
-    $facet[$facet_info['facet_type']]['field'] = $facet_info['field'];
-
-    // OR facet. We remove filters affecting the assiociated field.
-    // TODO: distinguish between normal filters and facet filters.
-    // See http://drupal.org/node/1390598.
-    // Filter the facet.
-    if (!empty($facet_search_filter)) {
-       $facet['facet_filter'] = $facet_search_filter;
-    }
-
-    // Limit the number of returned entries.
-    if ($facet_limit > 0 && $facet_info['facet_type'] == 'terms') {
-      $facet[$facet_info['facet_type']]['size'] = $facet_limit;
-    }
-
-    return $facet;
   }
 
   /**
@@ -1781,23 +1797,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
 
     return $facet_search_filter;
-  }
-
-  /**
-   * Helper function create Facet for date field type.
-   */
-  protected function createDateFieldFacet($facet_id, $facet) {
-    $result = $facet[$facet_id];
-
-    $date_interval = $this->getDateFacetInterval($facet_id);
-    $result['date_histogram']['interval'] = $date_interval;
-    // TODO: Check the timezone cause this way of hardcoding doesn't seems right.
-    $result['date_histogram']['time_zone'] = 'UTC';
-    // Use factor 1000 as we store dates as seconds from epoch
-    // not milliseconds.
-    $result['date_histogram']['factor'] = 1000;
-
-    return $result;
   }
 
   /**
@@ -1929,8 +1928,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $result = array();
     $index_fields = $this->getIndexFields($query);
     $facets = $query->getOption('search_api_facets');
-    if (!empty($facets) && isset($response['facets'])) {
-      foreach ($response['facets'] as $facet_id => $facet_data) {
+    if (!empty($facets) && isset($response['aggregations'])) {
+      foreach ($response['aggregations'] as $facet_id => $facet_data) {
         if (isset($facets[$facet_id])) {
           $facet_info = $facets[$facet_id];
           $facet_min_count = $facet_info['min_count'];
@@ -1940,29 +1939,29 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
           // TODO: handle different types (GeoDistance and so on).
           if ($field_type === 'date') {
-            foreach ($facet_data['entries'] as $entry) {
-              if ($entry['count'] >= $facet_min_count) {
+            foreach ($facet_data['buckets'] as $entry) {
+              if ($entry['doc_count'] >= $facet_min_count) {
                 // Divide time by 1000 as we want seconds from epoch
                 // not milliseconds.
                 $result[$facet_id][] = array(
-                  'count' => $entry['count'],
-                  'filter' => '"' . ($entry['time'] / 1000) . '"',
+                  'count' => $entry['doc_count'],
+                  'filter' => '"' . ($entry['key']/1000) . '"',
                 );
               }
             }
           }
           else {
-            foreach ($facet_data['terms'] as $term) {
-              if ($term['count'] >= $facet_min_count) {
+            foreach ($facet_data['buckets'] as $term) {
+              if ($term['doc_count'] >= $facet_min_count) {
                 if ($field_type == 'boolean') {
-                  $term_value = ($term['term'] == 'T' ? TRUE : FALSE);
+                  $term_value = ($term['key'] == 'T' ? TRUE : FALSE);
                 }
                 else {
-                  $term_value = '"' . $term['term'] . '"';
+                  $term_value = '"' . $term['key'] . '"';
                 }
 
                 $result[$facet_id][] = array(
-                  'count' => $term['count'],
+                  'count' => $term['doc_count'],
                   'filter' => $term_value,
                 );
               }

@@ -288,10 +288,10 @@ function _elasticsearch_connector_statistics_match_entity(&$path, $account) {
 
 /**
  *
- * @param \Elasticsearch\Client $client
+ * @param \nodespark\DESConnector\ClientInterface $client
  * @param array $access_log
  */
-function elasticsearch_connector_statistics_log_data(\Elasticsearch\Client $client) {
+function elasticsearch_connector_statistics_log_data(\nodespark\DESConnector\ClientInterface $client) {
   global $user;
 
   $cluster_settings = variable_get('elasticsearch_connector_statistics_cluster', array());
@@ -318,8 +318,9 @@ function elasticsearch_connector_statistics_log_data(\Elasticsearch\Client $clie
     'entity'          => $entity,
     'referer'         => $_GET['referer'],
     'timestamp'      => time(),
-    '_ttl'            => $ttl,
   );
+
+  $doc['ttl'] = $ttl;
 
   // Alter the document, or add more fields.
   drupal_alter('elasticsearch_connector_statistics_log_data', $doc, $client);
@@ -408,12 +409,12 @@ function elasticsearch_connector_statistics_get_mapping($ttl = NULL) {
 
 /**
  * Create Elasticsearch connector statistics type.
- * @param Elasticsearch\Client $client
+ * @param \nodespark\DESConnector\ClientInterface $client
  * @param string
  * @patam string
  * @return array
  */
-function elasticsearch_connector_statistics_create_type(Elasticsearch\Client $client, $index, $type, $ttl = NULL) {
+function elasticsearch_connector_statistics_create_type(\nodespark\DESConnector\ClientInterface $client, $index, $type, $ttl = NULL) {
   $mapping_params['index'] = $index;
   $mapping_params['type'] = $type;
   $my_type_mapping = elasticsearch_connector_statistics_get_mapping($ttl);
