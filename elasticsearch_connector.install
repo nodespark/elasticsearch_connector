@@ -1,0 +1,135 @@
+<?php
+/**
+ * @file
+ *
+ * The installtion file for elasticsearch_connector module.
+ */
+
+/**
+ * Implements hook_requirements().
+ *
+ * Check Elastica installation.
+ */
+function elasticsearch_connector_requirements($phase) {
+  $t = get_t();
+  if ($phase === 'install') {
+    if (version_compare(phpversion(), '5.3.9', '<')) {
+      return array(
+        'elasticsearch_connector' => array(
+          'title' => $t('The PHP version is not compatible with this module.'),
+          'description' => $t('The module requires PHP version bigger than or equal to version 5.3.9.'),
+          'severity' => REQUIREMENT_ERROR,
+          'value' => $t('PHP version not compatible.'),
+        ),
+      );
+    }
+  }
+
+  if ($phase == 'runtime') {
+    if (!class_exists('\Elasticsearch\Client')) {
+      return array(
+        'elasticsearch_connector' => array(
+          'title' => $t('The Elasticsearch library is missing.'),
+          'description' => $t('The official library for Elasticsearch connection is missing.'),
+          'severity' => REQUIREMENT_ERROR,
+          'value' => $t('Elasticsearch library missing.'),
+        ),
+      );
+    }
+    else {
+      return array(
+        'elasticsearch_connector' => array(
+          'title' => $t('Elasticsearch PHP library'),
+          'description' => $t('The official Elasticsearch library was correctly installed.'),
+          'severity' => REQUIREMENT_OK,
+          'value' => $t('OK'),
+        ),
+      );
+    }
+  }
+
+  return array();
+}
+
+/**
+ * Implements hook_schema().
+ */
+function elasticsearch_connector_schema() {
+  $schema['elasticsearch_connector_cluster'] = array(
+    'description' => 'The base table for elasticsearch clusters.',
+    'export' => array(
+      'key' => 'cluster_id',
+      'admin_title' => 'name',
+      'api' => array(
+        'owner' => 'elasticsearch_connector',
+        'api' => 'elasticsearch_connector_defaults',
+        'minimum_version' => 1,
+        'current_version' => 1,
+      ),
+    ),
+    'fields' => array(
+      'cluster_id' => array(
+        'description' => 'Unique identifier for the cluster environment',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'name' => array(
+        'description' => 'Human-readable name for the cluster',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'url' => array(
+        'description' => 'URL of master Node.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''
+      ),
+      'status' => array(
+        'description' => 'Boolean indicating whether the entity is active or not.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'options' => array(
+        'description' => 'Other serialized options available for the cluster',
+        'type' => 'blob',
+        'not null' => TRUE,
+        'size' => 'normal',
+      ),
+    ),
+    'indexes' => array('status_idx' => array('status')),
+    'unique keys' => array(),
+    'foreign keys' => array(),
+    'primary key' => array('cluster_id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Delete Search Api elasticsearch servers.
+ */
+function elasticsearch_connector_uninstall() {
+  variable_del('elasticsearch_connector_get_default_connector');
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Update permissions.
+ */
+function elasticsearch_connector_update_7100(&$sandbox) {
+  db_update('role_permission')
+    ->fields(array(
+      'permission' => 'administer elasticsearch connector',
+    ))
+    ->condition('permission', 'adminiser elasticsearch connector')
+    ->execute();
+}

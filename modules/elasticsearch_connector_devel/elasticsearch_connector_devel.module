@@ -1,0 +1,51 @@
+<?php
+/**
+ * @file
+ * The Elasticsearch Connector Devel module has a purpose to deliver debuggin
+ * information to the developers for faster debugging.
+ *
+ */
+
+/**
+ * Implements hook_block_info().
+ */
+function elasticsearch_connector_devel_block_info() {
+  $blocks = array();
+
+  $blocks['elasticsearch_debug'] = array(
+    'info' => 'Elasticsearch: Debugger',
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_elasticsearch_connector_load_library_options_alter().
+ * @param array $options
+ */
+function elasticsearch_connector_devel_elasticsearch_connector_load_library_options_alter(&$options, $cluster) {
+  require_once DRUPAL_ROOT . '/' .
+               drupal_get_path('module', 'elasticsearch_connector_devel') . '/includes/GuzzleConnectionDebugging.inc';
+
+  if (class_exists('\Elasticsearch\Connections\GuzzleConnectionDebug')) {
+    $options['connectionClass'] = '\Elasticsearch\Connections\GuzzleConnectionDebug';
+  }
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function elasticsearch_connector_devel_block_view($delta = '') {
+  if ('elasticsearch_debug' == $delta && class_exists('\Elasticsearch\Connections\GuzzleConnectionDebug')) {
+    $debug = array();
+    // If we have debug information, display.
+    $debug = \Elasticsearch\Connections\GuzzleConnectionDebug::$debugOutput;
+    if (!empty($debug)) {
+      return array(
+        'subject' => t('Elasticsearch debugger'),
+        'content' => kprint_r($debug, TRUE),
+      );
+    }
+  }
+}

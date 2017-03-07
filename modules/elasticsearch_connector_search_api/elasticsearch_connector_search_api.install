@@ -1,0 +1,88 @@
+<?php
+/**
+ * @file
+ * Install/unstall tasks for the Elasticsearch Connector Search API module.
+ */
+
+/**
+ * Implements hook_disable().
+ *
+ * Disable Search Api elasticsearch servers and associated indexes.
+ */
+function elasticsearch_connector_search_api_disable() {
+  if (module_exists('search_api')) {
+    module_load_include('module', 'search_api');
+    foreach (search_api_server_load_multiple(FALSE, array('class' => 'search_api_elasticsearch_connector'), TRUE) as $server) {
+      $server->update(array('enabled' => 0));
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Delete Search Api elasticsearch servers.
+ */
+function elasticsearch_connector_search_api_uninstall() {
+  if (module_exists('search_api')) {
+    db_delete('search_api_server')
+      ->condition('class', 'search_api_elasticsearch_connector')
+      ->execute();
+  }
+}
+
+/**
+ * Update Search API servers and indexes that use ElasticSearch.
+ */
+function elasticsearch_connector_search_api_update_7001() {
+  if (!function_exists('search_api_server_load_multiple')) {
+    return t('No Search API servers to update.');
+  }
+
+  $servers = search_api_server_load_multiple(FALSE);
+  $indexes = search_api_index_load_multiple(FALSE);
+
+  foreach ($indexes as $index) {
+    // If the index uses a server with our service class, then the server
+    // configuration needs to be updated.
+    if ($index->server && $servers[$index->server]->class == 'search_api_elasticsearch_connector') {
+      // Duplicate the old method of setting the ElasticSearch index name:
+      // concatenate the database name and the index machine name with a set
+      // prefix.
+      global $databases;
+      $site_database = $databases['default']['default']['database'];
+      $cluster_index_name = preg_replace('/[^A-Za-z0-9_]+/', '', 'elasticsearch_index_' . $site_database . '_' . $index->machine_name);
+
+      // If the server's cluster index name isn't set yet, update it.
+      if (empty($index->options['index_name'])) {
+        $server->options['cluster_index_name'] = $cluster_index_name;
+        $index->options['index_name'] = $cluster_index_name;
+        $index->save();
+      }
+    }
+  }
+
+  return t('Updated Search API servers and indexes that use ElasticSearch. You may need to re-export Search API configuration features.');
+}
+
+/**
+ * Update Search API indexes to use the new settings options.
+ */
+function elasticsearch_connector_search_api_update_7002() {
+  if (!function_exists('search_api_server_load_multiple')) {
+    return t('No Search API servers to update.');
+  }
+
+  $indexes = search_api_index_load_multiple(FALSE);
+  foreach ($indexes as $index) {
+    // If the index uses a server with our service class, then the server
+    // configuration needs to be updated.
+    if ($index->server && $index->server()->class == 'search_api_elasticsearch_connector') {
+      // If the server's cluster index name isn't set yet, update it.
+      $index->options['index_name'] = array('index' => $index->options['index_name']);
+      $index->save();
+    }
+  }
+
+  return t('Updated Search API indexes that use ElasticSearch to the new settings format.');
+}

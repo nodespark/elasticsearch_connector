@@ -1,0 +1,202 @@
+<?php
+/**
+ * @file
+ * Created on Jan 08, 2014
+ *
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function elasticsearch_watchdog_uninstall() {
+  if (!module_exists('elasticsearch_connector')) {
+    module_load_include('module', 'elasticsearch_connector');
+  }
+
+  module_load_include('module', 'elasticsearch_watchdog');
+
+  $client_id = elasticsearch_watchdog_get_cluster_id();
+  if (!empty($client_id)) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      $index = elasticsearch_watchdog_get_realindex_name();
+      $type = elasticsearch_watchdog_get_type_name();
+      $alias_name = elasticsearch_watchdog_get_index_name();
+
+      $index_exists = $client->indices()->exists(array(
+        'index' => $index,
+      ));
+
+      if ($index_exists) {
+        $client->indices()->deleteAlias(array(
+          'index' => $index,
+          'name' => $alias_name
+        ));
+
+        $client->indices()->deleteMapping(array(
+          'index' => $index,
+          'type'  => $type
+        ));
+
+        $result = $client->indices()->getMapping(array(
+          'index' => $index,
+        ));
+
+        if (empty($result)) {
+          $client->indices()->delete(array(
+            'index' => $index,
+          ));
+        }
+      }
+    }
+  }
+
+  variable_del('elasticsearch_watchdog_cluster_id');
+  variable_del('elasticsearch_watchdog_ttl');
+  variable_del('elasticsearch_watchdog_index');
+  variable_del('elasticsearch_watchdog_type');
+  variable_del('elasticsearch_watchdog_types_view');
+}
+
+/**
+ * Implements hook_requirements().
+ *
+ * Check Elastica installation.
+ */
+function elasticsearch_watchdog_requirements($phase) {
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    $elasticsearch_connector_path = elasticsearch_connector_main_settings_path();
+    $client_id = elasticsearch_watchdog_get_cluster_id();
+    if (!empty($client_id)) {
+      $client = elasticsearch_connector_get_client_by_id($client_id);
+      if ($client) {
+        try {
+          $info = $client->info();
+          if (!empty($info) && elasticsearch_connector_check_status($info)) {
+            return array(
+              'elasticsearch_watchdog' => array(
+                'title' => $t('Elasticsearch Watchdog Status'),
+                'description' => $t(
+                    'The elasticsearch watchdog module initialize a connection to the cluster successfully.'
+                ),
+                'severity' => REQUIREMENT_OK,
+                'value' => $t(
+                    'Cluster ID: @cluster_id',
+                    array(
+                      '@cluster_id' => $client_id
+                    )
+                ),
+              ),
+            );
+          }
+          else {
+            return array(
+              'elasticsearch_watchdog' => array(
+                'title' => $t('Elasticsearch Watchdog Status'),
+                'description' => $t(
+                    'Cluster status is not available. Please check cluster info at ' .
+                    '<a href="@clusters">Cluster info page</a> or check your Elasticsearch server.',
+                    array(
+                      '@clusters' => url(
+                          $elasticsearch_connector_path . '/clusters/' . $client_id . '/info',
+                          array()
+                      )
+                    )
+                ),
+                'severity' => REQUIREMENT_ERROR,
+                'value' => $t('Cluster information is not available.'),
+              ),
+            );
+          }
+        }
+        catch (Exception $e) {
+          error_log($e->getMessage());
+        }
+      }
+      else {
+        return array(
+          'elasticsearch_watchdog' => array(
+            'title' => $t('Elasticsearch Watchdog Status'),
+            'description' => $t(
+              'The object that Elasticsearch Connector module returns is not available. ' .
+              '<a href="@clusters">Check cluster settings</a> or check Elasticsearch cluster itself.',
+              array(
+                '@clusters' => url(
+                  $elasticsearch_connector_path . '/clusters/' . $client_id . '/edit',
+                  array()
+                )
+              )
+            ),
+            'severity' => REQUIREMENT_ERROR,
+            'value' => $t("Client object is not available."),
+          ),
+        );
+      }
+    }
+    else {
+      return array(
+        'elasticsearch_watchdog' => array(
+          'title' => $t('Elasticsearch Watchdog Status'),
+          'description' => $t(
+            'The module settings have not been configured. ' .
+            '<a href="@clusters">Please go and configure your settings.</a>',
+            array(
+              '@clusters' => url(
+                $elasticsearch_connector_path . '/watchdog',
+                array()
+              )
+            )
+          ),
+          'severity' => REQUIREMENT_ERROR,
+          'value' => $t('Module settings not setup correctly.'),
+        ),
+      );
+    }
+  }
+
+  return array();
+}
+
+/**
+ * Updating the watchdog settings to handle the new
+ */
+function elasticsearch_watchdog_update_7001() {
+  $new_val['cluster_id'] = variable_get('elasticsearch_watchdog_cluster_id', '');
+  if (!empty($new_val['cluster_id'])) {
+    module_load_include('inc', 'elasticsearch_watchdog', 'elasticsearch_watchdog.admin');
+
+    $old_alias = variable_get('elasticsearch_watchdog_index', 'elasticsearch_watchdog');
+    $old_template = variable_get('elasticsearch_watchdog_index', 'elasticsearch_watchdog') . '_template';
+
+    $new_val['index'] = variable_get('elasticsearch_watchdog_index', 'elasticsearch_watchdog') . '_index';
+    variable_set('elasticsearch_watchdog_cluster_id', $new_val);
+
+    $index_name = elasticsearch_watchdog_get_realindex_name();
+    $alias_name = elasticsearch_watchdog_get_index_name();
+
+    $client = elasticsearch_connector_get_client_by_id($new_val['cluster_id']);
+    if ($client) {
+      try {
+        $client->indices()->deleteAlias(array(
+          'index' => $index_name,
+          'name' => $old_alias
+        ));
+
+        $client->indices()->putAlias(array(
+          'index' => $index_name,
+          'name' => $alias_name,
+        ));
+
+        $client->indices()->deleteTemplate(array(
+          'name' => $old_template
+        ));
+
+      }
+      catch (Exception $e) {
+        throw $e;
+      }
+    }
+  }
+}

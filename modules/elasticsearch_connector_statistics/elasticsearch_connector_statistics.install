@@ -1,0 +1,158 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Statistics module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function elasticsearch_connector_statistics_uninstall() {
+  if (!module_exists('elasticsearch_connector')) {
+    module_load_include('module', 'elasticsearch_connector');
+  }
+
+  module_load_include('module', 'elasticsearch_connector_statistics');
+
+  $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+  if ($client_id) {
+    $client = elasticsearch_connector_get_client_by_id($client_id);
+    if ($client) {
+      $index = elasticsearch_connector_statistics_get_cluster_vars('index');
+      $type =variable_get('elasticsearch_connector_statistics_type',  ELASTICSEARCH_CONNECTOR_STATS_DEFAULT_TYPE);
+
+      $index_exists = $client->indices()->exists(array(
+        'index' => $index,
+      ));
+
+      if ($index_exists) {
+        $client->indices()->deleteMapping(array(
+          'index' => $index,
+          'type'  => $type
+        ));
+
+        $result = $client->indices()->getMapping(array(
+          'index' => $index,
+        ));
+
+        if (empty($result)) {
+          $client->indices()->delete(array(
+            'index' => $index,
+          ));
+        }
+      }
+    }
+  }
+
+  // Remove variables.
+  variable_del('elasticsearch_connector_statistics_count_content_views');
+  variable_del('elasticsearch_connector_statistics_count_content_views_ajax');
+  variable_del('elasticsearch_connector_statistics_enable_access_log');
+  variable_del('elasticsearch_connector_statistics_block_top_day_num');
+  variable_del('elasticsearch_connector_statistics_block_top_all_num');
+  variable_del('elasticsearch_connector_statistics_cluster');
+  variable_del('elasticsearch_connector_statistics_ttl');
+  variable_del('elasticsearch_connector_statistics_type');
+}
+
+/**
+ * Implements hook_requirements().
+ *
+ * Check the requirements the module needs to run correctly.
+ */
+function elasticsearch_connector_statistics_requirements($phase) {
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    $elasticsearch_connector_path = elasticsearch_connector_main_settings_path();
+    $client_id = elasticsearch_connector_statistics_get_cluster_vars();
+    if (!empty($client_id)) {
+      $client = elasticsearch_connector_get_client_by_id($client_id);
+      if ($client) {
+        try {
+          $info = $client->info();
+          if (!empty($info) && elasticsearch_connector_check_status($info)) {
+            return array(
+              'elasticsearch_connector_statistics' => array(
+                'title' => $t('Elasticsearch Connector Statistics Status'),
+                'description' => $t(
+                    'The elasticsearch statistics module initialized a connection to the cluster successfully.'
+                ),
+                'severity' => REQUIREMENT_OK,
+                'value' => $t(
+                    'Cluster ID: @cluster_id',
+                    array(
+                      '@cluster_id' => $client_id
+                    )
+                ),
+              ),
+            );
+          }
+          else {
+            return array(
+              'elasticsearch_connector_statistics' => array(
+                'title' => $t('Elasticsearch Connector Statistics Status'),
+                'description' => $t(
+                    'Cluster status is not available. Please check cluster info at ' .
+                    '<a href="@clusters">Cluster info page</a> or check your Elasticsearch server.',
+                    array(
+                      '@clusters' => url(
+                          $elasticsearch_connector_path . '/clusters/' . $client_id . '/info',
+                          array()
+                      )
+                    )
+                ),
+                'severity' => REQUIREMENT_ERROR,
+                'value' => $t('Cluster information is not available.'),
+              ),
+            );
+          }
+        }
+        catch (Exception $e) {
+          error_log($e->getMessage());
+        }
+      }
+      else {
+        return array(
+          'elasticsearch_connector_statistics' => array(
+            'title' => $t('Elasticsearch Connector Statistics Status'),
+            'description' => $t(
+                'The object that Elasticsearch Connector module returns is not available. ' .
+                '<a href="@clusters">Check cluster settings</a> or check Elasticsearch cluster itself.',
+                array(
+                  '@clusters' => url(
+                      $elasticsearch_connector_path . '/clusters/' . $client_id . '/edit',
+                      array()
+                  )
+                )
+            ),
+            'severity' => REQUIREMENT_ERROR,
+            'value' => $t("Client object is not available."),
+          ),
+        );
+      }
+    }
+    else {
+      return array(
+        'elasticsearch_connector_statistics' => array(
+          'title' => $t('Elasticsearch Connector Statistics Status'),
+          'description' => $t(
+              'The module settings have not been configured. ' .
+              '<a href="@clusters">Please go and configure your settings.</a>',
+              array(
+                '@clusters' => url(
+                    $elasticsearch_connector_path . '/statistics',
+                    array()
+                )
+              )
+          ),
+          'severity' => REQUIREMENT_ERROR,
+          'value' => $t('Module settings not setup correctly.'),
+        ),
+      );
+    }
+  }
+
+  return array();
+}
