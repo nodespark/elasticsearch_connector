@@ -2,6 +2,7 @@
 
 namespace Drupal\elasticsearch_connector_views\Plugin\views\query;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
@@ -360,12 +361,12 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
     $filter = array();
     foreach ($where as $wh) {
       foreach ($wh['conditions'] as $cond) {
-        $filter[drupal_strtolower($wh['type'])][] = $cond['field'];
+        $filter[Unicode::strtolower($wh['type'])][] = $cond['field'];
       }
     }
 
     if (count($filter) > 1) {
-      $filter = array(drupal_strtolower($this->group_operator) => $filter);
+      $filter = array(Unicode::strtolower($this->group_operator) => $filter);
     }
 
     return $filter;
@@ -399,10 +400,9 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       $client = $this->elasticsearchClient;
       if ($client) {
         $view->execute_time = microtime(TRUE) - $start;
-        // Execute the search.
       }
 
-      // Execute search.
+      // Execute the search.
       $response = $client->search(
         array(
           'index' => $index,
