@@ -94,9 +94,13 @@ function elasticsearch_connector_views_views_data() {
  * Handle the fields mapping and handle nested data types.
  *
  * @param string $base_table
+ *   The base table value.
  * @param array $data
+ *   Data array.
  * @param array $fields
+ *   Fields array.
  * @param string $base_field_name
+ *   Base field name.
  */
 function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fields, $base_field_name = '') {
   if (!empty($fields)) {
