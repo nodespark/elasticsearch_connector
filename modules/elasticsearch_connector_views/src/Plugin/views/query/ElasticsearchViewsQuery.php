@@ -134,7 +134,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
    *   The logger to use.
    */
   public function getLogger() {
-    return $this->logger ? : \Drupal::logger('elasticsearch_connector_views');
+    return $this->logger ?: \Drupal::logger('elasticsearch_connector_views');
   }
 
   /**
@@ -172,9 +172,13 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
 
   /**
    * @param $table
+   *   Table name.
    * @param $field
+   *   Field name.
    * @param string $alias
+   *   Alias.
    * @param array $params
+   *   Params array.
    */
   public function addField($table, $field, $alias = '', $params = array()) {
     $this->fields[$field] = $field;
