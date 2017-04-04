@@ -46,7 +46,7 @@ class ElasticsearchViewsEntity extends ElasticsearchViewsStandard {
    *   The entity entity display repository.
    */
   public function getEntityDisplayRepository() {
-    return $this->entityDisplayRepository ? : \Drupal::service('entity_display.repository');
+    return $this->entityDisplayRepository ?: \Drupal::service('entity_display.repository');
   }
 
   /**
