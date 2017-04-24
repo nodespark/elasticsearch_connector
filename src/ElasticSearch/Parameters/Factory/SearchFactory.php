@@ -5,7 +5,6 @@ namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Builder\SearchBuilder;
 use Drupal\search_api\Item\FieldInterface;
 use Drupal\search_api\Query\QueryInterface;
-use Drupal\search_api\Utility\Utility as SearchApiUtility;
 
 /**
  * Class SearchFactory.
@@ -41,11 +40,13 @@ class SearchFactory {
     $results = $query->getResults();
     $results->setExtraData('elasticsearch_response', $response);
     $results->setResultCount($response['hits']['total']);
+    /** @var \Drupal\search_api\Utility\FieldsHelper $fields_helper */
+    $fields_helper = \Drupal::getContainer()->get('search_api.fields_helper');
 
     // Add each search result to the results array.
     if (!empty($response['hits']['hits'])) {
       foreach ($response['hits']['hits'] as $result) {
-        $result_item = SearchApiUtility::createItem($index, $result['_id']);
+        $result_item = $fields_helper->createItem($index, $result['_id']);
         $result_item->setScore($result['_score']);
 
         // Set each item in _source as a field in Search API.
@@ -56,13 +57,7 @@ class SearchFactory {
           }
           $field = $index->getField($elasticsearch_property_id);
           if (!$field instanceof FieldInterface) {
-            $field = SearchApiUtility::createField(
-              $index,
-              $elasticsearch_property_id,
-              [
-                'property_path' => $elasticsearch_property_id,
-              ]
-            );
+            $field = $fields_helper->createField($index, $elasticsearch_property_id, ['property_path' => $elasticsearch_property_id]);
           }
           $field->setValues($elasticsearch_property);
           $result_item->setField($elasticsearch_property_id, $field);
