@@ -29,6 +29,9 @@ use nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms;
 use nodespark\DESConnector\Elasticsearch\Aggregations\Metrics\Stats;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Plugin\PluginFormInterface;
+use Drupal\search_api\Plugin\PluginFormTrait;
+
 
 /**
  * @SearchApiBackend(
@@ -37,7 +40,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   description = @Translation("Index items using an Elasticsearch server.")
  * )
  */
-class SearchApiElasticsearchBackend extends BackendPluginBase {
+class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginFormInterface {
+
+  use PluginFormTrait;
 
   /** @var \Drupal\Core\Config\Config */
   protected $elasticsearchSettings;
@@ -187,20 +192,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       '#description' => t('Select the cluster you want to handle the connections.'),
     ];
     return $form;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
-    parent::validateConfigurationForm($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-    parent::submitConfigurationForm($form, $form_state);
   }
 
   /**
