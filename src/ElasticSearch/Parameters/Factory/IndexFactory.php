@@ -92,7 +92,7 @@ class IndexFactory {
     $params = IndexFactory::index($index, TRUE);
 
     foreach ($items as $id => $item) {
-      $data = ['id' => $id];
+      $data = [];
       /** @var FieldInterface $field */
       foreach ($item as $name => $field) {
         $field_type = $field->getType();
@@ -115,7 +115,7 @@ class IndexFactory {
           $data[$field->getFieldIdentifier()] = $values;
         }
       }
-      $params['body'][] = ['index' => ['_id' => $data['id']]];
+      $params['body'][] = ['index' => ['_id' => $id]];
       $params['body'][] = $data;
     }
 
