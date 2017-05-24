@@ -31,7 +31,7 @@ class ElasticsearchViewsStringFilter extends FilterPluginBase {
       $identifier = $this->options['expose']['identifier'];
 
       if (empty($this->options['expose']['use_operator']) || empty($this->options['expose']['operator_id'])) {
-        // exposed and locked.
+        // Exposed and locked.
         $which = in_array($this->operator, $this->operatorValues(1)) ? 'value' : 'none';
       }
       else {
@@ -66,11 +66,14 @@ class ElasticsearchViewsStringFilter extends FilterPluginBase {
       // Ensure there is something in the 'value'.
       $form['value'] = array(
         '#type' => 'value',
-        '#value' => NULL
+        '#value' => NULL,
       );
     }
   }
 
+  /**
+   * Helper function to define Options.
+   */
   protected function defineOptions() {
     $options = parent::defineOptions();
 
@@ -79,6 +82,9 @@ class ElasticsearchViewsStringFilter extends FilterPluginBase {
     return $options;
   }
 
+  /**
+   * Helper function to build Admin Summary.
+   */
   public function adminSummary() {
     if ($this->isAGroup()) {
       return $this->t('grouped');
@@ -98,6 +104,9 @@ class ElasticsearchViewsStringFilter extends FilterPluginBase {
     return $output;
   }
 
+  /**
+   * Helper function to build operator values.
+   */
   protected function operatorValues($values = 1) {
     $options = array();
     foreach ($this->operators() as $id => $info) {
@@ -122,9 +131,9 @@ class ElasticsearchViewsStringFilter extends FilterPluginBase {
   }
 
   /**
-   *
+   * Helper function to define opertators.
    */
-  function operators() {
+  public function operators() {
     $operators = array(
       '=' => array(
         'title' => $this->t('Is equal to'),
@@ -157,7 +166,7 @@ class ElasticsearchViewsStringFilter extends FilterPluginBase {
         'values' => 1,
       ),
     );
-    // if the definition allows for the empty operator, add it.
+    // If the definition allows for the empty operator, add it.
     if (!empty($this->definition['allow empty'])) {
       $operators += array(
         'empty' => array(
@@ -179,7 +188,7 @@ class ElasticsearchViewsStringFilter extends FilterPluginBase {
   }
 
   /**
-   *
+   * Helper function to query.
    */
   public function query() {
 
