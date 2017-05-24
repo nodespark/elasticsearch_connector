@@ -30,8 +30,8 @@ class FilterFactory {
 
         case '=':
           $filter = [
-            'not' => [
-              'filter' => [
+            'bool' => [
+              'must_not' => [
                 'exists' => ['field' => $condition->getField()],
               ],
             ],
