@@ -55,10 +55,7 @@ class SearchFactory {
           if (!is_array($elasticsearch_property)) {
             $elasticsearch_property = [$elasticsearch_property];
           }
-          $field = $index->getField($elasticsearch_property_id);
-          if (!$field instanceof FieldInterface) {
-            $field = $fields_helper->createField($index, $elasticsearch_property_id, ['property_path' => $elasticsearch_property_id]);
-          }
+          $field = $fields_helper->createField($index, $elasticsearch_property_id, ['property_path' => $elasticsearch_property_id]);
           $field->setValues($elasticsearch_property);
           $result_item->setField($elasticsearch_property_id, $field);
         }
