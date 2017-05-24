@@ -436,6 +436,13 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function isAvailable() {
+    return $this->client->isClusterOk();
+  }
+
+  /**
    * Fill the aggregation array of the request.
    *
    * @param \Drupal\search_api\Query\QueryInterface $query
