@@ -94,6 +94,14 @@ class SearchBuilder {
       $query_body['match_all'] = [];
     }
 
+    $exclude_source_fields = $this->query->getOption('elasticsearch_connector_exclude_source_fields', array());
+
+    if (!empty($exclude_source_fields)) {
+      $this->body['_source'] = [
+        'excludes' => $exclude_source_fields
+      ];
+    }
+
     $params['body'] = $this->body;
     // Preserve the options for further manipulation if necessary.
     $this->query->setOption('ElasticParams', $params);
