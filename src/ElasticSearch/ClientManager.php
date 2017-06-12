@@ -76,7 +76,8 @@ class ClientManager implements ClientManagerInterface {
 
       $this->moduleHandler->alter(
         'elasticsearch_connector_load_library_options',
-        $options
+        $options,
+        $cluster
       );
 
       $this->clients[$hash] = $this->clientManagerFactory->create($options);
