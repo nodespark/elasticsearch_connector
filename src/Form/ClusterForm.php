@@ -77,6 +77,7 @@ class ClusterForm extends EntityForm {
         'Enter the administrative cluster name that will be your Elasticsearch cluster unique identifier.'
       ),
       '#required' => TRUE,
+      '#weight' => 1,
     );
 
     $form['cluster_id'] = array(
@@ -93,6 +94,7 @@ class ClusterForm extends EntityForm {
       ),
       '#required' => TRUE,
       '#disabled' => !empty($this->entity->cluster_id),
+      '#weight' => 2,
     );
 
     $form['url'] = array(
@@ -106,6 +108,7 @@ class ClusterForm extends EntityForm {
         'Examples: http://localhost:9200 or https://localhost:443.'
       ),
       '#required' => TRUE,
+      '#weight' => 3,
     );
 
     $form['status_info'] = $this->clusterFormInfo();
@@ -118,10 +121,12 @@ class ClusterForm extends EntityForm {
         'If the cluster connection is not specified the API will use the default connection.'
       ),
       '#default_value' => (empty($default) || (!empty($this->entity->cluster_id) && $this->entity->cluster_id == $default)) ? '1' : '0',
+      '#weight' => 4,
     );
 
     $form['options'] = array(
       '#tree' => TRUE,
+      '#weight' => 5,
     );
 
     $form['options']['multiple_nodes_connection'] = array(
@@ -132,6 +137,7 @@ class ClusterForm extends EntityForm {
         'Then the Elasticsearch client can distribute the query execution on random base between nodes.'
       ),
       '#default_value' => (!empty($this->entity->options['multiple_nodes_connection']) ? 1 : 0),
+      '#weight' => 5.1,
     );
 
     $form['status'] = array(
@@ -143,6 +149,7 @@ class ClusterForm extends EntityForm {
         Cluster::ELASTICSEARCH_CONNECTOR_STATUS_INACTIVE => t('Inactive'),
       ),
       '#required' => TRUE,
+      '#weight' => 6,
     );
 
     $form['options']['use_authentication'] = array(
@@ -153,6 +160,7 @@ class ClusterForm extends EntityForm {
       ),
       '#default_value' => (!empty($this->entity->options['use_authentication']) ? 1 : 0),
       '#suffix' => '<div id="hosting-iframe-container">&nbsp;</div>',
+      '#weight' => 5.2,
     );
 
     $form['options']['authentication_type'] = array(
@@ -170,6 +178,7 @@ class ClusterForm extends EntityForm {
           ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
         ),
       ),
+      '#weight' => 5.3,
     );
 
     $form['options']['username'] = array(
@@ -182,6 +191,7 @@ class ClusterForm extends EntityForm {
           ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
         ),
       ),
+      '#weight' => 5.4,
     );
 
     $form['options']['password'] = array(
@@ -194,6 +204,7 @@ class ClusterForm extends EntityForm {
           ':input[name="options[use_authentication]"]' => array('checked' => TRUE),
         ),
       ),
+      '#weight' => 5.5,
     );
 
     $form['options']['timeout'] = array(
@@ -205,6 +216,7 @@ class ClusterForm extends EntityForm {
         'After how many seconds the connection should timeout if there is no connection to Elasticsearch.'
       ),
       '#default_value' => (!empty($this->entity->options['timeout']) ? $this->entity->options['timeout'] : Cluster::ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT),
+      '#weight' => 5.6,
     );
   }
 

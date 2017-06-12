@@ -171,6 +171,7 @@ class IndexForm extends EntityForm {
       '#required' => TRUE,
       '#default_value' => '',
       '#description' => t('Enter the index name.'),
+      '#weight' => 1,
     );
 
     $form['index_id'] = array(
@@ -187,6 +188,7 @@ class IndexForm extends EntityForm {
       ),
       '#required' => TRUE,
       '#disabled' => !empty($this->entity->index_id),
+      '#weight' => 2,
     );
 
     // Here server refers to the elasticsearch cluster.
@@ -206,6 +208,7 @@ class IndexForm extends EntityForm {
       '#required' => TRUE,
       '#default_value' => 5,
       '#description' => t('Enter the number of shards for the index.'),
+      '#weight' => 3,
     );
 
     $form['num_of_replica'] = array(
@@ -213,6 +216,7 @@ class IndexForm extends EntityForm {
       '#title' => t('Number of replica'),
       '#default_value' => 1,
       '#description' => t('Enter the number of shards replicas.'),
+      '#weight' => 4,
     );
 
     $form['codec'] = array(
@@ -224,6 +228,7 @@ class IndexForm extends EntityForm {
         'default' => 'LZ4',
         'best_compression' => 'DEFLATE',
       ),
+      '#weight' => 5,
     );
   }
 
