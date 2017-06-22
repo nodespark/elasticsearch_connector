@@ -61,7 +61,9 @@ class ClientManager implements ClientManagerInterface {
           $cluster->getRawUrl(),
         ),
         'options' => array(),
-        'curl' => array(),
+        'curl' => array(
+          CURLOPT_CONNECTTIMEOUT => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : Cluster::ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT)
+        ),
       );
 
       if ($cluster->options['use_authentication']) {
