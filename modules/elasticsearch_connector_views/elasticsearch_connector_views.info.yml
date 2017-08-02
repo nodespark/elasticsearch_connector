@@ -7,4 +7,5 @@ package: Elasticsearch
 type: module
 dependencies:
  - views
+ - elasticsearch_connector
 version: VERSION
