@@ -461,6 +461,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
           break;
         default:
           $object = new Terms($key, $key);
+          if (!empty($facet['limit'])) {
+            $object->setSize($facet['limit']);
+          }
       }
 
       if (!empty($object)) {
