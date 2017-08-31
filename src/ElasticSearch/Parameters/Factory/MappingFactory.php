@@ -67,6 +67,11 @@ class MappingFactory {
           return [
             'type' => 'attachment',
           ];
+
+        case 'object':
+          return [
+            'type' => 'nested'
+          ];
       }
     }
     catch (ElasticsearchException $e) {

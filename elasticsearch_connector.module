@@ -548,3 +548,17 @@ function elasticsearch_connector_site_hash() {
   }
   return $hash;
 }
+
+/**
+ * Alter the mapping of Drupal data types to Search API data types.
+ *
+ * @param array $mapping
+ *   An array mapping all known (and supported) Drupal data types to their
+ *   corresponding Search API data types. A value of FALSE means that fields of
+ *   that type should be ignored by the Search API.
+ *
+ * @see \Drupal\search_api\Utility\DataTypeHelperInterface::getFieldTypeMapping()
+ */
+function elasticsearch_connector_search_api_field_type_mapping_alter(array &$mapping) {
+  $mapping['object'] = 'object';
+}

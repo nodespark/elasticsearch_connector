@@ -863,4 +863,12 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
   /* TODO: Implement the settings update feature. */
 
+  /**
+   * Enable support for the object data type
+   * @param string $type
+   * @return bool
+   */
+  public function supportsDataType($type) {
+    return in_array($type, ['object']);
+  }
 }
