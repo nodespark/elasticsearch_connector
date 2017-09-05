@@ -428,6 +428,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     $params = SearchFactory::search($query);
 
     try {
+      // Allow modules to alter the Elastic Search query.
+      $this->preQuery($query);
+
       // Do search.
       $response = $this->client->search($params)->getRawResponse();
       $results = SearchFactory::parseResult($query, $response);
@@ -436,6 +439,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
       if ($query->getOption('search_api_facets')) {
         $this->parseFacets($results, $query);
       }
+
+      // Allow modules to alter the Elastic Search Results.
+      $this->postQuery($results, $query, $response);
+
       return $results;
     }
     catch (\Exception $e) {
@@ -861,6 +868,33 @@ class SearchApiElasticsearchBackend extends BackendPluginBase {
     }
 
     return $result;
+  }
+
+  /**
+   * Allow custom changes before sending a search query to Elastic Search.
+   *
+   * This allows subclasses to apply custom changes before the query is sent to
+   * Solr.
+   *
+   * @param \Drupal\search_api\Query\QueryInterface $query
+   *   The \Drupal\search_api\Query\Query object representing the executed
+   *   search query.
+   */
+  protected function preQuery(QueryInterface $query) {
+  }
+
+  /**
+   * Allow custom changes before search results are returned for subclasses.
+   *
+   * @param \Drupal\search_api\Query\ResultSetInterface $results
+   *   The results array that will be returned for the search.
+   * @param \Drupal\search_api\Query\QueryInterface $query
+   *   The \Drupal\search_api\Query\Query object representing the executed
+   *   search query.
+   * @param object $response
+   *   The response object returned by Elastic Search.
+   */
+  protected function postQuery(ResultSetInterface $results, QueryInterface $query, $response) {
   }
 
   /* TODO: Implement the settings update feature. */
