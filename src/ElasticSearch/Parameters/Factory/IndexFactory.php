@@ -168,11 +168,11 @@ class IndexFactory {
 
     $index_machine_name = is_string($index) ? $index : $index->id();
 
-    return preg_replace(
+    return strtolower(preg_replace(
       '/[^A-Za-z0-9_]+/',
       '',
       'elasticsearch_index_' . $site_database . '_' . $index_machine_name
-    );
+    ));
   }
 
 }
