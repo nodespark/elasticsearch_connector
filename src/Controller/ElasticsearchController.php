@@ -13,21 +13,24 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class ElasticsearchController extends ControllerBase {
 
   /**
-   * @var ClientManagerInterface
+   * Elasticsearch client manager service.
+   *
+   * @var \Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface
    */
   private $clientManager;
 
   /**
    * ElasticsearchController constructor.
    *
-   * @param ClientManagerInterface $client_manager
+   * @param \Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface $client_manager
+   *   Elasticsearch client manager service.
    */
   public function __construct(ClientManagerInterface $client_manager) {
     $this->clientManager = $client_manager;
   }
 
   /**
-   *
+   * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
     return new static (
@@ -38,7 +41,7 @@ class ElasticsearchController extends ControllerBase {
   /**
    * Displays information about an Elasticsearch Cluster.
    *
-   * @param \Drupal\elasticsearch_connector\Entity\Cluster $cluster
+   * @param \Drupal\elasticsearch_connector\Entity\Cluster $elasticsearch_cluster
    *   An instance of Cluster.
    *
    * @return array
@@ -46,12 +49,12 @@ class ElasticsearchController extends ControllerBase {
    */
   public function page(Cluster $elasticsearch_cluster) {
     // Build the Search API index information.
-    $render = array(
-      'view' => array(
+    $render = [
+      'view' => [
         '#theme' => 'elasticsearch_cluster',
         '#cluster' => $elasticsearch_cluster,
-      ),
-    );
+      ],
+    ];
     // Check if the cluster is enabled and can be written to.
     if ($elasticsearch_cluster->cluster_id) {
       $render['form'] = $this->formBuilder()->getForm(
@@ -59,6 +62,7 @@ class ElasticsearchController extends ControllerBase {
         $elasticsearch_cluster
       );
     }
+
     return $render;
   }
 
@@ -79,20 +83,19 @@ class ElasticsearchController extends ControllerBase {
   /**
    * Complete information about the Elasticsearch Client.
    *
-   * @param Cluster $elasticsearch_cluster
+   * @param \Drupal\elasticsearch_connector\Entity\Cluster $elasticsearch_cluster
+   *   Elasticsearch cluster.
    *
-   * @return mixed
-   *
-   * @throws \Exception
-   *   Exception.
+   * @return array
+   *   Render array.
    */
   public function getInfo(Cluster $elasticsearch_cluster) {
     // TODO: Get the statistics differently.
     $client_connector = $this->clientManager->getClientForCluster($elasticsearch_cluster);
 
-    $node_rows = array();
-    $cluster_statistics_rows = array();
-    $cluster_health_rows = array();
+    $node_rows = [];
+    $cluster_statistics_rows = [];
+    $cluster_health_rows = [];
 
     if ($client_connector->isClusterOk()) {
       // Nodes.
@@ -101,19 +104,19 @@ class ElasticsearchController extends ControllerBase {
 
       $total_docs = 0;
       $total_size = 0;
-      $node_rows = array();
+      $node_rows = [];
       if (!empty($node_stats['nodes'])) {
         // TODO: Better format the results in order to build the
         // correct output.
         foreach ($node_stats['nodes'] as $node_id => $node_properties) {
-          $row = array();
-          $row[] = array('data' => $node_properties['name']);
-          $row[] = array('data' => $node_properties['indices']['docs']['count']);
-          $row[] = array(
+          $row = [];
+          $row[] = ['data' => $node_properties['name']];
+          $row[] = ['data' => $node_properties['indices']['docs']['count']];
+          $row[] = [
             'data' => format_size(
               $node_properties['indices']['store']['size_in_bytes']
             ),
-          );
+          ];
           $total_docs += $node_properties['indices']['docs']['count'];
           $total_size += $node_properties['indices']['store']['size_in_bytes'];
           $node_rows[] = $row;
@@ -121,35 +124,35 @@ class ElasticsearchController extends ControllerBase {
       }
 
       $cluster_status = $client_connector->getClusterInfo();
-      $cluster_statistics_rows = array(
-        array(
-          array(
+      $cluster_statistics_rows = [
+        [
+          [
             'data' => $cluster_status['health']['number_of_nodes'] . ' ' . t(
                 'Nodes'
             ),
-          ),
-          array(
+          ],
+          [
             'data' => $cluster_status['health']['active_shards'] + $cluster_status['health']['unassigned_shards'] . ' ' . t(
                 'Total Shards'
             ),
-          ),
-          array(
+          ],
+          [
             'data' => $cluster_status['health']['active_shards'] . ' ' . t(
                 'Successful Shards'
             ),
-          ),
-          array(
+          ],
+          [
             'data' => count(
                 $cluster_status['state']['metadata']['indices']
             ) . ' ' . t('Indices'),
-          ),
-          array('data' => $total_docs . ' ' . t('Total Documents')),
-          array('data' => format_size($total_size) . ' ' . t('Total Size')),
-        ),
-      );
+          ],
+          ['data' => $total_docs . ' ' . t('Total Documents')],
+          ['data' => format_size($total_size) . ' ' . t('Total Size')],
+        ],
+      ];
 
-      $cluster_health_rows = array();
-      $cluster_health_mapping = array(
+      $cluster_health_rows = [];
+      $cluster_health_mapping = [
         'cluster_name' => t('Cluster name'),
         'status' => t('Status'),
         'timed_out' => t('Time out'),
@@ -169,52 +172,52 @@ class ElasticsearchController extends ControllerBase {
         'active_shards_percent_as_number' => t(
           'Active shards percent as number'
         ),
-      );
+      ];
 
       foreach ($cluster_status['health'] as $health_key => $health_value) {
-        $row = array();
-        $row[] = array('data' => $cluster_health_mapping[$health_key]);
-        $row[] = array('data' => ($health_value === FALSE ? 'False' : $health_value));
+        $row = [];
+        $row[] = ['data' => $cluster_health_mapping[$health_key]];
+        $row[] = ['data' => ($health_value === FALSE ? 'False' : $health_value)];
         $cluster_health_rows[] = $row;
       }
     }
 
-    $output['cluster_statistics_wrapper'] = array(
+    $output['cluster_statistics_wrapper'] = [
       '#type' => 'fieldset',
       '#title' => t('Cluster statistics'),
       '#collapsible' => TRUE,
       '#collapsed' => FALSE,
-      '#attributes' => array(),
-    );
+      '#attributes' => [],
+    ];
 
-    $output['cluster_statistics_wrapper']['nodes'] = array(
+    $output['cluster_statistics_wrapper']['nodes'] = [
       '#theme' => 'table',
-      '#header' => array(
-        array('data' => t('Node name')),
-        array('data' => t('Documents')),
-        array('data' => t('Size')),
-      ),
+      '#header' => [
+        ['data' => t('Node name')],
+        ['data' => t('Documents')],
+        ['data' => t('Size')],
+      ],
       '#rows' => $node_rows,
-      '#attributes' => array(),
-    );
+      '#attributes' => [],
+    ];
 
-    $output['cluster_statistics_wrapper']['cluster_statistics'] = array(
+    $output['cluster_statistics_wrapper']['cluster_statistics'] = [
       '#theme' => 'table',
-      '#header' => array(
-        array('data' => t('Total'), 'colspan' => 6),
-      ),
+      '#header' => [
+        ['data' => t('Total'), 'colspan' => 6],
+      ],
       '#rows' => $cluster_statistics_rows,
-      '#attributes' => array('class' => array('admin-elasticsearch-statistics')),
-    );
+      '#attributes' => ['class' => ['admin-elasticsearch-statistics']],
+    ];
 
-    $output['cluster_health'] = array(
+    $output['cluster_health'] = [
       '#theme' => 'table',
-      '#header' => array(
-        array('data' => t('Cluster Health'), 'colspan' => 2),
-      ),
+      '#header' => [
+        ['data' => t('Cluster Health'), 'colspan' => 2],
+      ],
       '#rows' => $cluster_health_rows,
-      '#attributes' => array('class' => array('admin-elasticsearch-health')),
-    );
+      '#attributes' => ['class' => ['admin-elasticsearch-health']],
+    ];
 
     return $output;
   }

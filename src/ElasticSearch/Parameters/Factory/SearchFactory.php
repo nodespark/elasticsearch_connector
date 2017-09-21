@@ -15,8 +15,10 @@ class SearchFactory {
    * Build search parameters from a query interface.
    *
    * @param \Drupal\search_api\Query\QueryInterface $query
+   *   Search API query object.
    *
    * @return array
+   *   Array of parameters to send along to the Elasticsearch _search endpoint.
    */
   public static function search(QueryInterface $query) {
     $builder = new SearchBuilder($query);
@@ -25,13 +27,17 @@ class SearchFactory {
   }
 
   /**
-   * Parse a elastic search response into a ResultSetInterface
+   * Parse a Elasticsearch response into a ResultSetInterface.
+   *
    * TODO: Add excerpt handling.
    *
    * @param \Drupal\search_api\Query\QueryInterface $query
+   *   Search API query.
    * @param array $response
+   *   Raw response array back from Elasticsearch.
    *
    * @return \Drupal\search_api\Query\ResultSetInterface
+   *   The results of the search.
    */
   public static function parseResult(QueryInterface $query, array $response) {
     $index = $query->getIndex();

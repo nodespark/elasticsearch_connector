@@ -33,8 +33,8 @@ class ClusterRouteProvider implements EntityRouteProviderInterface {
           'parameters' => [
             'elasticsearch_cluster' => [
               'with_config_overrides' => TRUE,
-            ]
-          ]
+            ],
+          ],
         ]
       );
     $route_collection->add('entity.elasticsearch_cluster.canonical', $route);

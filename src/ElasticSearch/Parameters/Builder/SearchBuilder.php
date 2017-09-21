@@ -7,7 +7,7 @@ use Drupal\Component\Utility\Unicode;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\FilterFactory;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory;
-use Drupal\search_api\Entity\Index;
+use Drupal\search_api\ParseMode\ParseModeInterface;
 use Drupal\search_api\Query\Condition;
 use Drupal\search_api\Query\ConditionGroupInterface;
 use Drupal\search_api\Query\QueryInterface;
@@ -17,34 +17,49 @@ use Elasticsearch\Common\Exceptions\ElasticsearchException;
  * Class SearchBuilder.
  */
 class SearchBuilder {
-
   use StringTranslationTrait;
 
   /**
-   * @var Index
+   * Search API Index entity.
+   *
+   * @var \Drupal\search_api\Entity\Index
    */
   protected $index;
 
   /**
+   * Search API Query object.
+   *
    * @var \Drupal\search_api\Query\QueryInterface
    */
   protected $query;
 
+  /**
+   * Elasticsearch Query DSL.
+   *
+   * Will be converted to JSON and sent in the request body as the Elasticsearch
+   * query DSL.
+   *
+   * @var array
+   */
   protected $body;
 
   /**
    * ParameterBuilder constructor.
    *
    * @param \Drupal\search_api\Query\QueryInterface $query
+   *   Search API Query object.
    */
   public function __construct(QueryInterface $query) {
     $this->query = $query;
     $this->index = $query->getIndex();
-    $this->body = array();
+    $this->body = [];
   }
 
   /**
+   * Build up the body of the request to the Elasticsearch _search endpoint.
+   *
    * @return array
+   *   Array or parameters to send along to the Elasticsearch _search endpoint.
    */
   public function build() {
     // Query options.
@@ -94,11 +109,11 @@ class SearchBuilder {
       $query_body['match_all'] = [];
     }
 
-    $exclude_source_fields = $this->query->getOption('elasticsearch_connector_exclude_source_fields', array());
+    $exclude_source_fields = $this->query->getOption('elasticsearch_connector_exclude_source_fields', []);
 
     if (!empty($exclude_source_fields)) {
       $this->body['_source'] = [
-        'excludes' => $exclude_source_fields
+        'excludes' => $exclude_source_fields,
       ];
     }
 
@@ -110,9 +125,16 @@ class SearchBuilder {
   }
 
   /**
-   * Helper function return associative array with query options.
+   * Helper function to return associative array with query options.
    *
    * @return array
+   *   Associative array with the following keys:
+   *   - query_offset: Pager offset.
+   *   - query_limit: Number of items to return in the query.
+   *   - query_search_string: Main full text query.
+   *   - query_search_filter: Filters.
+   *   - sort: Sort options.
+   *   - mlt: More like this search options.
    */
   protected function getSearchQueryOptions() {
     // Query options.
@@ -142,7 +164,7 @@ class SearchBuilder {
 
       // Full text fields in which to perform the search.
       $query_full_text_fields = $this->index->getFulltextFields();
-      $query_fields = array();
+      $query_fields = [];
       foreach ($query_full_text_fields as $full_text_field_name) {
         $full_text_field = $index_fields[$full_text_field_name];
         $query_fields[] = $full_text_field->getFieldIdentifier() . '^' . $full_text_field->getBoost();
@@ -209,17 +231,15 @@ class SearchBuilder {
    *
    * TODO: better handling of parse modes.
    *
-   * @param array $keys
-   * @param string $parse_mode
-   * @param array $full_text_fields
+   * @param string[] $keys
+   *   Array of search keys, each one a string.
+   * @param \Drupal\search_api\ParseMode\ParseModeInterface $parse_mode
+   *   Parse mode in use.
    *
    * @return string
+   *   Full text search query string.
    */
-  protected function flattenKeys(
-    array $keys,
-    $parse_mode = '',
-    $full_text_fields = []
-  ) {
+  protected function flattenKeys(array $keys, ParseModeInterface $parse_mode = NULL) {
     $conjunction = isset($keys['#conjunction']) ? $keys['#conjunction'] : 'AND';
     $negation = !empty($keys['#negation']);
     $values = [];
@@ -256,14 +276,14 @@ class SearchBuilder {
   }
 
   /**
-   * Helper function that return Sort for query in search.
+   * Helper function that returns sort for query in search.
    *
    * @return array
+   *   Sort portion of the query.
    *
    * @throws \Exception
    */
   protected function getSortSearchQuery() {
-
     $index_fields = $this->index->getFields();
     $sort = [];
     $query_full_text_fields = $this->index->getFulltextFields();
@@ -287,7 +307,7 @@ class SearchBuilder {
       }
       else {
         // TODO: no silly exceptions...
-        throw new \Exception(t('Incorrect sorting!.'));
+        throw new \Exception(t('Incorrect sorting!'));
       }
 
     }
@@ -297,27 +317,23 @@ class SearchBuilder {
   /**
    * Recursively parse Search API condition group.
    *
-   * @param ConditionGroupInterface $condition_group
-   * @param array $index_fields
-   * @param string $ignored_field_id
+   * @param \Drupal\search_api\Query\ConditionGroupInterface $condition_group
+   *   The condition group object that holds all conditions that should be
+   *   expressed as filters.
+   * @param \Drupal\search_api\Item\FieldInterface[] $index_fields
+   *   An array of all indexed fields for the index, keyed by field identifier.
    *
-   * @return array|null
+   * @return array
+   *   Array of filter parameters to apply to query based on the given Search
+   *   API condition group.
    *
    * @throws \Exception
    */
-  protected function getQueryFilters(
-    ConditionGroupInterface $condition_group,
-    array $index_fields,
-    $ignored_field_id = ''
-  ) {
+  protected function getQueryFilters(ConditionGroupInterface $condition_group, array $index_fields) {
+    $filters = [];
 
-    if (empty($condition_group)) {
-      return NULL;
-    }
-    else {
+    if (!empty($condition_group)) {
       $conjunction = $condition_group->getConjunction();
-
-      $filters = [];
 
       foreach ($condition_group->getConditions() as $condition) {
         $filter = NULL;
@@ -325,9 +341,9 @@ class SearchBuilder {
         // Simple filter [field_id, value, operator].
         if ($condition instanceof Condition) {
 
-          if (!$condition->getField() || !$condition->getValue() || !$condition->getOperator()
-          ) {
-            // TODO: When using views the sort field is coming as a filter and messing with this section.
+          if (!$condition->getField() || !$condition->getValue() || !$condition->getOperator()) {
+            // TODO: When using views the sort field is coming as a filter and
+            // messing with this section.
             // throw new Exception(t('Incorrect filter criteria is using for searching!'));
           }
 
@@ -364,8 +380,7 @@ class SearchBuilder {
         elseif ($condition instanceof ConditionGroupInterface) {
           $nested_filters = $this->getQueryFilters(
             $condition,
-            $index_fields,
-            $ignored_field_id
+            $index_fields
           );
 
           if (!empty($nested_filters)) {
@@ -375,23 +390,28 @@ class SearchBuilder {
       }
 
       $filters = $this->setFiltersConjunction($filters, $conjunction);
-
-      return $filters;
     }
+
+    return $filters;
   }
 
   /**
-   * Helper function that set filters conjunction.
+   * Helper function to set filters conjunction.
    *
    * @param array $filters
+   *   Array of filter parameters to be passed along to Elasticsearch.
    * @param string $conjunction
+   *   The conjunction used by the corresponding Search API condition group –
+   *   either 'AND' or 'OR'.
    *
-   * @return array|null
+   * @return array
+   *   Returns the passed $filters array wrapped in an array keyed by 'should'
+   *   or 'must', as appropriate, based on the given conjunction.
    *
    * @throws \Exception
+   *   In case of an invalid $conjunction.
    */
   protected function setFiltersConjunction(array &$filters, $conjunction) {
-
     if ($conjunction === 'OR') {
       $filters = ['should' => $filters];
     }
@@ -413,7 +433,18 @@ class SearchBuilder {
     return ['bool' => $filters];
   }
 
-  protected function setMoreLikeThisQuery($query_options) {
+  /**
+   * Setup the More like this clause of the Elasticsearch query.
+   *
+   * Adjusts $this->body to have a more like this query.
+   *
+   * @param array $query_options
+   *   Array of query options. We're most interested here in the key of 'mlt',
+   *   which should contain the following keys:
+   *   - id: To be used as the like_text in the more_like_this query.
+   *   - fields: Array of fields.
+   */
+  protected function setMoreLikeThisQuery(array $query_options) {
     if (!empty($query_options['mlt'])) {
       $mlt_query['more_like_this'] = [];
       $mlt_query['more_like_this']['like_text'] = $query_options['mlt']['id'];
@@ -429,4 +460,5 @@ class SearchBuilder {
       $this->body['fields'] = array_values($query_options['mlt']['fields']);
     }
   }
+
 }

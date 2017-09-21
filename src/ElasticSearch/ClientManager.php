@@ -11,26 +11,29 @@ use nodespark\DESConnector\ClientFactoryInterface;
  */
 class ClientManager implements ClientManagerInterface {
 
-  /** @var \nodespark\DESConnector\ClientInterface[] */
+  /**
+   * Array of clients keyed by JSON encoded cluster URL and options.
+   *
+   * @var \nodespark\DESConnector\ClientInterface[]
+   */
   protected $clients = [];
 
   /**
-   * @var ModuleHandlerInterface
+   * Module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
   protected $moduleHandler;
 
   /**
-   * The class that implements
-   * \nodespark\DESConnector\ClientFactoryInterface.
+   * Client manager factory.
    *
-   * @var string
+   * @var \nodespark\DESConnector\ClientFactoryInterface
    */
   protected $clientManagerFactory;
 
   /**
-   * ConnectorManager constructor.
-   *
-   * @param ModuleHandlerInterface $module_handler
+   * {@inheritdoc}
    */
   public function __construct(ModuleHandlerInterface $module_handler, ClientFactoryInterface $clientManagerFactory) {
     $this->moduleHandler = $module_handler;
@@ -38,13 +41,7 @@ class ClientManager implements ClientManagerInterface {
   }
 
   /**
-   * Get the Elasticsearch client required by the functionality.
-   *
-   * @param Cluster $cluster
-   *
-   * @return \nodespark\DESConnector\ClientInterface
-   *
-   * @throws \Exception
+   * {@inheritdoc}
    */
   public function getClientForCluster(Cluster $cluster) {
     $hosts = [
@@ -56,15 +53,15 @@ class ClientManager implements ClientManagerInterface {
 
     $hash = json_encode($hosts);
     if (!isset($this->clients[$hash])) {
-      $options = array(
-        'hosts' => array(
+      $options = [
+        'hosts' => [
           $cluster->getRawUrl(),
-        ),
-        'options' => array(),
-        'curl' => array(
-          CURLOPT_CONNECTTIMEOUT => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : Cluster::ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT)
-        ),
-      );
+        ],
+        'options' => [],
+        'curl' => [
+          CURLOPT_CONNECTTIMEOUT => (!empty($cluster->options['timeout']) ? $cluster->options['timeout'] : Cluster::ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT),
+        ],
+      ];
 
       if ($cluster->options['use_authentication']) {
         $options['auth'] = [

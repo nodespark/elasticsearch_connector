@@ -1,11 +1,5 @@
 <?php
 
-/**
- *
- * TODO: Check for dependencies and remove them in order to properly test the
- *   code.
- */
-
 namespace Drupal\elasticsearch_connector\Plugin\search_api\backend;
 
 use Drupal\Component\Utility\Unicode;
@@ -32,8 +26,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\search_api\Plugin\PluginFormTrait;
 
-
 /**
+ * Elasticsearch Search API Backend definition.
+ *
+ * TODO: Check for dependencies and remove them in order to properly test the
+ * code.
+ *
  * @SearchApiBackend(
  *   id = "elasticsearch",
  *   label = @Translation("Elasticsearch"),
@@ -44,29 +42,59 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
   use PluginFormTrait;
 
-  /** @var \Drupal\Core\Config\Config */
+  /**
+   * Elasticsearch settings.
+   *
+   * @var \Drupal\Core\Config\Config
+   */
   protected $elasticsearchSettings;
 
-  /** @var int */
+  /**
+   * Cluster id.
+   *
+   * @var int
+   */
   protected $clusterId;
 
-  /** @var Cluster */
+  /**
+   * Cluster object.
+   *
+   * @var \Drupal\elasticsearch_connector\Entity\Cluster
+   */
   protected $cluster;
 
-  /** @var ClientInterface */
+  /**
+   * Elasticsearch client.
+   *
+   * @var \nodespark\DESConnector\ClientInterface
+   */
   protected $client;
 
-  /** @var \Drupal\Core\Form\FormBuilderInterface */
+  /**
+   * Form builder service.
+   *
+   * @var \Drupal\Core\Form\FormBuilderInterface
+   */
   protected $formBuilder;
 
-  /** @var \Drupal\Core\Extension\ModuleHandlerInterface */
+  /**
+   * Module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
   protected $moduleHandler;
 
-  /** @var ClientManagerInterface */
+  /**
+   * Client manager service.
+   *
+   * @var \Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface
+   */
   protected $clientManager;
 
   /**
-   * @var LoggerInterface
+   * Logger.
+   *
+   * @var \Psr\Log\LoggerInterface
    */
   protected $logger;
 
@@ -74,15 +102,23 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * SearchApiElasticsearchBackend constructor.
    *
    * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
    * @param string $plugin_id
+   *   The plugin_id for the plugin instance.
    * @param array $plugin_definition
+   *   The plugin implementation definition.
    * @param \Drupal\Core\Form\FormBuilderInterface $form_builder
+   *   Form builder service.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
-   * @param ClientManagerInterface $client_manager
+   *   Module handler service.
+   * @param \Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface $client_manager
+   *   Client manager service.
    * @param \Drupal\Core\Config\Config $elasticsearch_settings
-   * @param LoggerInterface $logger
+   *   Elasticsearch settings object.
+   * @param \Psr\Log\LoggerInterface $logger
+   *   Logger.
    *
-   * @throws SearchApiException
+   * @throws \Drupal\search_api\SearchApiException
    */
   public function __construct(
     array $configuration,
@@ -117,7 +153,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     $this->client = $this->clientManager->getClientForCluster(
       $this->cluster
     );
-
   }
 
   /**
@@ -182,7 +217,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       $options[$key] = $cluster->cluster_id;
     }
 
-    $options[Cluster::getDefaultCluster()] = t('Default cluster: ' . Cluster::getDefaultCluster());
+    $options[Cluster::getDefaultCluster()] = t('Default cluster: @name', ['@name' => Cluster::getDefaultCluster()]);
     $form['cluster_settings']['cluster'] = [
       '#type' => 'select',
       '#title' => t('Cluster'),
@@ -215,8 +250,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   }
 
   /**
-   * @return array
-   * @throws \Exception
+   * {@inheritdoc}
    */
   public function viewSettings() {
     $info = [];
@@ -279,7 +313,13 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   }
 
   /**
-   * {@inheritdoc}
+   * Create or re-create the given index's field mapping.
+   *
+   * @param \Drupal\search_api\IndexInterface $index
+   *   Index to update fields for.
+   *
+   * @return bool
+   *   TRUE on success, FALSE otherwise.
    */
   public function fieldsUpdated(IndexInterface $index) {
     $params = IndexFactory::index($index, TRUE);
@@ -349,7 +389,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       $response = $this->client->bulk(
         IndexFactory::bulkIndex($index, $items)
       );
-      // If error throw the error we have.
+      // If there were any errors, log them and throw an exception.
       if (!empty($response['errors'])) {
         foreach ($response['items'] as $item) {
           if (!empty($item['index']['status']) && $item['index']['status'] == '400') {
@@ -405,17 +445,17 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
     $params = IndexFactory::index($index, TRUE);
 
-    // Check elasticsearch index.
+    // Check Elasticsearch index.
     if (!$this->client->indices()->existsType($params)) {
       return $search_result;
     }
 
     // Add the facets to the request.
-    if($query->getOption('search_api_facets')) {
+    if ($query->getOption('search_api_facets')) {
       $this->addFacets($query);
     }
 
-    // Build Elastica query.
+    // Build Elasticsearch query.
     $params = SearchFactory::search($query);
 
     try {
@@ -446,10 +486,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * Fill the aggregation array of the request.
    *
    * @param \Drupal\search_api\Query\QueryInterface $query
+   *   Search API query.
    */
   protected function addFacets(QueryInterface $query) {
     foreach ($query->getOption('search_api_facets') as $key => $facet) {
-      $facet += array('type' => NULL);
+      $facet += ['type' => NULL];
 
       $object = NULL;
 
@@ -457,8 +498,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       switch ($facet['type']) {
         case 'stats':
           $object = new Stats($key, $key);
-
           break;
+
         default:
           $object = new Terms($key, $key);
           if (!empty($facet['limit'])) {
@@ -473,33 +514,35 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   }
 
   /**
-   * Parse the resultset and add the facet values.
+   * Parse the result set and add the facet values.
    *
    * @param \Drupal\search_api\Query\ResultSet $results
+   *   Result set, all items matched in a search.
    * @param \Drupal\search_api\Query\QueryInterface $query
+   *   Search API query object.
    */
   protected function parseFacets(ResultSet $results, QueryInterface $query) {
     $response = $results->getExtraData('elasticsearch_response');
     $facets = $query->getOption('search_api_facets');
 
     // Create an empty array that will be attached to the result object.
-    $attach = array();
+    $attach = [];
 
-    // Loop trough all the aggregations items.
+    // Loop through all the aggregations items.
     foreach ($response['aggregations'] as $key => $value) {
 
-      $terms = array();
+      $terms = [];
 
-      // Handle the stats different than the default terms options.
+      // Handle the stats differently from the default terms options.
       if (!empty($facets[$key]['type']) && $facets[$key]['type'] == 'stats') {
         $terms = $value;
       }
       else {
-        array_walk($value['buckets'], function($value) use (&$terms) {
-          $terms[] = array(
+        array_walk($value['buckets'], function ($value) use (&$terms) {
+          $terms[] = [
             'count' => $value['doc_count'],
-            'filter' => '"' . $value['key'] . '"'
-          );
+            'filter' => '"' . $value['key'] . '"',
+          ];
         });
       }
 
@@ -510,11 +553,13 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   }
 
   /**
-   * Helper function, check if the type exists.
+   * Helper function, check if the given index and type exists.
    *
-   * @param IndexInterface $index
+   * @param \Drupal\search_api\IndexInterface $index
+   *   Index object.
    *
-   * @return boolean
+   * @return bool
+   *   TRUE if the given index exists in Elasticsearch, otherwise FALSE.
    */
   protected function doesTypeExists(IndexInterface $index) {
     $params = IndexFactory::index($index, TRUE);
@@ -553,13 +598,19 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   /**
    * Helper function. Return date gap from two dates or timestamps.
    *
-   * @see facetapi_get_timestamp_gap()
-   *
-   * @param int $min
-   * @param int $max
+   * @param mixed $min
+   *   Start date or timestamp.
+   * @param mixed $max
+   *   End date or timestamp.
    * @param bool $timestamp
+   *   TRUE if the first two params are timestamps, FALSE otherwise. In the case
+   *   of FALSE, it's assumed the first two arguments are strings and they are
+   *   converted to timestamps using strtotime().
    *
    * @return string
+   *   One of 'NONE', 'YEAR', 'MONTH', or 'DAY' depending on the difference
+   *
+   * @see facetapi_get_timestamp_gap()
    */
   protected static function getDateGap($min, $max, $timestamp = TRUE) {
     if ($timestamp !== TRUE) {
@@ -592,16 +643,19 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * Helper function build facets in search.
    *
    * @param array $params
-   * @param QueryInterface $query
+   *   Array of parameters to be sent in the body of a _search endpoint
+   *   Elasticsearch request.
+   * @param \Drupal\search_api\Query\QueryInterface $query
+   *   Search API query object.
    */
   protected function addSearchFacets(array &$params, QueryInterface $query) {
 
-    // SEARCH API FACETS.
+    // Search API facets.
     $facets = $query->getOption('search_api_facets');
     $index_fields = $this->getIndexFields($query);
 
     if (!empty($facets)) {
-      // Loop trough facets.
+      // Loop through facets.
       foreach ($facets as $facet_id => $facet_info) {
         $field_id = $facet_info['field'];
         $facet = [$field_id => []];
@@ -610,6 +664,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
         if (!isset($index_fields[$field_id])) {
           continue;
         }
+        // TODO: missing function reference.
         $field_type = search_api_extract_inner_type($index_fields[$field_id]['type']);
 
         // TODO: handle different types (GeoDistance and so on). See the
@@ -635,7 +690,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   }
 
   /**
-   * Helper function that add options and return facet.
+   * Helper function that adds options and returns facet.
    *
    * @param array $facet
    * @param QueryInterface $query
@@ -867,11 +922,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   /* TODO: Implement the settings update feature. */
 
   /**
-   * Enable support for the object data type
-   * @param string $type
-   * @return bool
+   * {@inheritdoc}
    */
   public function supportsDataType($type) {
     return in_array($type, ['object']);
   }
+
 }
