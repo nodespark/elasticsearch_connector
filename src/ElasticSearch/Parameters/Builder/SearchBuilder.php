@@ -17,25 +17,37 @@ use Elasticsearch\Common\Exceptions\ElasticsearchException;
  * Class SearchBuilder.
  */
 class SearchBuilder {
-
   use StringTranslationTrait;
 
   /**
-   * @var Index
+   * Search API Index entity.
+   *
+   * @var \Drupal\search_api\Entity\Index
    */
   protected $index;
 
   /**
+   * Search API Query object.
+   *
    * @var \Drupal\search_api\Query\QueryInterface
    */
   protected $query;
 
+  /**
+   * Elasticsearch Query DSL.
+   *
+   * Will be converted to JSON and sent in the request body as the Elasticsearch
+   * query DSL.
+   *
+   * @var array
+   */
   protected $body;
 
   /**
    * ParameterBuilder constructor.
    *
    * @param \Drupal\search_api\Query\QueryInterface $query
+   *   Search API Query object.
    */
   public function __construct(QueryInterface $query) {
     $this->query = $query;
@@ -44,7 +56,10 @@ class SearchBuilder {
   }
 
   /**
+   * Build up the body of the request to the Elasticsearch _search endpoint.
+   *
    * @return array
+   *   Array or parameters to send along to the Elasticsearch _search endpoint.
    */
   public function build() {
     // Query options.
@@ -98,7 +113,7 @@ class SearchBuilder {
 
     if (!empty($exclude_source_fields)) {
       $this->body['_source'] = [
-        'excludes' => $exclude_source_fields
+        'excludes' => $exclude_source_fields,
       ];
     }
 

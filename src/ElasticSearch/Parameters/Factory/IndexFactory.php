@@ -5,7 +5,7 @@ namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 use Drupal\search_api\IndexInterface;
 
 /**
- * Class IndexFactory.
+ * Create Elasticsearch Indices.
  */
 class IndexFactory {
 
@@ -21,10 +21,15 @@ class IndexFactory {
    * ['fields']      = (list) Default comma-separated list of fields to return
    * in the response for updates.
    *
-   * @param IndexInterface $index
+   * @param \Drupal\search_api\IndexInterface $index
+   *   Index to create.
    * @param bool $with_type
+   *   Should the index be created with a type.
    *
    * @return array
+   *   Associative array with the following keys:
+   *   - index: The name of the index on the Elasticsearch server.
+   *   - type(optional): The name of the type to use for the given index.
    */
   public static function index(IndexInterface $index, $with_type = FALSE) {
     $params = [];
@@ -84,16 +89,20 @@ class IndexFactory {
    * Build parameters to bulk delete indexes.
    *
    * @param \Drupal\search_api\IndexInterface $index
+   *   Index object.
    * @param \Drupal\search_api\Item\ItemInterface[] $items
+   *   An array of items to be indexed, keyed by their item IDs.
    *
    * @return array
+   *   Array of parameters to send along to Elasticsearch to perform the bulk
+   *   index.
    */
   public static function bulkIndex(IndexInterface $index, array $items) {
     $params = IndexFactory::index($index, TRUE);
 
     foreach ($items as $id => $item) {
       $data = [];
-      /** @var FieldInterface $field */
+      /** @var \Drupal\search_api\Item\FieldInterface $field */
       foreach ($item as $name => $field) {
         $field_type = $field->getType();
         if (!empty($field->getValues())) {
@@ -123,15 +132,18 @@ class IndexFactory {
   }
 
   /**
-   * Build parameters required to create an index mapping
+   * Build parameters required to create an index mapping.
+   *
    * TODO: We need also:
    * $params['index'] - (Required)
    * ['type'] - The name of the document type
-   * ['timeout'] - (time) Explicit operation timeout
+   * ['timeout'] - (time) Explicit operation timeout.
    *
    * @param \Drupal\search_api\IndexInterface $index
+   *   Index object.
    *
-   * @return mixed
+   * @return array
+   *   Parameters required to create an index mapping.
    */
   public static function mapping(IndexInterface $index) {
     $params = IndexFactory::index($index, TRUE);
@@ -155,11 +167,14 @@ class IndexFactory {
   }
 
   /**
-   * Helper function. Returns the elasticsearch name of an index.
+   * Helper function. Returns the Elasticsearch name of an index.
    *
-   * @param IndexInterface $index
+   * @param \Drupal\search_api\IndexInterface $index
+   *   Index object.
    *
    * @return string
+   *   The name of the index on the Elasticsearch server. Includes a prefix for
+   *   uniqueness, the database name, and index machine name.
    */
   public static function getIndexName(IndexInterface $index) {
 
