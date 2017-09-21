@@ -393,7 +393,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       if (!empty($response['errors'])) {
         foreach ($response['items'] as $item) {
           if (!empty($item['index']['status']) && $item['index']['status'] == '400') {
-            $this->logger->error($item['index']['error']['reason'] . '. ' . $item['index']['error']['caused_by']['reason']);
+            $this->logger->error('%reason. %caused_by for id: %id', [
+              '%reason' => $item['index']['error']['reason'],
+              '%caused_by' => $item['index']['error']['caused_by']['reason'],
+              '%id' => $item['index']['_id'],
+            ]);
           }
         }
 
