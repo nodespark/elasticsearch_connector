@@ -26,7 +26,7 @@ function elasticsearch_connector_requirements($phase) {
   }
 
   if ($phase == 'runtime') {
-    if (!class_exists('\nodespark\DESConnector\ClientInterface')) {
+    if (!interface_exists('\nodespark\DESConnector\ClientInterface')) {
       return array(
         'elasticsearch_connector' => array(
           'title' => $t('The Elasticsearch library is missing.'),
