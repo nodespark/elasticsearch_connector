@@ -12,6 +12,9 @@ use Drupal\search_api\Query\Condition;
 use Drupal\search_api\Query\ConditionGroupInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
+use MakinaCorpus\Lucene\Query;
+use MakinaCorpus\Lucene\TermCollectionQuery;
+use MakinaCorpus\Lucene\TermQuery;
 
 /**
  * Class SearchBuilder.
@@ -169,13 +172,13 @@ class SearchBuilder {
       }
 
       // Query string.
-      $search_string = $this->flattenKeys($keys, $parse_mode);
+      $lucene = $this->flattenKeys($keys, $parse_mode, $this->index->getServerInstance()->getBackend()->getFuzziness());
+      $search_string = $lucene->__toString();
 
       if (!empty($search_string)) {
         $query_search_string = ['query_string' => []];
         $query_search_string['query_string']['query'] = $search_string;
         $query_search_string['query_string']['fields'] = $query_fields;
-        $query_search_string['query_string']['default_operator'] = 'OR';
       }
     }
 
@@ -225,52 +228,57 @@ class SearchBuilder {
   }
 
   /**
-   * Return a full text search query.
+   * Turn the given search keys into a lucene object structure.
    *
-   * TODO: better handling of parse modes.
-   *
-   * @param string[] $keys
-   *   Array of search keys, each one a string.
+   * @param array $keys
+   *   Search keys, in the format described by
+   *   \Drupal\search_api\ParseMode\ParseModeInterface::parseInput().
    * @param \Drupal\search_api\ParseMode\ParseModeInterface $parse_mode
-   *   Parse mode in use.
+   *   Search API parse mode.
+   * @param bool $fuzzy
+   *   Enable fuzzy support or not.
    *
-   * @return string
-   *   Full text search query string.
+   * @return \MakinaCorpus\Lucene\AbstractQuery
+   *   Return a lucene query object.
    */
-  protected function flattenKeys(array $keys, ParseModeInterface $parse_mode = NULL) {
+  protected function flattenKeys(array $keys, ParseModeInterface $parse_mode = NULL, $fuzzy = TRUE) {
+    // Grab the conjunction and negation properties if present.
     $conjunction = isset($keys['#conjunction']) ? $keys['#conjunction'] : 'AND';
     $negation = !empty($keys['#negation']);
-    $values = [];
 
-    foreach ($keys as $key_nr => $key) {
-      // We cannot use \Drupal\Core\Render\Element::children() anymore because
-      // $keys is not a valid render array.
-      if ($key_nr[0] === '#' || !$key) {
-        continue;
-      }
+    // Create a top level query.
+    $query = (new TermCollectionQuery())
+      ->setOperator($conjunction);
+    if ($negation) {
+      $query->setExclusion(Query::OP_PROHIBIT);
+    }
+
+    // Filter out top level properties beginning with '#'.
+    $keys = array_filter($keys, function ($key) {
+      return $key[0] !== '#';
+    }, ARRAY_FILTER_USE_KEY);
+
+    // Loop over the keys.
+    foreach ($keys as $key) {
+      $element = NULL;
 
       if (is_array($key)) {
-        $values[] = $this->flattenKeys($key);
+        $element = $this->luceneFlattenKeys($key, $parse_mode);
       }
       elseif (is_string($key)) {
-        // If parse mode is not "direct": quote the keyword.
-        if ($parse_mode->getPluginId() !== 'direct') {
-          $key = '"' . $key . '"';
+        $element = (new TermQuery())
+          ->setValue($key);
+        if ($fuzzy) {
+          $element->setFuzzyness($fuzzy);
         }
+      }
 
-        $values[] = $key;
+      if (isset($element)) {
+        $query->add($element);
       }
     }
 
-    if (!empty($values)) {
-      return ($negation === TRUE ? 'NOT ' : '') . '(' . implode(
-        " {$conjunction} ",
-        $values
-      ) . ')';
-    }
-    else {
-      return '';
-    }
+    return $query;
   }
 
   /**

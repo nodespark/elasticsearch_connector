@@ -3,8 +3,15 @@
   "description": "Elasticsearch Connector module for Drupal.",
   "type": "drupal-module",
   "homepage": "https://www.drupal.org/project/elasticsearch_connector",
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/m4olivei/php-lucene-query"
+    }
+  ],
   "require": {
-    "nodespark/des-connector": "5.x-dev"
+    "nodespark/des-connector": "5.x-dev",
+    "makinacorpus/php-lucene": "dev-empty-fuzzy-distance"
   },
   "license": "GPL-2.0+",
   "authors": [
