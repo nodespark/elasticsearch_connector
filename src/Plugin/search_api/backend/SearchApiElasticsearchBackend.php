@@ -49,6 +49,12 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
   /**
    * Auto fuzziness setting.
+   *
+   * Auto fuzziness in Elasticsearch means we don't specify a specific
+   * Levenshtein distance, falling back to auto behavior. Fuzziness, including
+   * auto fuzziness, is defined in the Elasticsearch documentation here:
+   *
+   * @see https://www.elastic.co/guide/en/elasticsearch/reference/5.6/common-options.html#fuzziness
    */
   const FUZZINESS_AUTO = 'auto';
 
