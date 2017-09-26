@@ -205,7 +205,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       'http_method' => 'AUTO',
       'autocorrect_spell' => TRUE,
       'autocorrect_suggest_words' => TRUE,
-      'fuzziness' => FALSE,
+      'fuzziness' => self::FUZZINESS_AUTO,
     ];
   }
 
