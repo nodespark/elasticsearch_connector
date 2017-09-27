@@ -43,6 +43,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   use PluginFormTrait;
 
   /**
+   * Set a large integer to be the size for a "Hard limit" value of "No limit".
+   */
+  const FACET_NO_LIMIT_SIZE = 10000;
+
+  /**
    * Elasticsearch settings.
    *
    * @var \Drupal\Core\Config\Config
@@ -506,9 +511,12 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
         default:
           $object = new Terms($key, $key);
-          if (!empty($facet['limit'])) {
-            $object->setSize($facet['limit']);
-          }
+
+          // Limit the number of facets in the result according the to facet
+          // setting. A limit of 0 means no limit. Elasticsearch doesn't have a
+          // way to set no limit, so we set a large integer in that case.
+          $size = $facet['limit'] ? $facet['limit'] : self::FACET_NO_LIMIT_SIZE;
+          $object->setSize($size);
       }
 
       if (!empty($object)) {
