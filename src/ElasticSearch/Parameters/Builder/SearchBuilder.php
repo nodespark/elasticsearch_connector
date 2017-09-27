@@ -90,9 +90,7 @@ class SearchBuilder {
       $this->body['query'] += $query_options['query_search_string'];
     }
     elseif (!empty($query_options['query_search_filter'])) {
-      // TODO: post_filter is a temporary workaround that should be removed
-      // when we have a Query builder class.
-      $this->body['post_filter'] = $query_options['query_search_filter'];
+      $this->body['query'] = $query_options['query_search_filter'];
     }
 
     // TODO: Handle fields on filter query.
