@@ -40,7 +40,7 @@ class FilterFactory {
 
         default:
           throw new \Exception(
-            t('Value is empty for :field_id! Incorrect filter criteria is using for searching!', [':field_id' => $condition->getField()])
+            'Value is empty for ' . $condition->getField() . '. Incorrect filter criteria is using for searching!'
           );
       }
     }
