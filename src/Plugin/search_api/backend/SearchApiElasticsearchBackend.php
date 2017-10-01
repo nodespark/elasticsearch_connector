@@ -48,6 +48,17 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   const FACET_NO_LIMIT_SIZE = 10000;
 
   /**
+   * Auto fuzziness setting.
+   *
+   * Auto fuzziness in Elasticsearch means we don't specify a specific
+   * Levenshtein distance, falling back to auto behavior. Fuzziness, including
+   * auto fuzziness, is defined in the Elasticsearch documentation here:
+   *
+   * @see https://www.elastic.co/guide/en/elasticsearch/reference/5.6/common-options.html#fuzziness
+   */
+  const FUZZINESS_AUTO = 'auto';
+
+  /**
    * Elasticsearch settings.
    *
    * @var \Drupal\Core\Config\Config
@@ -194,6 +205,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       'http_method' => 'AUTO',
       'autocorrect_spell' => TRUE,
       'autocorrect_suggest_words' => TRUE,
+      'fuzziness' => self::FUZZINESS_AUTO,
     ];
   }
 
@@ -231,6 +243,21 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       '#default_value' => $this->configuration['cluster_settings']['cluster'] ? $this->configuration['cluster_settings']['cluster'] : '',
       '#description' => t('Select the cluster you want to handle the connections.'),
     ];
+
+    $fuzziness_options = [
+      '' => $this->t('- Disabled -'),
+      self::FUZZINESS_AUTO => self::FUZZINESS_AUTO,
+    ];
+    $fuzziness_options += array_combine(range(1, 5), range(1, 5));
+    $form['fuzziness'] = [
+      '#type' => 'select',
+      '#title' => t('Fuzziness'),
+      '#required' => TRUE,
+      '#options' => $fuzziness_options,
+      '#default_value' => $this->configuration['fuzziness'],
+      '#description' => $this->t('Some queries and APIs support parameters to allow inexact fuzzy matching, using the fuzziness parameter. See <a href="https://www.elastic.co/guide/en/elasticsearch/reference/5.6/common-options.html#fuzziness">Fuzziness</a> for more information.'),
+    ];
+
     return $form;
   }
 
@@ -287,9 +314,22 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
   /**
    * Get the configured cluster; if the cluster is blank, use the default.
+   *
+   * @return string
+   *   The name of the configured cluster.
    */
   public function getCluster() {
     return $this->configuration['cluster_settings']['cluster'];
+  }
+
+  /**
+   * Get the configured fuzziness value.
+   *
+   * @return string
+   *   The configured fuzziness value.
+   */
+  public function getFuzziness() {
+    return $this->configuration['fuzziness'];
   }
 
   /**
