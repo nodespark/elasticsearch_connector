@@ -75,6 +75,7 @@ class MappingFactory {
       }
     }
     catch (ElasticsearchException $e) {
+      // TODO Nothing above seems to throw an exception. Shall we remove this?
       watchdog_exception('Elasticsearch Backend', $e);
     }
 
