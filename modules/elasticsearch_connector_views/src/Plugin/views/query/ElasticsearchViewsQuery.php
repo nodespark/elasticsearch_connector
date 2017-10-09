@@ -2,8 +2,8 @@
 
 namespace Drupal\elasticsearch_connector_views\Plugin\views\query;
 
-use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
@@ -323,25 +323,6 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
     $this->params['fields'][] = '_source';
 
     $params = array();
-    if (isset($this->params['q']) && !empty($this->params['q'])) {
-      // If we have more than one field we make a multi match query.
-      if (count($this->params['fields']) > 1) {
-
-        $params['query']['multi_match'] = array(
-          'query' => $this->params['q'],
-          '_source' => array_values($this->params['fulltext_fields']),
-        );
-      }
-      else {
-
-        $params['query']['match'] = array(
-          reset($this->params['fulltext_fields']) => array(
-            'query' => $this->params['q'],
-            'operator' => $this->params['fulltext_operator'],
-          ),
-        );
-      }
-    }
 
     $params['size'] = $view->pager->getItemsPerPage();
     $params['from'] = $view->pager->getCurrentPage() * $view->pager->getItemsPerPage();
@@ -359,26 +340,14 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       $params['_source'] = array_merge($params['_source'], $this->params['fields']);
     }
 
-    $where = $this->where;
-
-    $params['filter'] = $this->buildFilterArray($where);
-
-    // Elastic complains when there is an empty filter array.
-    if (empty($params['filter'])) {
-      unset($params['filter']);
-    }
-
-    // If a filter and query is set, combine them into a filtered query.
-    if (isset($params['filter']) && isset($params['query'])) {
-      $temp = $params['query'];
-      unset($params['query']);
-
-      $params['query']['bool'] = array(
-        'must' => $temp,
-        'filter' => $params['filter'],
-      );
-
-      unset($params['filter']);
+    if (!empty($this->where['conditions'])) {
+      $params['query'] = [
+        'bool' => [
+          'must' => [
+            'match' => $this->where['conditions'],
+          ],
+        ],
+      ];
     }
 
     // Add sorting.
@@ -418,12 +387,12 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
     $filter = array();
     foreach ($where as $wh) {
       foreach ($wh['conditions'] as $cond) {
-        $filter[drupal_strtolower($wh['type'])][] = $cond['field'];
+        $filter[Unicode::strtolower($wh['type'])][] = $cond['field'];
       }
     }
 
     if (count($filter) > 1) {
-      $filter = array(drupal_strtolower($this->group_operator) => $filter);
+      $filter = array(Unicode::strtolower($this->group_operator) => $filter);
     }
 
     return $filter;
@@ -457,10 +426,9 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       $client = $this->elasticsearchClient;
       if ($client) {
         $view->execute_time = microtime(TRUE) - $start;
-        // Execute the search.
       }
 
-      // Execute search.
+      // Execute the search.
       $response = $client->search(
         array(
           'index' => $index,

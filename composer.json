@@ -4,7 +4,8 @@
   "type": "drupal-module",
   "homepage": "https://www.drupal.org/project/elasticsearch_connector",
   "require": {
-    "nodespark/des-connector": "5.x-dev"
+    "nodespark/des-connector": "5.x-dev",
+    "makinacorpus/php-lucene": "^1.0.2"
   },
   "license": "GPL-2.0+",
   "authors": [
