@@ -2,6 +2,8 @@
 
 namespace Drupal\elasticsearch_connector_views\Plugin\views\query;
 
+use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
@@ -113,6 +115,13 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
   protected $logger;
 
   /**
+   * The entity type manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
@@ -123,6 +132,9 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
     $logger = $container->get('logger.factory')
                         ->get('elasticsearch_connector_views');
     $plugin->setLogger($logger);
+
+    $entity_type_manager = $container->get('entity_type.manager');
+    $plugin->setEntityTypeManager($entity_type_manager);
 
     return $plugin;
   }
@@ -151,6 +163,17 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
   }
 
   /**
+   * Sets the entity type manager service.
+   *
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager service.
+   */
+  public function setEntityTypeManager(EntityTypeManagerInterface $entity_type_manager) {
+    $this->entityTypeManager = $entity_type_manager;
+  }
+
+
+  /**
    * {@inheritdoc}
    */
   public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
@@ -161,7 +184,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       $cluster_id = $data['table']['base']['cluster_id'];
       $this->index = $data['table']['base']['index'];
       $this->elasticsearchTypes[$data['table']['base']['type']] = $data['table']['base']['type'];
-      $this->elasticsearchCluster = Cluster::load($cluster_id);
+      $this->elasticsearchCluster = $this->entityTypeManager->getStorage('elasticsearch_cluster')->load($cluster_id);
       $clientManager = \Drupal::service('elasticsearch_connector.client_manager');
       $this->elasticsearchClient = $clientManager->getClientForCluster($this->elasticsearchCluster);
     }

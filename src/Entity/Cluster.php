@@ -98,53 +98,6 @@ class Cluster extends ConfigEntityBase {
     return isset($this->cluster_id) ? $this->cluster_id : NULL;
   }
 
-  /**
-   * Get the default (cluster) used for elasticsearch.
-   *
-   * @return string
-   *
-   *   TODO: Not sure that getting the default cluster in general should be part
-   *   of the CLuster entity. TODO: Maybe check if that is a default Cluster
-   *   entity - YES, but in general - NO.
-   */
-  public static function getDefaultCluster() {
-    return \Drupal::state()->get(
-      'elasticsearch_connector_get_default_connector',
-      ''
-    );
-  }
-
-  /**
-   * Set the default (cluster) used for elasticsearch.
-   *
-   * @param $cluster_id
-   *
-   * @return mixed
-   */
-  public static function setDefaultCluster($cluster_id) {
-    return \Drupal::state()->set(
-      'elasticsearch_connector_get_default_connector',
-      $cluster_id
-    );
-  }
-
-  /**
-   * Load all clusters.
-   *
-   * @param bool $include_inactive
-   *
-   * @return \Drupal\elasticsearch_connector\Entity\Cluster[]
-   */
-  public static function loadAllClusters($include_inactive = TRUE) {
-    $clusters = self::loadMultiple();
-    foreach ($clusters as $cluster) {
-      if (!$include_inactive && !$cluster->status) {
-        unset($clusters[$cluster->cluster_id]);
-      }
-    }
-
-    return $clusters;
-  }
 
   /**
    * Get the full base URL of the cluster, including any authentication.

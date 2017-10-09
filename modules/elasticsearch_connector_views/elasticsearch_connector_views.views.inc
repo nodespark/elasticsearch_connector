@@ -13,9 +13,11 @@ use Drupal\elasticsearch_connector\Entity\Cluster;
  */
 function elasticsearch_connector_views_views_data() {
   $data = array();
-
   $clientManager = \Drupal::service('elasticsearch_connector.client_manager');
-  foreach (Cluster::loadAllClusters(FALSE) as $cluster) {
+  /** @var \Drupal\elasticsearch_connector\ClusterManager $cluster_manager */
+  $cluster_manager = \Drupal::service('elasticsearch_connector.cluster_manager');
+
+  foreach ($cluster_manager->loadAllClusters(FALSE) as $cluster) {
     $elasticsearchClient = $clientManager->getClientForCluster($cluster);
     if ($elasticsearchClient->isClusterOk()) {
       $indices = $elasticsearchClient->indices()->stats();

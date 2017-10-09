@@ -4,6 +4,7 @@ namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\elasticsearch_connector\ClusterManager;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -30,25 +31,36 @@ class IndexForm extends EntityForm {
   protected $entityTypeManager;
 
   /**
+   * The cluster manager service.
+   *
+   * @var \Drupal\elasticsearch_connector\ClusterManager
+   */
+  protected $clusterManager;
+
+  /**
    * Constructs an IndexForm object.
    *
    * @param \Drupal\Core\Entity\EntityManager|\Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager
    *   The entity type manager.
    * @param ClientManagerInterface $client_manager
    */
-  public function __construct(EntityTypeManagerInterface $entity_manager, ClientManagerInterface $client_manager) {
+  public function __construct(EntityTypeManagerInterface $entity_manager, ClientManagerInterface $client_manager, ClusterManager $cluster_manager) {
     // Setup object members.
     $this->entityTypeManager = $entity_manager;
     $this->clientManager = $client_manager;
+    $this->clusterManager = $cluster_manager;
   }
 
   /**
+   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
    *
+   * @return static
    */
   static public function create(ContainerInterface $container) {
     return new static (
       $container->get('entity_type.manager'),
-      $container->get('elasticsearch_connector.client_manager')
+      $container->get('elasticsearch_connector.client_manager'),
+      $container->get('elasticsearch_connector.cluster_manager')
     );
   }
 
@@ -195,7 +207,7 @@ class IndexForm extends EntityForm {
     $form['server'] = array(
       '#type' => 'radios',
       '#title' => $this->t('Server'),
-      '#default_value' => !empty($this->entity->server) ? $this->entity->server : Cluster::getDefaultCluster(),
+      '#default_value' => !empty($this->entity->server) ? $this->entity->server : $this->clusterManager->getDefaultCluster(),
       '#description' => $this->t('Select the server this index should reside on. Index can not be enabled without connection to valid server.'),
       '#options' => $this->getClusterField('cluster_id'),
       '#weight' => 9,
@@ -257,7 +269,7 @@ class IndexForm extends EntityForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    $cluster = Cluster::load($this->entity->server);
+    $cluster = $this->entityTypeManager->getStorage('elasticsearch_cluster')->load($this->entity->server);
     $client = $this->clientManager->getClientForCluster($cluster);
 
     $index_params['index'] = $this->entity->index_id;

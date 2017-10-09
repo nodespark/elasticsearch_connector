@@ -7,3 +7,7 @@ services:
     arguments:
       - '@module_handler'
       - '@elasticsearch_connector.client_factory'
+
+  elasticsearch_connector.cluster_manager:
+    class: Drupal\elasticsearch_connector\ClusterManager
+    arguments: ['@state', '@entity_type.manager']

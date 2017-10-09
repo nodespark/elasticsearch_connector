@@ -16,67 +16,62 @@ class MappingFactory {
    * @param FieldInterface $field
    *
    * @return array|null
+   *   Array of settings when a known field type is provided. Null otherwise.
    */
   public static function mappingFromField(FieldInterface $field) {
-    try {
-      $type = $field->getType();
+    $type = $field->getType();
 
-      switch ($type) {
-        case 'text':
-          return [
-            'type' => 'text',
-            'boost' => $field->getBoost(),
-            'fields' => [
-              "keyword" => [
-                "type" => 'keyword',
-                'ignore_above' => 256,
-              ]
+    switch ($type) {
+      case 'text':
+        return [
+          'type' => 'text',
+          'boost' => $field->getBoost(),
+          'fields' => [
+            "keyword" => [
+              "type" => 'keyword',
+              'ignore_above' => 256,
             ]
-          ];
+          ]
+        ];
 
-        case 'uri':
-        case 'string':
-        case 'token':
-          return [
-            'type' => 'keyword',
-          ];
+      case 'uri':
+      case 'string':
+      case 'token':
+        return [
+          'type' => 'keyword',
+        ];
 
-        case 'integer':
-        case 'duration':
-          return [
-            'type' => 'integer',
-          ];
+      case 'integer':
+      case 'duration':
+        return [
+          'type' => 'integer',
+        ];
 
-        case 'boolean':
-          return [
-            'type' => 'boolean',
-          ];
+      case 'boolean':
+        return [
+          'type' => 'boolean',
+        ];
 
-        case 'decimal':
-          return [
-            'type' => 'float',
-          ];
+      case 'decimal':
+        return [
+          'type' => 'float',
+        ];
 
-        case 'date':
-          return [
-            'type' => 'date',
-            'format' => 'epoch_second',
-          ];
+      case 'date':
+        return [
+          'type' => 'date',
+          'format' => 'epoch_second',
+        ];
 
-        case 'attachment':
-          return [
-            'type' => 'attachment',
-          ];
+      case 'attachment':
+        return [
+          'type' => 'attachment',
+        ];
 
-        case 'object':
-          return [
-            'type' => 'nested'
-          ];
-      }
-    }
-    catch (ElasticsearchException $e) {
-      // TODO Nothing above seems to throw an exception. Shall we remove this?
-      watchdog_exception('Elasticsearch Backend', $e);
+      case 'object':
+        return [
+          'type' => 'nested'
+        ];
     }
 
     return NULL;

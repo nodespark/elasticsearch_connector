@@ -82,24 +82,4 @@ class Index extends ConfigEntityBase {
     return isset($this->index_id) ? $this->index_id : NULL;
   }
 
-  /**
-   * Loads index object.
-   *
-   * @param $index_id
-   *
-   * @return \Drupal\elasticsearch_connector\Entity\Index
-   */
-  public static function loadIndex($index_id) {
-    return Index::load($index_id);
-  }
-
-  /**
-   * Load all indices.
-   *
-   * @return \Drupal\elasticsearch_connector\Entity\Index[]
-   */
-  public static function loadAllIndices() {
-    return Index::loadMultiple();
-  }
-
 }

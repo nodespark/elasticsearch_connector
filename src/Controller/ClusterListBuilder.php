@@ -26,6 +26,13 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
   protected $indexStorage;
 
   /**
+   * Storage interface for the elasticsearch_cluster entity.
+   *
+   * @var \Drupal\Core\Entity\EntityStorageInterface
+   */
+  protected $clusterStorage;
+
+  /**
    * Elasticsearch client manager service.
    *
    * @var \Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface
@@ -39,11 +46,13 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     EntityTypeInterface $entity_type,
     EntityStorageInterface $storage,
     EntityStorageInterface $index_storage,
+    EntityStorageInterface $cluster_storage,
     ClientManagerInterface $client_manager
   ) {
     parent::__construct($entity_type, $storage);
 
     $this->indexStorage = $index_storage;
+    $this->clusterStorage = $cluster_storage;
     $this->clientManager = $client_manager;
   }
 
@@ -58,6 +67,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
       $entity_type,
       $container->get('entity_type.manager')->getStorage($entity_type->id()),
       $container->get('entity_type.manager')->getStorage('elasticsearch_index'),
+      $container->get('entity_type.manager')->getStorage('elasticsearch_cluster'),
       $container->get('elasticsearch_connector.client_manager')
     );
   }
@@ -123,7 +133,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
       $client_connector = $this->clientManager->getClientForCluster($entity);
     }
     elseif ($entity instanceof Index) {
-      $cluster = Cluster::load($entity->server);
+      $cluster = $this->clusterStorage->load($entity->server);
       $client_connector = $this->clientManager->getClientForCluster($cluster);
     }
     else {
@@ -134,7 +144,7 @@ class ClusterListBuilder extends ConfigEntityListBuilder {
     $result = [];
     $status = NULL;
     if (isset($entity->cluster_id)) {
-      $cluster = Cluster::load($entity->cluster_id);
+      $cluster = $this->clusterStorage->load($entity->cluster_id);
 
       if ($client_connector->isClusterOk()) {
         $cluster_health = $client_connector->cluster()->health();

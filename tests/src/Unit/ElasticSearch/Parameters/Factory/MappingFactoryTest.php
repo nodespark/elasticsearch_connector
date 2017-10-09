@@ -106,6 +106,13 @@ class MappingFactoryTest extends UnitTestCase {
       'type' => 'nested',
     ];
     $this->assertEquals($expected_mapping, MappingFactory::mappingFromField($field->reveal()));
+
+    /** @var \Prophecy\Prophecy\ObjectProphecy $field_prophecy */
+    $field = $this->prophesize(FieldInterface::class);
+    $field->getType()
+      ->willReturn('foo');
+
+    $this->assertNull(MappingFactory::mappingFromField($field->reveal()));
   }
 
 }
