@@ -31,7 +31,7 @@ defaults: &defaults
   # 'checkout' supports a path key, but not on locals where you test with the
   # circleci CLI tool.
   # https://discuss.circleci.com/t/bug-circleci-build-command-ignores-checkout-path-config/13004
-  working_directory: /var/www/html/modules/elasticsearch_connector
+  working_directory: /var/www/html/modules/$CIRCLE_PROJECT_REPONAME
 
 # YAML does not support merging of lists. That means we can't have a default
 # 'steps' configuration, though we can have defaults for individual step
@@ -60,6 +60,11 @@ unit_kernel_tests: &unit_kernel_tests
 
     - restore_cache: *restore_cache
     - save_cache: *save_cache
+
+    - run:
+        working_directory: /var/www/html
+        command: |
+          cp ./modules/$CIRCLE_PROJECT_REPONAME/.circleci/phpunit_elasticsearch_connector.xml.dist /var/www/html/core
 
     - run:
         working_directory: /var/www/html

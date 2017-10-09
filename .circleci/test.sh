@@ -17,6 +17,5 @@ robo update:dependencies
 robo override:phpunit-config $1
 
 sudo -E -u www-data robo setup:drupal
-# sudo -u www-data robo test $1
-sudo -u www-data mkdir /tmp/phpunit
-sudo -u www-data php core/scripts/run-tests.sh --concurrency 31 --module $1 --verbose --xml /tmp/phpunit/ --sqlite /tmp/drupal-tests.sqlite
+
+vendor/bin/phpunit -c core/phpunit_elasticsearch_connector.xml.dist --debug --verbose --group=elasticsearch_connector
