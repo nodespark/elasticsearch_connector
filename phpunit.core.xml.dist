@@ -53,7 +53,6 @@
       <directory>../modules/elasticsearch_connector</directory>
       <exclude>
         <directory>../modules/elasticsearch_connector/tests</directory>
-        <directory>../modules/elasticsearch_connector/src/Tests</directory>
       </exclude>
     </whitelist>
   </filter>
