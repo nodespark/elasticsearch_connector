@@ -50,10 +50,10 @@
   </listeners>
   <filter>
     <whitelist>
-      <directory>../modules/contrib/elasticsearch_connector</directory>
+      <directory>../modules/elasticsearch_connector</directory>
       <exclude>
-        <directory>../modules/contrib/elasticsearch_connector/tests</directory>
-        <directory>../modules/contrib/elasticsearch_connector/src/Tests</directory>
+        <directory>../modules/elasticsearch_connector/tests</directory>
+        <directory>../modules/elasticsearch_connector/src/Tests</directory>
       </exclude>
     </whitelist>
   </filter>
