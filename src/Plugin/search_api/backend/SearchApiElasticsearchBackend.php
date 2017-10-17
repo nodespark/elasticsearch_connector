@@ -4,11 +4,13 @@ namespace Drupal\elasticsearch_connector\Plugin\search_api\backend;
 
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Config;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
+use Drupal\elasticsearch_connector\ClusterManager;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\SearchFactory;
@@ -108,6 +110,20 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   protected $clientManager;
 
   /**
+   * The cluster manager service.
+   *
+   * @var \Drupal\elasticsearch_connector\ClusterManager
+   */
+  protected $clusterManager;
+
+  /**
+   * The entity type manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * Logger.
    *
    * @var \Psr\Log\LoggerInterface
@@ -133,6 +149,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    *   Elasticsearch settings object.
    * @param \Psr\Log\LoggerInterface $logger
    *   Logger.
+   * @param \Drupal\elasticsearch_connector\ClusterManager $cluster_manager
+   *   The cluster manager service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager service.
    *
    * @throws \Drupal\search_api\SearchApiException
    */
@@ -144,7 +164,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     ModuleHandlerInterface $module_handler,
     ClientManagerInterface $client_manager,
     Config $elasticsearch_settings,
-    LoggerInterface $logger
+    LoggerInterface $logger,
+    ClusterManager $cluster_manager,
+    EntityTypeManagerInterface $entity_type_manager
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
@@ -153,12 +175,14 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     $this->clientManager = $client_manager;
     $this->logger = $logger;
     $this->elasticsearchSettings = $elasticsearch_settings;
+    $this->clusterManager = $cluster_manager;
+    $this->entityTypeManager = $entity_type_manager;
 
     if (empty($this->configuration['cluster_settings']['cluster'])) {
-      $this->configuration['cluster_settings']['cluster'] = Cluster::getDefaultCluster();
+      $this->configuration['cluster_settings']['cluster'] = $this->clusterManager->getDefaultCluster();
     }
 
-    $this->cluster = Cluster::load(
+    $this->cluster = $this->entityTypeManager->getStorage('elasticsearch_cluster')->load(
       $this->configuration['cluster_settings']['cluster']
     );
 
@@ -169,6 +193,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     $this->client = $this->clientManager->getClientForCluster(
       $this->cluster
     );
+
   }
 
   /**
@@ -183,7 +208,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       $container->get('module_handler'),
       $container->get('elasticsearch_connector.client_manager'),
       $container->get('config.factory')->get('elasticsearch.settings'),
-      $container->get('logger.factory')->get('elasticconnector_sapi')
+      $container->get('logger.factory')->get('elasticconnector_sapi'),
+      $container->get('elasticsearch_connector.cluster_manager'),
+      $container->get('entity_type_manager')
     );
   }
 
@@ -228,13 +255,13 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     ];
 
     // We are not displaying disabled clusters.
-    $clusters = Cluster::loadAllClusters(FALSE);
+    $clusters = $this->clusterManager->loadAllClusters(FALSE);
     $options = [];
     foreach ($clusters as $key => $cluster) {
       $options[$key] = $cluster->cluster_id;
     }
 
-    $options[Cluster::getDefaultCluster()] = t('Default cluster: @name', ['@name' => Cluster::getDefaultCluster()]);
+    $options[$this->clusterManager->getDefaultCluster()] = t('Default cluster: @name', ['@name' => $this->clusterManager->getDefaultCluster()]);
     $form['cluster_settings']['cluster'] = [
       '#type' => 'select',
       '#title' => t('Cluster'),

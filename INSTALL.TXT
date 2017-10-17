@@ -1,36 +1,8 @@
-This module requires to install the official Elasticsearch PHP library in order to function correctly.
-Read more about the library: https://github.com/elastic/elasticsearch-php
+Install this module with the following command:
 
-In order to install the library you can use 2 ways:
+```
+composer require drupal/elasticsearch_connector
+```
 
-1. Install it using the Composer manager module (https://www.drupal.org/project/composer_manager).
-
-2. Manually edit root composer.json and put into the "merge-plugin" section the path to the module json file.
-
-Example:
-
-....
-     "merge-plugin": {
-       "include": [
-         "core/composer.json",
-         "modules/elasticsearch_connector/composer.json"
-       ],
-       "recurse": false,
-       "replace": false,
-       "merge-extra": false
-     }
-....
-
-After that you should executed:
-
-sudo composer update nodespark/des-connector --no-dev
-
-Uninstall the library:
-
-
-* Remove the line added into main composer.json added in installation step.
-* Remove the library with composer by running the following command:
-
-sudo composer remove nodespark/des-connector --update-with-dependencies
-
----------------------------------------------------------------------------------------------
+Then, either install it with Drush using `drush en elasticsearch_connector` or via
+the administration interface.

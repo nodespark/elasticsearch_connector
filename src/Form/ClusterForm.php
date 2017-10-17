@@ -4,6 +4,7 @@ namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\elasticsearch_connector\ClusterManager;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -20,12 +21,23 @@ class ClusterForm extends EntityForm {
   private $clientManager;
 
   /**
+   * The cluster manager service.
+   *
+   * @var \Drupal\elasticsearch_connector\ClusterManager
+   */
+  protected $clusterManager;
+
+  /**
    * ElasticsearchController constructor.
    *
    * @param ClientManagerInterface $client_manager
+   *   The client manager.
+   * @param \Drupal\elasticsearch_connector\ClusterManager $cluster_manager
+   *   The cluster manager.
    */
-  public function __construct(ClientManagerInterface $client_manager) {
+  public function __construct(ClientManagerInterface $client_manager, ClusterManager $cluster_manager) {
     $this->clientManager = $client_manager;
+    $this->clusterManager = $cluster_manager;
   }
 
   /**
@@ -113,7 +125,7 @@ class ClusterForm extends EntityForm {
 
     $form['status_info'] = $this->clusterFormInfo();
 
-    $default = Cluster::getDefaultCluster();
+    $default = $this->clusterManager->getDefaultCluster();
     $form['default'] = array(
       '#type' => 'checkbox',
       '#title' => t('Make this cluster default connection'),
@@ -229,12 +241,12 @@ class ClusterForm extends EntityForm {
 
     // TODO: Check for valid URL when we are submitting the form.
     // Set default cluster.
-    $default = Cluster::getDefaultCluster();
+    $default = $this->clusterManager->getDefaultCluster();
     if (empty($default) && !$values['default']) {
-      $default = Cluster::setDefaultCluster($values['cluster_id']);
+      $default = $this->clusterManager->setDefaultCluster($values['cluster_id']);
     }
     elseif ($values['default']) {
-      $default = Cluster::setDefaultCluster($values['cluster_id']);
+      $default = $this->clusterManager->setDefaultCluster($values['cluster_id']);
     }
 
     if ($values['default'] == 0 && !empty($default) && $default == $values['cluster_id']) {

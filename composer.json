@@ -7,6 +7,9 @@
     "nodespark/des-connector": "5.x-dev",
     "makinacorpus/php-lucene": "^1.0.2"
   },
+  "require-dev": {
+    "drupal/search_api": "^1.4"
+  },
   "license": "GPL-2.0+",
   "authors": [
     {

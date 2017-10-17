@@ -3,6 +3,7 @@
 namespace Drupal\elasticsearch_connector\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\Entity\Cluster;
@@ -21,12 +22,23 @@ class IndexDeleteForm extends EntityConfirmFormBase {
   private $clientManager;
 
   /**
+   * The entity type manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * ElasticsearchController constructor.
    *
    * @param ClientManagerInterface $client_manager
+   *   The client manager service.
+   * @param EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager service.
    */
-  public function __construct(ClientManagerInterface $client_manager) {
+  public function __construct(ClientManagerInterface $client_manager, EntityTypeManagerInterface $entity_type_manager) {
     $this->clientManager = $client_manager;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -34,7 +46,8 @@ class IndexDeleteForm extends EntityConfirmFormBase {
    */
   static public function create(ContainerInterface $container) {
     return new static (
-      $container->get('elasticsearch_connector.client_manager')
+      $container->get('elasticsearch_connector.client_manager'),
+      $container->get('entity_type_manager')
     );
   }
 
@@ -50,7 +63,7 @@ class IndexDeleteForm extends EntityConfirmFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     /** @var Cluster $cluster */
-    $cluster = Cluster::load($this->entity->server);
+    $cluster = $this->entityTypeManager->getStorage('elasticsearch_cluster')->load($this->entity->server);
     $client = $this->clientManager->getClientForCluster($cluster);
     try {
       if ($client->indices()

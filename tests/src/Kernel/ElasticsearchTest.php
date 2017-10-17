@@ -1,14 +1,14 @@
 <?php
 
-namespace Drupal\elasticsearch_connector\Tests;
+namespace Drupal\elasticsearch_connector\Tests\Kernel;
 
 use Drupal\search_api\Entity\Index;
 use Drupal\search_api\Entity\Server;
 use Drupal\search_api\Query\ResultSetInterface;
-use Drupal\search_api_db\Tests\BackendTest;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Tests\search_api_db\Kernel\BackendTest;
 
 /**
  * Tests index and search capabilities using the elasticsearch backend.

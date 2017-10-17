@@ -40,7 +40,7 @@ class FilterFactory {
 
         default:
           throw new \Exception(
-            t('Value is empty for :field_id! Incorrect filter criteria is using for searching!', [':field_id' => $condition->getField()])
+            'Value is empty for ' . $condition->getField() . '. Incorrect filter criteria is using for searching!'
           );
       }
     }
@@ -122,15 +122,7 @@ class FilterFactory {
           break;
 
         default:
-          throw new \Exception(
-            t(
-              'Undefined operator :field_operator for :field_id field! Incorrect filter criteria is using for searching!',
-              [
-                ':field_operator' => $condition->getOperator(),
-                ':field_id' => $condition->getField(),
-              ]
-            )
-          );
+          throw new \Exception('Undefined operator ' . $condition->getOperator() . ' for ' . $condition->getField() . ' field! Incorrect filter criteria is using for searching!');
       }
     }
 
