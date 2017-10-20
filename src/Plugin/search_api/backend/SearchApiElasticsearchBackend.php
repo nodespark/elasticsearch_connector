@@ -210,7 +210,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       $container->get('config.factory')->get('elasticsearch.settings'),
       $container->get('logger.factory')->get('elasticconnector_sapi'),
       $container->get('elasticsearch_connector.cluster_manager'),
-      $container->get('entity_type_manager')
+      $container->get('entity_type.manager')
     );
   }
 
