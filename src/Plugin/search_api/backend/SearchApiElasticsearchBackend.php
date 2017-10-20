@@ -19,6 +19,7 @@ use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\Query\ResultSet;
+use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api\SearchApiException;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
 use nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms;
