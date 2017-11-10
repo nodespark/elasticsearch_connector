@@ -390,7 +390,7 @@ class SearchBuilder {
           );
 
           if (!empty($nested_filters)) {
-            $filters = array_merge($filters, $nested_filters);
+            $filters[] = $nested_filters;
           }
         }
       }
