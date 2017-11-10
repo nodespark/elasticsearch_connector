@@ -592,6 +592,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
           // way to set no limit, so we set a large integer in that case.
           $size = $facet['limit'] ? $facet['limit'] : self::FACET_NO_LIMIT_SIZE;
           $object->setSize($size);
+
+          // Set global scope for facets with 'OR' operator.
+          if ($facet['operator'] == 'or') {
+            $object->setGlobalScope(TRUE);
+          }
       }
 
       if (!empty($object)) {
@@ -615,24 +620,38 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     // Create an empty array that will be attached to the result object.
     $attach = [];
 
-    // Loop through all the aggregations items.
-    foreach ($response['aggregations'] as $key => $value) {
-
+    foreach ($facets as $key => $facet) {
       $terms = [];
 
-      // Handle the stats differently from the default terms options.
-      if (!empty($facets[$key]['type']) && $facets[$key]['type'] == 'stats') {
-        $terms = $value;
+      // Handle 'and' operator.
+      if ($facet['operator'] == 'and' || ($facet['operator'] == 'or' && !isset($response['aggregations'][$key . '_global']))) {
+        if (!empty($facet['type']) && $facet['type'] == 'stats') {
+          $terms = $response['aggregations'][$key];
+        }
+        else {
+          $buckets = $response['aggregations'][$key]['buckets'];
+          array_walk($buckets, function ($value) use (&$terms) {
+            $terms[] = [
+              'count' => $value['doc_count'],
+              'filter' => '"' . $value['key'] . '"',
+            ];
+          });
+        }
       }
-      else {
-        array_walk($value['buckets'], function ($value) use (&$terms) {
-          $terms[] = [
-            'count' => $value['doc_count'],
-            'filter' => '"' . $value['key'] . '"',
-          ];
-        });
+      elseif ($facet['operator'] == 'or') {
+        if (!empty($facet['type']) && $facet['type'] == 'stats') {
+          $terms = $response['aggregations'][$key . '_global'];
+        }
+        else {
+          $buckets = $response['aggregations'][$key . '_global'][$key]['buckets'];
+          array_walk($buckets, function ($value) use (&$terms) {
+            $terms[] = [
+              'count' => $value['doc_count'],
+              'filter' => '"' . $value['key'] . '"',
+            ];
+          });
+        }
       }
-
       $attach[$key] = $terms;
     }
 
