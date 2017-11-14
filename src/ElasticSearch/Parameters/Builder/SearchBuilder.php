@@ -146,6 +146,15 @@ class SearchBuilder {
     // Index fields.
     $index_fields = $this->index->getFields();
 
+    // Search API does not provide metadata for some special fields but might
+    // try to query for them. Thus add the metadata so we allow for querying
+    // them.
+    if (empty($index_fields['search_api_datasource'])) {
+      $index_fields['search_api_datasource'] = \Drupal::getContainer()
+        ->get('search_api.fields_helper')
+        ->createField($this->index, 'search_api_datasource', ['type' => 'string']);
+    }
+
     // Range.
     $query_offset = empty($query_options['offset']) ? 0 : $query_options['offset'];
     $query_limit = empty($query_options['limit']) ? 10 : $query_options['limit'];
