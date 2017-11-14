@@ -364,24 +364,28 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * {@inheritdoc}
    */
   public function addIndex(IndexInterface $index) {
-    $index_name = IndexFactory::getIndexName($index);
-    if (!empty($index_name)) {
-      try {
-        if (!$this->client->indices()->exists(IndexFactory::index($index))) {
-          $response = $this->client->indices()->create(
-            IndexFactory::create($index)
-          );
-          if (!$this->client->CheckResponseAck($response)) {
-            drupal_set_message($this->t('The elasticsearch client was not able to create index'), 'error');
-          }
-        }
+    $this->updateIndex($index);
+  }
 
-        // Update mapping.
-        $this->fieldsUpdated($index);
+  /**
+   * {@inheritdoc}
+   */
+  public function updateIndex(IndexInterface $index) {
+    try {
+      if (!$this->client->indices()->exists(IndexFactory::index($index))) {
+        $response = $this->client->indices()->create(
+          IndexFactory::create($index)
+        );
+        if (!$this->client->CheckResponseAck($response)) {
+          drupal_set_message($this->t('The elasticsearch client was not able to create index'), 'error');
+        }
       }
-      catch (ElasticsearchException $e) {
-        drupal_set_message($e->getMessage(), 'error');
-      }
+
+      // Update mapping.
+      $this->fieldsUpdated($index);
+    }
+    catch (ElasticsearchException $e) {
+      drupal_set_message($e->getMessage(), 'error');
     }
   }
 
