@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- This is based on Drupal's core phpunit.xml.dist. It makes
-     coverage reports to complete much faster thanks to the
-     whitelist section. -->
+<!-- This based on Drupal's core phpunit.xml.dist. -->
 <!-- TODO set checkForUnintentionallyCoveredCode="true" once https://www.drupal.org/node/2626832 is resolved. -->
 <!-- PHPUnit expects functional tests to be run with either a privileged user
  or your current system user. See core/tests/README.md and
@@ -43,16 +41,22 @@
     <testsuite name="functional">
       <file>./tests/TestSuites/FunctionalTestSuite.php</file>
     </testsuite>
+    <testsuite name="nonfunctional">
+      <file>./tests/TestSuites/UnitTestSuite.php</file>
+      <file>./tests/TestSuites/KernelTestSuite.php</file>
+    </testsuite>
   </testsuites>
   <listeners>
     <listener class="\Drupal\Tests\Listeners\DrupalStandardsListener">
     </listener>
   </listeners>
+  <!-- Filter for coverage reports. -->
   <filter>
-    <whitelist>
+    <whitelist processUncoveredFilesFromWhitelist="true">
       <directory>../modules/elasticsearch_connector</directory>
       <exclude>
         <directory>../modules/elasticsearch_connector/tests</directory>
+        <directory>../modules/elasticsearch_connector/test_modules</directory>
       </exclude>
     </whitelist>
   </filter>
