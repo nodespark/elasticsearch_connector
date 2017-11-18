@@ -1,9 +1,10 @@
 # Default configuration file for Drupal modules.
 #
-# To use this in a new module:
-#   1. Copy the .circleci directory to the module.
-#   2. Update the working_directory key.
-#   3. Update the module path in the code-sniffer job.
+# Use setup.sh to automate setting this up. Otherwise, to use this in a new
+# module:
+#   1. Copy config.yml to the module's .circleci directory.
+#   2. Change 'latest' in the image tag to the latest tag.
+#   3. Update the working_directory key.
 #   4. Connect CircleCI to the repository through the Circle UI.
 #   5. Set the COMPOSER_AUTH environment variable in Circle to grant access to
 #      any private repositories.
@@ -14,14 +15,18 @@
 
 defaults: &defaults
   docker:
-    # specify the version you desire here
-    - image: andrewberry/drupal_tests:0.0.3
+    # specify the version you desire here (avoid latest except for testing)
+    - image: andrewberry/drupal_tests:0.0.11
 
     # Use our fork until https://github.com/wernight/docker-phantomjs/pull/3 is
     # merged.
     # - image: wernight/phantomjs:2.1.1
     - image: andrewberry/docker-phantomjs:v2.1.1-patch1
       command: [phantomjs, --webdriver=8910]
+
+    - image: mariadb:10.3
+      environment:
+        MYSQL_ALLOW_EMPTY_PASSWORD: 1
 
     # Specify service dependencies here if necessary
     # CircleCI maintains a library of pre-built images
@@ -64,18 +69,12 @@ unit_kernel_tests: &unit_kernel_tests
     - run:
         working_directory: /var/www/html
         command: |
-            cp ./modules/$CIRCLE_PROJECT_REPONAME/.circleci/test.sh /var/www/html
-            ./test.sh $CIRCLE_PROJECT_REPONAME
-
-    - run:
-        working_directory: /var/www/html
-        command: |
           ./test.sh $CIRCLE_PROJECT_REPONAME
 
     - store_test_results:
-        path: /tmp/phpunit
+        path: /var/www/html/artifacts/phpunit
     - store_artifacts:
-        path: /tmp/phpunit
+        path: /var/www/html/artifacts
 
 # Run Behat tests. This command invokes the test-js.sh hook.
 behat_tests: &behat_tests
@@ -91,6 +90,11 @@ behat_tests: &behat_tests
         command: |
           ./test-js.sh $CIRCLE_PROJECT_REPONAME
 
+    - store_test_results:
+        path: /var/www/html/artifacts/behat
+    - store_artifacts:
+        path: /var/www/html/artifacts
+
 # Run code quality tests. This invokes code-sniffer.sh.
 code_sniffer: &code_sniffer
   <<: *defaults
@@ -103,15 +107,12 @@ code_sniffer: &code_sniffer
     - run:
         working_directory: /var/www/html
         command: |
-          cp ./modules/$CIRCLE_PROJECT_REPONAME/.circleci/code-sniffer.sh /var/www/html
           ./code-sniffer.sh $CIRCLE_PROJECT_REPONAME
 
     - store_test_results:
-        path: /tmp/phpcs
-
-
+        path: /var/www/html/artifacts/phpcs
     - store_artifacts:
-        path: /tmp/phpcs
+        path: /var/www/html/artifacts
 
 # Run code coverage tests. This invokes code-coverage-stats.sh.
 code_coverage: &code_coverage
@@ -127,13 +128,15 @@ code_coverage: &code_coverage
         command: |
           ./code-coverage-stats.sh $CIRCLE_PROJECT_REPONAME
     - store_artifacts:
-        path: /var/www/html/sites/coverage.tar.gz
+        path: /var/www/html/artifacts
 
 # Declare all of the jobs we should run.
 version: 2
 jobs:
   run-unit-kernel-tests:
      <<: *unit_kernel_tests
+  run-behat-tests:
+     <<: *behat_tests
   run-code-sniffer:
      <<: *code_sniffer
   run-code-coverage:
@@ -146,5 +149,6 @@ workflows:
   test_and_lint:
     jobs:
       - run-unit-kernel-tests
+      - run-behat-tests
       - run-code-sniffer
       - run-code-coverage

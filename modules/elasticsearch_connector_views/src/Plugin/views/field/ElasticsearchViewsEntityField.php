@@ -20,9 +20,7 @@ use Drupal\views\Views;
  */
 class ElasticsearchViewsEntityField extends Field {
 
-  use ElasticsearchViewsFieldTrait {
-    preRender as traitPreRender;
-  }
+  use ElasticsearchViewsFieldTrait;
 
   /**
    * The parent path of this property.
@@ -178,7 +176,6 @@ class ElasticsearchViewsEntityField extends Field {
    */
   public function preRender(&$values) {
     if ($this->options['field_rendering']) {
-      $this->traitPreRender($values);
       parent::preRender($values);
     }
     else {
