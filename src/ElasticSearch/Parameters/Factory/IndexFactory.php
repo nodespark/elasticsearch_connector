@@ -50,17 +50,26 @@ class IndexFactory {
    *
    * @return array
    */
-  public static function create(IndexInterface $index) {
-    return [
-      'index' => IndexFactory::getIndexName($index),
-      'body' => [
-        'settings' => [
-          'number_of_shards' => $index->getOption('number_of_shards', 5),
-          'number_of_replicas' => $index->getOption('number_of_replicas', 1),
-        ],
-      ],
-    ];
-  }
+   public static function create(IndexInterface $index) {
+     $indexName = IndexFactory::getIndexName($index);
+     $indexConfig =  [
+       'index' => $indexName,
+       'body' => [
+         'settings' => [
+           'number_of_shards' => $index->getOption('number_of_shards', 5),
+           'number_of_replicas' => $index->getOption('number_of_replicas', 1),
+         ],
+       ],
+     ];
+
+     // Allow other modules to alter index config before we create it.
+     $dispatcher = \Drupal::service('event_dispatcher');
+     $prepareIndexEvent = new PrepareIndexEvent($indexConfig, $indexName);
+     $event = $dispatcher->dispatch(PrepareIndexEvent::PREPARE_INDEX, $prepareIndexEvent);
+     $indexConfig = $event->getIndexConfig();
+
+     return $indexConfig;
+   }
 
   /**
    * Build parameters to bulk delete indexes.
