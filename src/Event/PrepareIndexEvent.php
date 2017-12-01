@@ -14,6 +14,7 @@ class PrepareIndexEvent extends Event {
   const PREPARE_INDEX = 'elasticsearch_connector.prepare_index';
 
   protected $indexConfig;
+  protected $indexName;
 
   /**
    * PrepareIndexEvent constructor.

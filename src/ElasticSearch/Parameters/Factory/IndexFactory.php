@@ -3,6 +3,7 @@
 namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 
 use Drupal\search_api\IndexInterface;
+use Drupal\elasticsearch_connector\Event\PrepareIndexEvent;
 
 /**
  * Create Elasticsearch Indices.
