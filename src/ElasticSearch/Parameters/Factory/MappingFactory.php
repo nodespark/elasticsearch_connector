@@ -78,8 +78,8 @@ class MappingFactory {
 
     // Allow other modules to alter mapping config before we create it.
     $dispatcher = \Drupal::service('event_dispatcher');
-    $prepareMappingEvent = new PrepareIndexEvent($mappingConfig, $type, $field);
-    $event = $dispatcher->dispatch(PrepareIndexEvent::PREPARE_MAPPING, $prepareMappingEvent);
+    $prepareMappingEvent = new PrepareMappingEvent($mappingConfig, $type, $field);
+    $event = $dispatcher->dispatch(PrepareMappingEvent::PREPARE_MAPPING, $prepareMappingEvent);
     $mappingConfig = $event->getMappingConfig();
 
     return $mappingConfig;
