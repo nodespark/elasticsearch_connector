@@ -4,6 +4,7 @@ namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 
 use Drupal\search_api\Item\FieldInterface;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
+use Drupal\elasticsearch_connector\Event\PrepareMappingEvent;
 
 /**
  * Class MappingFactory.
@@ -20,10 +21,11 @@ class MappingFactory {
    */
   public static function mappingFromField(FieldInterface $field) {
     $type = $field->getType();
+    $mappingConfig = NULL;
 
     switch ($type) {
       case 'text':
-        return [
+        $mappingConfig = [
           'type' => 'text',
           'boost' => $field->getBoost(),
           'fields' => [
@@ -37,44 +39,50 @@ class MappingFactory {
       case 'uri':
       case 'string':
       case 'token':
-        return [
+        $mappingConfig = [
           'type' => 'keyword',
         ];
 
       case 'integer':
       case 'duration':
-        return [
+        $mappingConfig = [
           'type' => 'integer',
         ];
 
       case 'boolean':
-        return [
+        $mappingConfig = [
           'type' => 'boolean',
         ];
 
       case 'decimal':
-        return [
+        $mappingConfig = [
           'type' => 'float',
         ];
 
       case 'date':
-        return [
+        $mappingConfig = [
           'type' => 'date',
           'format' => 'epoch_second',
         ];
 
       case 'attachment':
-        return [
+        $mappingConfig = [
           'type' => 'attachment',
         ];
 
       case 'object':
-        return [
+        $mappingConfig = [
           'type' => 'nested'
         ];
     }
 
-    return NULL;
+    // Allow other modules to alter mapping config before we create it.
+    $dispatcher = \Drupal::service('event_dispatcher');
+    $prepareMappingEvent = new PrepareIndexEvent($mappingConfig, $type, $field);
+    $event = $dispatcher->dispatch(PrepareIndexEvent::PREPARE_MAPPING, $prepareMappingEvent);
+    $mappingConfig = $event->getMappingConfig();
+
+    return $mappingConfig;
   }
 
 }
