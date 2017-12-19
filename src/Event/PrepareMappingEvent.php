@@ -11,7 +11,7 @@ use Symfony\Component\EventDispatcher\Event;
  */
 class PrepareMappingEvent extends Event {
 
-  const PREPARE_INDEX = 'elasticsearch_connector.prepare_mapping';
+  const PREPARE_MAPPING = 'elasticsearch_connector.prepare_mapping';
 
   protected $mappingConfig;
   protected $type;
