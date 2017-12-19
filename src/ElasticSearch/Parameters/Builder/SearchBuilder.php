@@ -15,6 +15,7 @@ use Elasticsearch\Common\Exceptions\ElasticsearchException;
 use MakinaCorpus\Lucene\Query;
 use MakinaCorpus\Lucene\TermCollectionQuery;
 use MakinaCorpus\Lucene\TermQuery;
+use Drupal\elasticsearch_connector\Event\PrepareSearchQueryEvent;
 
 /**
  * Class SearchBuilder.
@@ -226,7 +227,7 @@ class SearchBuilder {
       $mlt = $query_options['search_api_mlt'];
     }
 
-    return [
+    $elasticSearchQuery = [
       'query_offset' => $query_offset,
       'query_limit' => $query_limit,
       'query_search_string' => $query_search_string,
@@ -234,6 +235,15 @@ class SearchBuilder {
       'sort' => $sort,
       'mlt' => $mlt,
     ];
+
+    // Allow other modules to alter index config before we create it.
+    $indexName = IndexFactory::getIndexName($this->index);
+    $dispatcher = \Drupal::service('event_dispatcher');
+    $prepareSearchQueryEvent = new PrepareSearchQueryEvent($elasticSearchQuery, $indexName);
+    $event = $dispatcher->dispatch(PrepareSearchQueryEvent::PREPARE_QUERY, $prepareSearchQueryEvent);
+    $elasticSearchQuery = $event->getElasticSearchQuery();
+
+    return $elasticSearchQuery;
   }
 
   /**
