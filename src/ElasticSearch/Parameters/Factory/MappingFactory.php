@@ -35,6 +35,7 @@ class MappingFactory {
             ]
           ]
         ];
+        break;
 
       case 'uri':
       case 'string':
@@ -42,38 +43,45 @@ class MappingFactory {
         $mappingConfig = [
           'type' => 'keyword',
         ];
+        break;
 
       case 'integer':
       case 'duration':
         $mappingConfig = [
           'type' => 'integer',
         ];
+        break;
 
       case 'boolean':
         $mappingConfig = [
           'type' => 'boolean',
         ];
+        break;
 
       case 'decimal':
         $mappingConfig = [
           'type' => 'float',
         ];
+        break;
 
       case 'date':
         $mappingConfig = [
           'type' => 'date',
           'format' => 'epoch_second',
         ];
+        break;
 
       case 'attachment':
         $mappingConfig = [
           'type' => 'attachment',
         ];
+        break;
 
       case 'object':
         $mappingConfig = [
           'type' => 'nested'
         ];
+        break;
     }
 
     // Allow other modules to alter mapping config before we create it.
