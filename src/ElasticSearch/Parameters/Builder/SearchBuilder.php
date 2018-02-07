@@ -80,9 +80,6 @@ class SearchBuilder {
       $this->body['sort'] = $query_options['sort'];
     }
 
-    // More Like This.
-    $this->setMoreLikeThisQuery($query_options);
-
     // Build the query.
     if (!empty($query_options['query_search_string']) && !empty($query_options['query_search_filter'])) {
       $this->body['query']['bool']['must'] = $query_options['query_search_string'];
@@ -119,6 +116,9 @@ class SearchBuilder {
         'excludes' => $exclude_source_fields,
       ];
     }
+
+    // More Like This.
+    $this->setMoreLikeThisQuery($query_options);
 
     $params['body'] = $this->body;
     // Preserve the options for further manipulation if necessary.
@@ -480,7 +480,32 @@ class SearchBuilder {
   protected function setMoreLikeThisQuery(array $query_options) {
     if (!empty($query_options['mlt'])) {
       $mlt_query['more_like_this'] = [];
-      $mlt_query['more_like_this']['like_text'] = $query_options['mlt']['id'];
+
+      // Transform input parameter "id" to "ids" if available.
+      if (isset($query_options['mlt']['id'])) {
+        $query_options['mlt']['ids'] =
+          is_array($query_options['mlt']['id']) ?
+            $query_options['mlt']['id'] :
+            [$query_options['mlt']['id']];
+        unset($query_options['mlt']['id']);
+      }
+
+      // Input parameter: ids
+      if (isset($query_options['mlt']['ids'])) {
+        $mlt_query['more_like_this']['ids'] = $query_options['mlt']['ids'];
+      }
+
+      // Input parameter: like
+      if (isset($query_options['mlt']['like'])) {
+        $mlt_query['more_like_this']['like'] = $query_options['mlt']['like'];
+      }
+
+      // Input parameter: unlike
+      if (isset($query_options['mlt']['unlike'])) {
+        $mlt_query['more_like_this']['unlike'] = $query_options['mlt']['unlike'];
+      }
+
+      // Input parameter: fields
       $mlt_query['more_like_this']['fields'] = array_values(
         $query_options['mlt']['fields']
       );
@@ -489,8 +514,7 @@ class SearchBuilder {
       $mlt_query['more_like_this']['min_doc_freq'] = 1;
       $mlt_query['more_like_this']['min_term_freq'] = 1;
 
-      $this->body['query'] = $mlt_query;
-      $this->body['fields'] = array_values($query_options['mlt']['fields']);
+      $this->body['query']['bool']['must'][] = $mlt_query;
     }
   }
 
