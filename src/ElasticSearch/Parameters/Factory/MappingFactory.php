@@ -4,6 +4,7 @@ namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 
 use Drupal\search_api\Item\FieldInterface;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
+use Drupal\elasticsearch_connector\Event\PrepareMappingEvent;
 
 /**
  * Class MappingFactory.
@@ -20,10 +21,11 @@ class MappingFactory {
    */
   public static function mappingFromField(FieldInterface $field) {
     $type = $field->getType();
+    $mappingConfig = NULL;
 
     switch ($type) {
       case 'text':
-        return [
+        $mappingConfig = [
           'type' => 'text',
           'boost' => $field->getBoost(),
           'fields' => [
@@ -33,48 +35,62 @@ class MappingFactory {
             ]
           ]
         ];
+        break;
 
       case 'uri':
       case 'string':
       case 'token':
-        return [
+        $mappingConfig = [
           'type' => 'keyword',
         ];
+        break;
 
       case 'integer':
       case 'duration':
-        return [
+        $mappingConfig = [
           'type' => 'integer',
         ];
+        break;
 
       case 'boolean':
-        return [
+        $mappingConfig = [
           'type' => 'boolean',
         ];
+        break;
 
       case 'decimal':
-        return [
+        $mappingConfig = [
           'type' => 'float',
         ];
+        break;
 
       case 'date':
-        return [
+        $mappingConfig = [
           'type' => 'date',
           'format' => 'strict_date_optional_time||epoch_second',
         ];
+        break;
 
       case 'attachment':
-        return [
+        $mappingConfig = [
           'type' => 'attachment',
         ];
+        break;
 
       case 'object':
-        return [
+        $mappingConfig = [
           'type' => 'nested'
         ];
+        break;
     }
 
-    return NULL;
+    // Allow other modules to alter mapping config before we create it.
+    $dispatcher = \Drupal::service('event_dispatcher');
+    $prepareMappingEvent = new PrepareMappingEvent($mappingConfig, $type, $field);
+    $event = $dispatcher->dispatch(PrepareMappingEvent::PREPARE_MAPPING, $prepareMappingEvent);
+    $mappingConfig = $event->getMappingConfig();
+
+    return $mappingConfig;
   }
 
 }
