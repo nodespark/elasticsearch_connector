@@ -20,7 +20,7 @@ class FilterFactory {
    */
   public static function filterFromCondition(Condition $condition) {
     // Handles "empty", "not empty" operators.
-    if (!$condition->getValue()) {
+    if (is_null($condition->getValue())) {
       switch ($condition->getOperator()) {
         case '<>':
           $filter = [
