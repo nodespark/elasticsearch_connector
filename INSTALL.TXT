@@ -1,8 +1,0 @@
-Install this module with the following command:
-
-```
-composer require drupal/elasticsearch_connector
-```
-
-Then, either install it with Drush using `drush en elasticsearch_connector` or via
-the administration interface.

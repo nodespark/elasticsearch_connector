@@ -38,7 +38,7 @@ class ElasticsearchTest extends BackendTest {
    *
    * @var array
    */
-  public static $modules = array('elasticsearch', 'elasticsearch_test');
+  public static $modules = array('elasticsearch_connector', 'elasticsearch_test');
 
   /**
    * {@inheritdoc}

@@ -17,4 +17,4 @@ status: 1
 langcode: en
 dependencies:
   module:
-    - elasticsearch
+    - elasticsearch_connector
