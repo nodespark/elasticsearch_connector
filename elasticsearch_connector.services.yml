@@ -11,3 +11,6 @@ services:
   elasticsearch_connector.cluster_manager:
     class: Drupal\elasticsearch_connector\ClusterManager
     arguments: ['@state', '@entity_type.manager']
+
+  elasticsearch_connector.index_factory:
+    class: Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory

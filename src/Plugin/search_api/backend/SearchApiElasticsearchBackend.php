@@ -132,6 +132,13 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   protected $logger;
 
   /**
+   * Elasticsearch index factory.
+   *
+   * @var \Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory
+   */
+  protected $indexFactory;
+
+  /**
    * SearchApiElasticsearchBackend constructor.
    *
    * @param array $configuration
@@ -154,6 +161,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    *   The cluster manager service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager service.
+   * @param \Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory $indexFactory
+   *   Index factory.
    *
    * @throws \Drupal\search_api\SearchApiException
    */
@@ -167,7 +176,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     Config $elasticsearch_settings,
     LoggerInterface $logger,
     ClusterManager $cluster_manager,
-    EntityTypeManagerInterface $entity_type_manager
+    EntityTypeManagerInterface $entity_type_manager,
+    IndexFactory $indexFactory
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
@@ -178,6 +188,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     $this->elasticsearchSettings = $elasticsearch_settings;
     $this->clusterManager = $cluster_manager;
     $this->entityTypeManager = $entity_type_manager;
+    $this->indexFactory = $indexFactory;
 
     if (empty($this->configuration['cluster_settings']['cluster'])) {
       $this->configuration['cluster_settings']['cluster'] = $this->clusterManager->getDefaultCluster();
@@ -211,7 +222,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       $container->get('config.factory')->get('elasticsearch.settings'),
       $container->get('logger.factory')->get('elasticconnector_sapi'),
       $container->get('elasticsearch_connector.cluster_manager'),
-      $container->get('entity_type.manager')
+      $container->get('entity_type.manager'),
+      $container->get('elasticsearch_connector.index_factory')
     );
   }
 
@@ -372,9 +384,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    */
   public function updateIndex(IndexInterface $index) {
     try {
-      if (!$this->client->indices()->exists(IndexFactory::index($index))) {
+      if (!$this->client->indices()->exists($this->indexFactory->index($index))) {
         $response = $this->client->indices()->create(
-          IndexFactory::create($index)
+          $this->indexFactory->create($index)
         );
         if (!$this->client->CheckResponseAck($response)) {
           drupal_set_message($this->t('The elasticsearch client was not able to create index'), 'error');
@@ -399,7 +411,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    *   TRUE on success, FALSE otherwise.
    */
   public function fieldsUpdated(IndexInterface $index) {
-    $params = IndexFactory::index($index, TRUE);
+    $params = $this->indexFactory->index($index, TRUE);
 
     try {
       if ($this->client->indices()->existsType($params)) {
@@ -421,7 +433,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       }
 
       $response = $this->client->indices()->putMapping(
-        IndexFactory::mapping($index)
+        $this->indexFactory->mapping($index)
       );
 
       if (!$this->client->CheckResponseAck($response)) {
@@ -440,7 +452,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * {@inheritdoc}
    */
   public function removeIndex($index) {
-    $params = IndexFactory::index($index);
+    $params = $this->indexFactory->index($index);
 
     try {
       if ($this->client->indices()->exists($params)) {
@@ -464,7 +476,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
     try {
       $response = $this->client->bulk(
-        IndexFactory::bulkIndex($index, $items)
+        $this->indexFactory->bulkIndex($index, $items)
       );
       // If there were any errors, log them and throw an exception.
       if (!empty($response['errors'])) {
@@ -506,7 +518,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
     try {
       $this->client->bulk(
-        IndexFactory::bulkDelete($index, $ids)
+        $this->indexFactory->bulkDelete($index, $ids)
       );
     }
     catch (ElasticsearchException $e) {
@@ -524,7 +536,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     // Get index.
     $index = $query->getIndex();
 
-    $params = IndexFactory::index($index, TRUE);
+    $params = $this->indexFactory->index($index, TRUE);
 
     // Check Elasticsearch index.
     if (!$this->client->indices()->existsType($params)) {
@@ -672,7 +684,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    *   TRUE if the given index exists in Elasticsearch, otherwise FALSE.
    */
   protected function doesTypeExists(IndexInterface $index) {
-    $params = IndexFactory::index($index, TRUE);
+    $params = $this->indexFactory->index($index, TRUE);
     try {
       return $this->client->indices()->existsType($params);
     }
