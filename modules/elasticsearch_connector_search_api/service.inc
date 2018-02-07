@@ -1382,7 +1382,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     // Build the query.
     if (!empty($query_options['query_search']) && !empty($query_options['query_search_filter'])) {
       $body['query']['bool']['must'] = $query_options['query_search'];
-      $body['query']['bool']['filter'] = $query_options['query_search_filter'];
+      $body['query']['bool']['filter'] = $query_options['query_search_filter']['filter'];
     }
     elseif (!empty($query_options['query_search'])) {
       if (empty($body['query'])) {
