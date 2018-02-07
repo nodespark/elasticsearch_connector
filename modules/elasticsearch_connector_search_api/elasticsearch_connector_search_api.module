@@ -36,6 +36,9 @@ function elasticsearch_connector_search_api_search_api_service_info() {
       $services['search_api_elasticsearch_connector']['class'] = 'SearchApiElasticsearchConnectorMissing';
     }
   }
+  elseif (file_exists(DRUPAL_ROOT . '/composer.json')) {
+    require_once DRUPAL_ROOT . '/vendor/autoload.php';
+  }
 
   return $services;
 }

@@ -816,6 +816,9 @@ function elasticsearch_connector_load_library($cluster) {
           // has not been invoked.
           composer_manager_register_autoloader();
         }
+        elseif (file_exists(DRUPAL_ROOT . '/composer.json')) {
+          require_once DRUPAL_ROOT . '/vendor/autoload.php';
+        }
 
         if (!class_exists('\nodespark\DESConnector\ClientFactory')) {
           // No library available!

@@ -1,9 +1,8 @@
 name = Elasticsearch Connector
-description = "Abstraction of making connection to the elasticsearch server. 
-This module is API for a whole bunch of functionality connected with this 
+description = "Abstraction of making connection to the elasticsearch server.
+This module is API for a whole bunch of functionality connected with this
 module."
 core = 7.x
 package = Elasticsearch
 configure = admin/config/elasticsearch-connector
 dependencies[] = ctools
-dependencies[] = composer_manager
