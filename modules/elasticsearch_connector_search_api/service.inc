@@ -766,7 +766,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         }
 
         if (!empty($filters)) {
-          $filters = $this->setFiltersConjunction($filters, $conjunction);
+          $filters = $this->normalizeFilters($filters,$conjunction);
         }
       }
       catch (Exception $e) {
@@ -776,6 +776,67 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
       return array($queries, $filters);
     }
+  }
+
+  /**
+   * Normalizes complicated filters.
+   */
+  protected function normalizeFilters($filters, $conjunction) {
+    $result = array();
+
+    if (isset($filters['filter'])) {
+      $result['filter'] = $filters['filter'];
+      unset($filters['filter']);
+    }
+
+    if (isset($filters['should'])) {
+      $result['should'] = $filters['should'];
+      unset($filters['should']);
+    }
+
+    if (isset($filters['must_not'])) {
+      $result['must_not'] = $filters['must_not'];
+      unset($filters['must_not']);
+    }
+
+    if (count($filters)) {
+      foreach ($filters as $key => $value) {
+        if (is_int($key)) {
+          if (isset($value['must_not'])) {
+            if (isset($result['must_not'])) {
+              $result['must_not'] += array($value['must_not']);
+            }
+            else {
+              $result['must_not'] = array($value['must_not']);
+            }
+          }
+          else {
+            if ($conjunction === 'AND') {
+              if (!isset($result['filter'])) {
+                $result['filter'] = array();
+                $result['filter'] = array($value);
+              }
+              else {
+                $result['filter'][] = array($value);
+              }
+            }
+            else {
+              if (!isset($result['should'])) {
+                $result['should'] = array();
+                $result['should'] = array($value);
+              }
+              else {
+                $result['should'][] = array($value);
+              }
+            }
+          }
+        }
+        else {
+          $result['filter'][] = array($value);
+        }
+      }
+    }
+    return $result;
   }
 
   /**
@@ -834,10 +895,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
         case '<>':
           $filter = array(
-            'not' => array(
-              'filter' => array(
-                'term' => array($filter_assoc['field_id'] => $filter_assoc['filter_value'])
-              )
+            'must_not' => array(
+              'term' => array($filter_assoc['field_id'] => $filter_assoc['filter_value']),
             )
           );
           break;
@@ -944,27 +1003,6 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
       'filter_value' => $filter_info[1],
       'filter_operator' => $filter_operator,
     );
-  }
-
-  /**
-   * Helper function that set filters conjunction
-   */
-  protected function setFiltersConjunction(&$filters, $conjunction) {
-    if (count($filters) > 1) {
-      if ($conjunction === 'OR') {
-        $filters = array('should' => $filters);
-      }
-      elseif ($conjunction === 'AND') {
-        $filters = array('must' => $filters);
-      }
-      else {
-        throw new Exception(t('Undefined conjunction :conjunction! Available values are :avail_conjunction! Incorrect filter criteria is using for searching!',
-            array(':conjunction!' => $conjunction, ':avail_conjunction' => $conjunction)));
-        return NULL;
-      }
-    }
-
-    return array('bool' => $filters);
   }
 
   /**
@@ -1293,11 +1331,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
         );
 
         if (!empty($query_options['query_search_filter'])) {
-          $query_options['query_search_filter'] = array(
-            'and' => array(
-              $query_options['query_search_filter'],
-              $geo_distance_filter
-            ),
+          $query_options['query_search_filter']['filter'][] = array(
+            $geo_distance_filter
           );
         } else {
           $query_options['query_search_filter'] = $geo_distance_filter;
@@ -1357,7 +1392,7 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     }
     elseif (!empty($query_options['query_search_filter'])) {
       $body['query']['bool']['must'] = array('match_all' => (object)array());
-      $body['query']['bool']['filter'] = $query_options['query_search_filter'];
+      $body['query']['bool'] = array_merge($body['query']['bool'], $query_options['query_search_filter']);
     }
 
     // TODO: Handle fields on filter query.
@@ -1681,6 +1716,10 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
     $spatial = array();
     if (isset($query_options['search_api_location'])) {
       $spatial = $query_options['search_api_location'];
+    }
+
+    if (isset($query_search_filter['should'])) {
+      $query_search_filter['minimum_should_match'] = 1;
     }
 
     return array(
