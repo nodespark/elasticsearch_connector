@@ -150,9 +150,8 @@ class IndexFactory {
 
     $properties = [
       'id' => [
-        'type' => 'string',
-        'index' => 'not_analyzed',
-        'include_in_all' => FALSE,
+        'type' => 'keyword',
+        'index' => 'true',
       ],
     ];
 
