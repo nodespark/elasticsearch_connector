@@ -61,11 +61,11 @@ class FilterFactory {
 
         case '<>':
           $filter = [
-            'not' => [
-              'filter' => [
+            'bool' => [
+              'must_not' => [
                 'term' => [$condition->getField() => $condition->getValue()],
               ],
-            ],
+            ]
           ];
           break;
 
