@@ -60,7 +60,7 @@ class MappingFactory {
       case 'date':
         return [
           'type' => 'date',
-          'format' => 'epoch_second',
+          'format' => 'strict_date_optional_time||epoch_second',
         ];
 
       case 'attachment':
