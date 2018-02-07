@@ -15,6 +15,8 @@ use Elasticsearch\Common\Exceptions\ElasticsearchException;
 use MakinaCorpus\Lucene\Query;
 use MakinaCorpus\Lucene\TermCollectionQuery;
 use MakinaCorpus\Lucene\TermQuery;
+use Drupal\elasticsearch_connector\Event\PrepareSearchQueryEvent;
+use Drupal\elasticsearch_connector\Event\BuildSearchParamsEvent;
 
 /**
  * Class SearchBuilder.
@@ -122,6 +124,13 @@ class SearchBuilder {
     // Preserve the options for further manipulation if necessary.
     $this->query->setOption('ElasticParams', $params);
 
+    // Allow other modules to alter index config before we create it.
+    $indexName = IndexFactory::getIndexName($this->index);
+    $dispatcher = \Drupal::service('event_dispatcher');
+    $buildSearchParamsEvent = new BuildSearchParamsEvent($params, $indexName);
+    $event = $dispatcher->dispatch(BuildSearchParamsEvent::BUILD_QUERY, $buildSearchParamsEvent);
+    $params = $event->getElasticSearchParams();
+
     return $params;
   }
 
@@ -226,7 +235,7 @@ class SearchBuilder {
       $mlt = $query_options['search_api_mlt'];
     }
 
-    return [
+    $elasticSearchQuery = [
       'query_offset' => $query_offset,
       'query_limit' => $query_limit,
       'query_search_string' => $query_search_string,
@@ -234,6 +243,15 @@ class SearchBuilder {
       'sort' => $sort,
       'mlt' => $mlt,
     ];
+
+    // Allow other modules to alter index config before we create it.
+    $indexName = IndexFactory::getIndexName($this->index);
+    $dispatcher = \Drupal::service('event_dispatcher');
+    $prepareSearchQueryEvent = new PrepareSearchQueryEvent($elasticSearchQuery, $indexName);
+    $event = $dispatcher->dispatch(PrepareSearchQueryEvent::PREPARE_QUERY, $prepareSearchQueryEvent);
+    $elasticSearchQuery = $event->getElasticSearchQuery();
+
+    return $elasticSearchQuery;
   }
 
   /**
