@@ -443,9 +443,13 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
         foreach ($response['hits']['hits'] as $doc) {
           $result_doc = array();
           foreach ($doc['_source'] as $field_name => $field_value) {
-            // TODO: Handle this by implementing the Multivalue interface in D8
-            // Handle multivalue with concatenation for now.
-            $result_doc[$field_name] = implode(' | ', $field_value);
+            if(is_array($field_value)) {
+              // TODO: Handle this by implementing the Multivalue interface in D8
+              // Handle multivalue with concatenation for now.
+              $result_doc[$field_name] = implode(' | ', $field_value);
+            }else{
+              $result_doc[$field_name] = $field_value;
+            }
           }
           $result_doc['_source'] = $doc['_source'];
           $result_doc['index'] = $item_index;
