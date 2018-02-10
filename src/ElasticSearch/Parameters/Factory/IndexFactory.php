@@ -5,6 +5,7 @@ namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 use Drupal\search_api\IndexInterface;
 use Drupal\elasticsearch_connector\Event\PrepareIndexEvent;
 use Drupal\elasticsearch_connector\Event\PrepareIndexMappingEvent;
+use Drupal\search_api_autocomplete\Suggester\SuggesterInterface;
 
 /**
  * Create Elasticsearch Indices.
@@ -166,9 +167,32 @@ class IndexFactory {
       ],
     ];
 
+    // Figure out which fields are used for autocompletion if any.
+    if (\Drupal::moduleHandler()->moduleExists('search_api_autocomplete')) {
+      $autocompletes = \Drupal::entityTypeManager()->getStorage('search_api_autocomplete_search')->loadMultiple();
+      $all_autocompletion_fields = [];
+      foreach ($autocompletes as $autocomplete) {
+        $suggester = \Drupal::service('plugin.manager.search_api_autocomplete.suggester');
+        $plugin = $suggester->createInstance('server', ['#search' => $autocomplete]);
+        assert($plugin instanceof SuggesterInterface);
+        $configuration = $plugin->getConfiguration();
+        $autocompletion_fields = isset($configuration['fields']) ? $configuration['fields'] : [];
+        if (!$autocompletion_fields) {
+          $autocompletion_fields = $plugin->getSearch()->getIndex()->getFulltextFields();
+        }
+
+        // Collect autocompletion fields in an array keyed by field id.
+        $all_autocompletion_fields += array_flip($autocompletion_fields);
+      }
+     }
+
     // Map index fields.
     foreach ($index->getFields() as $field_id => $field_data) {
       $properties[$field_id] = MappingFactory::mappingFromField($field_data);
+      // Enable fielddata for fields that are used with autocompletion.
+      if (isset($all_autocompletion_fields[$field_id])) {
+        $properties[$field_id]['fielddata'] = TRUE;
+      }
     }
 
     $params['body'][$params['type']]['properties'] = $properties;

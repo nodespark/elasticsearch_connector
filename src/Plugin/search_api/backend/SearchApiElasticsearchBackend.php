@@ -21,6 +21,9 @@ use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\Query\ResultSet;
 use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api\SearchApiException;
+use Drupal\search_api_autocomplete\SearchApiAutocompleteSearchInterface;
+use Drupal\search_api_autocomplete\SearchInterface;
+use Drupal\search_api_autocomplete\Suggestion\SuggestionFactory;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
 use nodespark\DESConnector\Elasticsearch\Aggregations\Bucket\Terms;
 use nodespark\DESConnector\Elasticsearch\Aggregations\Metrics\Stats;
@@ -527,6 +530,47 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   }
 
   /**
+   * Implements SearchApiAutocompleteInterface::getAutocompleteSuggestions().
+   *
+   * Note that the interface is not directly implemented to avoid a dependency
+   * on search_api_autocomplete module.
+   */
+  public function getAutocompleteSuggestions(QueryInterface $query, SearchInterface $search, $incomplete_key, $user_input) {
+    try {
+      $fields = $this->getQueryFulltextFields($query);
+      if (count($fields) > 1) {
+        throw new \LogicException('Elasticsearch requires a single fulltext field for use with autocompletion! Please adjust your configuration.');
+      }
+      $query->setOption('autocomplete', $incomplete_key);
+      $query->setOption('autocomplete_field', reset($fields));
+
+      // Disable facets so it does not collide with autocompletion results.
+      $query->setOption('search_api_facets', FALSE);
+
+      $result = $this->search($query);
+      $query->postExecute($result);
+
+      // Parse suggestions out of the response.
+      $suggestions = [];
+      $factory = new SuggestionFactory($user_input);
+
+      $response = $result->getExtraData('elasticsearch_response');
+      if (isset($response['aggregations']['autocomplete']['buckets'])) {
+        $suffix_start = strlen($user_input);
+        $buckets = $response['aggregations']['autocomplete']['buckets'];
+        foreach ($buckets as $bucket) {
+          $suggestions[] = $factory->createFromSuggestionSuffix(substr($bucket['key'], $suffix_start), $bucket['doc_count']);
+        }
+      }
+      return $suggestions;
+    }
+    catch (\Exception $e) {
+      $this->logger->error($e->getMessage());
+      return array();
+    }
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function search(QueryInterface $query) {
@@ -550,6 +594,24 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
     // Build Elasticsearch query.
     $params = SearchFactory::search($query);
+
+    // Note that this requires fielddata option to be enabled.
+    // @see ::getAutocompleteSuggestions()
+    // @see \Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory::mapping()
+    if ($incomplete_key = $query->getOption('autocomplete')) {
+      // Autocomplete suggestions are determined using a term aggregation (like
+      // facets), but filtered to only include facets with the right prefix.
+      // As the search facet field is analyzed, facets are tokenized terms and
+      // all in lower case. To match that, we need convert the our filter to
+      // lower case also.
+      $incomplete_key = strtolower($incomplete_key);
+      // Note that we cannot use the elasticsearch client aggregations API as
+      // it does not support the "include" parameter.
+      $params['body']['aggs']['autocomplete']['terms'] = [
+        'field' => $query->getOption('autocomplete_field'),
+        'include' => $incomplete_key . '.*',
+      ];
+    }
 
     try {
       // Allow modules to alter the Elastic Search query.
