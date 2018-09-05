@@ -1139,4 +1139,13 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     return in_array($type, ['object']);
   }
 
+  /**
+   * Implements __sleep()
+   *
+   * Prevents closure serialization error on search_api server add form
+   */
+  public function __sleep() {
+    return array();
+  }
+
 }
