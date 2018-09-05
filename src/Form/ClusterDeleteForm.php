@@ -64,7 +64,8 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
   static public function create(ContainerInterface $container) {
     return new static (
       $container->get('entity_type.manager'),
-      $container->get('elasticsearch_connector.client_manager')
+      $container->get('elasticsearch_connector.client_manager'),
+      $container->get('elasticsearch_connector.cluster_manager')
     );
   }
 
