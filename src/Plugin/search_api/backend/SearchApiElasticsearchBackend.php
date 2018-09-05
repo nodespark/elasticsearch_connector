@@ -291,7 +291,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       '' => $this->t('- Disabled -'),
       self::FUZZINESS_AUTO => self::FUZZINESS_AUTO,
     ];
-    $fuzziness_options += array_combine(range(1, 5), range(1, 5));
+    $fuzziness_options += array_combine(range(0, 5), range(0, 5));
     $form['fuzziness'] = [
       '#type' => 'select',
       '#title' => t('Fuzziness'),
