@@ -38,7 +38,7 @@ function hook_elasticsearch_connector_search_api_results_alter(&$results, $query
  * @param SearchApiIndex $index
  * @param array $params
  */
-function hook_elasticsearch_connector_search_api_add_index($index, &$params) {
+function hook_elasticsearch_connector_search_api_add_index_alter($index, &$params) {
 
 }
 
@@ -53,7 +53,7 @@ function hook_elasticsearch_connector_search_api_add_index($index, &$params) {
  * @param array $items
  *   The original items used to build the params variable.
  */
-function hook_elasticsearch_connector_search_api_index_items($index, &$params, $items) {
+function hook_elasticsearch_connector_search_api_index_items_alter($index, &$params, $items) {
 
 }
 
