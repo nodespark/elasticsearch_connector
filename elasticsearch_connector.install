@@ -1,0 +1,52 @@
+<?php
+
+/**
+ * @file
+ * The installation file for elasticsearch_connector module.
+ */
+
+/**
+ * Implements hook_requirements().
+ *
+ * Checks for Elasticsearch client library installation.
+ */
+function elasticsearch_connector_requirements($phase) {
+  // TODO: This should be rewritten in order to get the correct library.
+  if ($phase === 'install') {
+    if (version_compare(phpversion(), '5.4', '<')) {
+      return array(
+        'elasticsearch_connector' => array(
+          'title' => t('The PHP version is not compatible with this module.'),
+          'description' => t('The module requires PHP version bigger than or equal to version 5.3.9.'),
+          'severity' => REQUIREMENT_ERROR,
+          'value' => t('PHP version not compatible.'),
+        ),
+      );
+    }
+  }
+
+  if ($phase == 'runtime') {
+    if (!interface_exists('\nodespark\DESConnector\ClientInterface')) {
+      return array(
+        'elasticsearch_connector' => array(
+          'title' => t('The Elasticsearch client library is missing.'),
+          'description' => t('The client library for Elasticsearch connection is missing.'),
+          'severity' => REQUIREMENT_ERROR,
+          'value' => t('Elasticsearch library missing.'),
+        ),
+      );
+    }
+    else {
+      return array(
+        'elasticsearch_connector' => array(
+          'title' => t('Elasticsearch PHP client library'),
+          'description' => t('The client library for Elasticsearch was correctly installed.'),
+          'severity' => REQUIREMENT_OK,
+          'value' => t('OK'),
+        ),
+      );
+    }
+  }
+
+  return array();
+}

@@ -1,0 +1,8 @@
+type: module
+name: 'Elasticseach Test'
+description: 'Elasticsearch Search API backend tests'
+package: 'Search API'
+dependencies:
+  - search_api_test_db
+core: 8.x
+hidden: true

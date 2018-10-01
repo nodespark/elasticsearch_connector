@@ -1,0 +1,4 @@
+entity.elasticsearch_connector.cluster.view:
+  route_name: entity.elasticsearch_cluster.canonical
+  base_route: entity.elasticsearch_cluster.canonical
+  title: 'View'

@@ -1,0 +1,24 @@
+ul.index-dialog-links, ul.index-dialog-links li {
+    list-style-type: none;
+}
+
+ul.index-dialog-links li, ul.index-dialog-links li a {
+    display: inline;
+}
+
+ul.index-dialog-links li.active, ul.index-dialog-links li a.active {
+    color: #0074BD;
+}
+
+ul.index-dialog-links a {
+    padding-left: 20px;
+    margin: 5px;
+}
+
+ul.index-dialog-links li a {
+    background: url('../img/plus.png') left no-repeat;
+}
+
+.es-list-index {
+    padding-left: 3em;
+}

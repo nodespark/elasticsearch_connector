@@ -1,0 +1,9 @@
+administer elasticsearch connector:
+  title: 'Administer elasticsearch connector'
+  description: 'Giving you access to administer elasticsearch connector configurations.'
+administer elasticsearch cluster:
+  title: 'Administer elasticsearch cluster'
+  description: 'Giving you access to administer elasticsearch clusters.'
+administer elasticsearch index:
+  title: 'Administer elasticsearch index'
+  description: 'Giving you access to administer elasticsearch indices.'

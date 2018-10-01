@@ -1,0 +1,5 @@
+elasticsearch_connector.config_entity:
+  title: 'Elasticsearch Connector'
+  description: 'Administer Elasticsearch clusters and indices.'
+  route_name: elasticsearch_connector.config_entity.list
+  parent: system.admin_config_search

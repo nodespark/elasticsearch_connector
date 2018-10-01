@@ -1,0 +1,47 @@
+elasticsearch_connector.backend.plugin.elasticsearch:
+  type: mapping
+  label: 'Search API Elasticsearch settings'
+  mapping:
+    cluster_settings:
+      type: mapping
+      label: 'Elasticsearch settings'
+      mapping:
+        cluster:
+          type: string
+          label: 'The cluster that handles the connection'
+    scheme:
+      type: string
+      label: 'The HTTP protocol to use for sending queries'
+    host:
+      type: string
+      label: 'The host name or IP of the Elasticsearch server'
+    port:
+      type: string
+      label: 'The port of the Elasticsearch server'
+    path:
+      type: string
+      label: 'The path that identifies the Elasticsearch instance to use on the server'
+    http_user:
+      type: string
+      label: 'Username for basic HTTP authentication'
+    http_pass:
+      type: string
+      label: 'Password for basic HTTP authentication'
+    excerpt:
+      type: boolean
+      label: 'Return an excerpt for all results'
+    retrieve_data:
+      type: boolean
+      label: 'Retrieve result data from Elasticsearch'
+    highlight_data:
+      type: boolean
+      label: 'Highlight retrieved data'
+    http_method:
+      type: string
+      label: 'The HTTP method to use for sending queries'
+    autocorrect_spell:
+      type: boolean
+      label: 'Use spellcheck for autocomplete suggestions'
+    autocorrect_suggest_words:
+      type: boolean
+      label: 'Suggest additional words'

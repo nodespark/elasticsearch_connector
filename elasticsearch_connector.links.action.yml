@@ -1,0 +1,10 @@
+entity.elasticsearch_cluster.add_form:
+  route_name: entity.elasticsearch_cluster.add_form
+  title: 'Add cluster'
+  appears_on:
+    - elasticsearch_connector.config_entity.list
+entity.elasticsearch_index.add_form:
+  route_name: entity.elasticsearch_index.add_form
+  title: 'Add index'
+  appears_on:
+    - elasticsearch_connector.config_entity.list

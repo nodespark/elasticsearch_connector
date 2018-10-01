@@ -1,0 +1,564 @@
+<?php
+
+/**
+ * @file
+ * Provides hook implementations and functions accessible from other modules.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use \Elasticsearch\Client;
+
+/**
+ * Implements hook_help().
+ */
+function elasticsearch_connector_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.elasticsearch_connector':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Abstraction of making connection to the elasticsearch server. This module is API for a whole bunch of functionality connected with this module. Provides an interface to connect to a elasticsearch cluster and implements the official Elasticsearch-php library.') . '</p>';
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<dt>' . t('Create cluster') . '</dt>';
+      $output .= '<dd>' . t('To be described...') . '</dd>';
+      $output .= '<dt>' . t('Create index') . '</dt>';
+      $output .= '<dd>' . t('To be described...') . '</dd>';
+      $output .= '</dl>';
+
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function elasticsearch_connector_cron() {
+  // TODO: Check cluster node state and update cluster nodes if any changes.
+  // Do this only if we have auto-node update configuration enabled.
+  // The default state of the auto mode will be activated!
+}
+
+/**
+ * Implements hook_theme().
+ */
+function elasticsearch_connector_theme() {
+  return array(
+    'elasticsearch_connector_page' => array(
+      'render element' => 'page',
+      'template' => 'elasticsearch-connector-dialog-page',
+    ),
+  );
+}
+
+/**
+ * Implements hook_element_info().
+ */
+function elasticsearch_connector_element_info() {
+  return array(
+    'ec_clusters' => array(
+      '#input' => TRUE,
+      '#multiple' => FALSE,
+      '#theme' => 'select',
+      '#theme_wrappers' => array('form_element'),
+      '#process' => array('_elasticsearch_ec_clusters_process'),
+    ),
+    'ec_index' => array(
+      '#input' => TRUE,
+      '#tree' => TRUE,
+      '#multiple' => FALSE,
+      '#theme_wrappers' => array('form_element'),
+      '#process' => array('_elasticsearch_ec_index_process'),
+      '#attached' => _elasticsearch_ec_index_attached(),
+    ),
+  );
+}
+
+/**
+ * Process the ec_cluster element type.
+ *
+ * @param array $element
+ *   Form element array.
+ * @param array $form_state
+ *   Form State array.
+ * @param array $form
+ *   Form array.
+ *
+ * @return array $element
+ *   The altered $element array.
+ */
+function _elasticsearch_ec_clusters_process(array $element, array &$form_state, array $form) {
+  $element = form_process_select($element);
+
+  if (empty($element['#skip_default_options'])) {
+    $element['#only_active'] = isset($element['#only_active']) ? $element['#only_active'] : TRUE;
+    $element['#empty_option'] = isset($element['#empty_option']) ? $element['#empty_option'] : TRUE;
+    $clusters = elasticsearch_cluster_load_all($element['#only_active'], $element['#empty_option']);
+    $element['#options'] = $clusters;
+  }
+
+  return $element;
+}
+
+/**
+ * Attach required javascript for the ec_index element.
+ *
+ * @return array
+ *   Prepared array with assets to attach.
+ */
+function _elasticsearch_ec_index_attached() {
+  return array(
+    'js' => array(drupal_get_path('module', 'elasticsearch') . '/js/ec-index.js'),
+    'css' => array(drupal_get_path('module', 'elasticsearch') . '/css/ec-index.css'),
+    'library' => array(array('system', 'ui.dialog')),
+  );
+}
+
+/**
+ * Checks if other modules have locked the cluster.
+ *
+ * In case of major changes on the cluster settings and deletion the cluster
+ * could be locked.
+ * Invokes the hooks similar to the module_invoke.
+ *
+ * @param object $cluster
+ *   The fully loaded Cluster object.
+ *
+ * @return array
+ *   Array with clusters locked for deletion.
+ */
+function _elasticsearch_check_if_cluster_locked($cluster) {
+  $locked = array();
+  if (!empty($cluster)) {
+    $type = 'cluster';
+    foreach (module_implements('elasticsearch_edit_lock') as $module) {
+      $function = $module . '_elasticsearch_edit_lock';
+      $locked_result = $function($type, $cluster, NULL);
+      if (!empty($locked_result)) {
+        $locked[] = $module;
+      }
+    }
+  }
+
+  return $locked;
+}
+
+/**
+ * Checks if other modules have locked the index.
+ *
+ * In case of major changes on the index settings and deletion the index could
+ * be locked.
+ * Invokes the hooks similar to the module_invoke.
+ *
+ * @param string $cluster
+ *   The fully loaded Cluster object.
+ * @param string $index
+ *   The fully loaded Index object.
+ *
+ * @return array
+ *   Array with indexes locked for deletion.
+ */
+function _elasticsearch_check_if_index_locked($cluster, $index) {
+  $locked = array();
+  if (!empty($cluster)) {
+    $type = 'index';
+    foreach (module_implements('elasticsearch_edit_lock') as $module) {
+      $function = $module . '_elasticsearch_edit_lock';
+      $locked_result = $function($type, $cluster, $index);
+      if (!empty($locked_result)) {
+        $locked[] = $module;
+      }
+    }
+  }
+
+  return $locked;
+}
+
+/**
+ * Implements hook_elasticsearch_edit_lock().
+ */
+function elasticsearch_connector_elasticsearch_edit_lock($type, $cluster, $index = NULL) {
+  if ($type == 'cluster' && $cluster->cluster_id == elasticsearch_connector_get_default()) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+/**
+ * Build two drop downs, one for the cluster and one for the indices.
+ *
+ * @param array $element
+ *   Form element array.
+ * @param array $form_state
+ *   Form State array.
+ * @param array $form
+ *   Form array.
+ *
+ * @return array $element
+ *   The altered $element array.
+ */
+function _elasticsearch_ec_index_process(array $element, array &$form_state, array $form) {
+  $element['#tree'] = TRUE;
+  $element_id = $element['#id'];
+  $wrapper_id = $element_id . '-index-wrapper';
+
+  // TODO: Add icon if the cluster is OK or not.
+  $element['cluster_id'] = array(
+    '#type' => 'select',
+    '#id' => $element_id . '-cluster-id',
+    '#title' => t('Select cluster'),
+    '#required' => $element['#required'],
+    '#default_value' => isset($element['#default_value'])
+    && is_array($element['#default_value'])
+    && isset($element['#default_value']['cluster_id'])
+    ? $element['#default_value']['cluster_id']
+    : '',
+    // TODO: Allow this option to be overwritten and #value if we had such.
+    '#description' => t('Select the cluster.'),
+    '#ajax' => array(
+      'callback' => '_elasticsearch_ec_index_ajax',
+      'wrapper' => $wrapper_id,
+      'method' => 'replace',
+      'effect' => 'fade',
+    ),
+  );
+
+  if (!isset($element['cluster_id']['#current_path'])) {
+    $element['cluster_id']['#current_path'] = current_path();
+  }
+
+  if (empty($element['#skip_default_options'])) {
+    $element['#only_active'] = isset($element['#only_active']) ? $element['#only_active'] : TRUE;
+    $element['#empty_option'] = isset($element['#empty_option']) ? $element['#empty_option'] : TRUE;
+    $clusters = elasticsearch_cluster_load_all($element['#only_active'], $element['#empty_option']);
+    $element['cluster_id']['#options'] = $clusters;
+  }
+
+  // TODO: We need to handle the incoming tree name if such.
+  $links = array();
+  $index_options = array('' => t('Select index'));
+  if (is_array($element['#value']) && !empty($element['#value']['cluster_id'])) {
+    $index_options = array();
+    try {
+      $index_options = elasticsearch_get_indices_options($element['#value']['cluster_id'], TRUE);
+    }
+    catch (\Exception $e) {
+      if (!empty($element['#throw_exp'])) {
+        throw $e;
+      }
+    }
+    $links[] = array(
+      'title' => t('Add index'),
+      'href' => 'admin/config/elasticsearch/clusters/' . $element['#value']['cluster_id'] . '/indices/add',
+      'attributes' => array('target' => '_blank', 'class' => 'ec-index-dialog'),
+      'query' => array(
+        'render' => 'elasticsearch-dialog',
+        'index_element_id' => $element_id . '-index',
+        'cluster_element_id' => $element_id . '-cluster-id',
+      ),
+    );
+  }
+
+  $element['index'] = array(
+    '#type' => 'select',
+    '#title' => t('Select index'),
+    '#id' => $element_id . '-index',
+    '#required' => $element['#required'],
+    '#default_value' => isset($element['#default_value'])
+    && is_array($element['#default_value'])
+    && isset($element['#default_value']['index'])
+    ? $element['#default_value']['index']
+    : '',
+    '#description' => t('Select the index.'),
+    '#options' => $index_options,
+    '#prefix' => '<div id="' . $wrapper_id . '">',
+    '#suffix' => '<div class="dialog-links ' . $element['#id'] . '">'
+      . theme(
+        'links__es_index_links', array(
+          'links' => $links,
+          'attributes' => array(
+            'class' => 'index-dialog-links',
+          ),
+        )
+      )
+      . '</div></div>',
+  );
+
+  unset($element['#title']);
+  $context = array(
+    'form' => $form,
+  );
+  drupal_alter('ec_index_process', $element, $form_state, $context);
+
+  return $element;
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function elasticsearch_connector_page_alter(&$page) {
+  if (elasticsearch_in_dialog()) {
+    unset($page['page_top']);
+    unset($page['page_bottom']);
+
+    $page['#theme'] = 'elasticsearch_page';
+  }
+}
+
+/**
+ * Check if we are in a references dialog.
+ *
+ * @return bool
+ *   TRUE if we are in a dialog.
+ */
+function elasticsearch_connector_in_dialog() {
+  return (isset($_GET['render']) && $_GET['render'] == 'elasticsearch-dialog');
+}
+
+/**
+ * Check if we should close the dialog upon submission.
+ */
+function elasticsearch_connector_close_on_submit() {
+  return (!isset($_GET['closeonsubmit']) || $_GET['closeonsubmit']);
+}
+
+/**
+ * Sets destination parameter to close the dialog after redirect is completed.
+ */
+function elasticsearch_connector_close_on_redirect($cluster_id, $index_name) {
+  // We use $_GET['destination'] since that overrides anything that happens
+  // in the form. It is a hack, but it is very effective, since we don't have
+  // to be worried about getting overrun by other form submit handlers.
+  $_GET['destination'] = 'elasticsearch-dialog/redirect/' .
+    $cluster_id . '/' . $index_name .
+    '?elasticsearch-dialog-close=1&render=elasticsearch-dialog';
+
+  if (isset($_GET['cluster_element_id'])) {
+    $_GET['destination'] .= '&index_element_id=' . $_GET['index_element_id'];
+  }
+
+  if (isset($_GET['cluster_element_id'])) {
+    $_GET['destination'] .= '&cluster_element_id=' . $_GET['cluster_element_id'];
+  }
+
+}
+
+/**
+ * Page callback for our redirect page.
+ */
+function elasticsearch_connector_redirect_page($cluster, $index_name) {
+  // Add appropriate javascript that will be used by the parent page to fill in
+  // the required data.
+  if (elasticsearch_in_dialog() && isset($_GET['elasticsearch-dialog-close'])) {
+    drupal_add_js(drupal_get_path('module', 'elasticsearch') . '/js/ec-index-child.js');
+    drupal_add_js(
+      array(
+        'elasticsearch' =>
+          array(
+            'dialog' => array(
+              'cluster_id' => $cluster->cluster_id,
+              'index_name' => $index_name,
+              'index_element_id' => (string) $_GET['index_element_id'],
+              'cluster_element_id' => (string) $_GET['cluster_element_id'],
+            ),
+          ),
+      ),
+      'setting'
+    );
+  }
+
+  return '';
+}
+
+/**
+ * Ajax callback for the ec_index element.
+ *
+ * @param array $form
+ *   Form array.
+ * @param array $form_state
+ *   Form State array.
+ */
+function _elasticsearch_ec_index_ajax(array $form, array $form_state) {
+  $parents = $form_state['triggering_element']['#parents'];
+  $search_key = array_search('cluster_id', $parents);
+  $parents[$search_key] = 'index';
+  $index_element = drupal_array_get_nested_value($form, $parents);
+
+  return $index_element;
+}
+
+/**
+ * Get the indices based on cluster id.
+ *
+ * @param string $cluster_id
+ *   Cluster id.
+ *
+ * @return array Indices
+ *   Array with indices attached to the provided Cluster.
+ */
+function elasticsearch_connector_get_indices_options($cluster_id, $empty_option = FALSE) {
+  // TODO in src.
+  $result = array();
+
+  $client = elasticsearch_get_client_by_id($cluster_id);
+  if ($client) {
+    $indices = $client->indices()->stats();
+    drupal_alter('elasticsearch_indices', $indices);
+    if ($empty_option) {
+      $result[''] = t('Select index');
+    }
+    if (!empty($indices['indices'])) {
+      foreach ($indices['indices'] as $index_name => $index_info) {
+        // TODO: Check index status if such e.g. index closed or s.o.
+        $result[$index_name] = $index_name;
+      }
+    }
+  }
+
+  return $result;
+}
+
+/**
+ * Check if the index name has been passed correctly.
+ *
+ * @param string $index_name
+ *   Index name.
+ *
+ * @return bool
+ *   TRUE or FALSE depending on whether it is a valid name or not.
+ */
+function elasticsearch_connector_index_valid_load($index_name) {
+  // TODO in src.
+  if (preg_match('/^[a-z][a-z0-9_]*$/i', $index_name)) {
+    return $index_name;
+  }
+
+  return FALSE;
+}
+
+/**
+ * Get the nodes stats from elasticsearch server.
+ *
+ * @param \Elasticsearch\Client $client
+ *   ElasticSearch client object.
+ *
+ * @return array
+ *   Array with cluster stats.
+ */
+function elasticsearch_connector_get_cluster_nodes_stat(Client $client) {
+  try {
+    return $client->nodes()->stats();
+  }
+  catch (\Exception $e) {
+    drupal_set_message($e->getMessage(), 'error');
+  }
+
+  return array();
+}
+
+/**
+ * Check if a specific plugin exists on all nodes.
+ *
+ * TODO: This should be changed to check all data Nodes only but for now lets
+ * check all of them.
+ *
+ * @param \Elasticsearch\Client $client
+ *   Fully loaded Client object.
+ * @param string $plugin_name
+ *   Plugin name.
+ *
+ * @return bool
+ *   TRUE or FALSE depending if the plugin exists.
+ *
+ * @see http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-plugins.html
+ */
+function elasticsearch_connector_check_plugin_exists(Client $client, $plugin_name) {
+  $nodes_plugins = array();
+  $result = FALSE;
+
+  try {
+    $plugins = $client->nodes()->info(array('node_id' => '_all'));
+    foreach ($plugins['nodes'] as $elastic_node_id => $elastic_node) {
+      $nodes_plugins[$elastic_node_id][$plugin_name] = FALSE;
+      foreach ($elastic_node['plugins'] as $plugin) {
+        if ($plugin['name'] == $plugin_name) {
+          $nodes_plugins[$elastic_node_id][$plugin_name] = TRUE;
+        }
+      }
+
+      if (empty($nodes_plugins[$elastic_node_id][$plugin_name])) {
+        $result = FALSE;
+        break;
+      }
+      else {
+        $result = TRUE;
+      }
+    }
+
+    return $result;
+  }
+  catch (\Exception $e) {
+    drupal_set_message($e->getMessage(), 'error');
+    return FALSE;
+  }
+}
+
+/**
+ * Process variables for references_dialog_page.
+ */
+function template_process_elasticsearch_page(&$variables) {
+  // Generate messages last in order to capture as many as possible for the
+  // current page.
+  if (!isset($variables['messages'])) {
+    $variables['messages'] = $variables['page']['#show_messages'] ? theme('status_messages') : '';
+  }
+}
+
+/**
+ * Validates #element_validate of any form element as Elasticsearch TTL setting.
+ *
+ * @param array $element
+ *   Form element array.
+ * @param array $form_state
+ *   Form State array.
+ * @param array $form
+ *   Form array.
+ */
+function _elasticsearch_validate_ttl_field(array $element, array &$form_state, array $form) {
+  if (!empty($element['#value']) && !preg_match('/^([\d]+)(d|m|h|ms|w)$/', $element['#value'])) {
+    form_error($element, t('Invalid elasticsearch TTL value. Please use the proper syntax e.g. 1d (d (days), m (minutes), h (hours), ms (milliseconds) or w (weeks)).'));
+  }
+}
+
+/**
+ * Returns a unique hash for the current site.
+ *
+ * This is used to identify Solr documents from different sites within a single
+ * Solr server.
+ *
+ * @return string
+ *   A unique site hash, containing only alphanumeric characters.
+ */
+function elasticsearch_connector_site_hash() {
+  // Copied from apachesolr_site_hash().
+  if (!($hash = \Drupal::config('elasticsearch.settings')->get('site_hash'))) {
+    global $base_url;
+    $hash = substr(base_convert(sha1(uniqid($base_url, TRUE)), 16, 36), 0, 6);
+    \Drupal::config('elasticsearch.settings')->set('site_hash', $hash)->save();
+  }
+  return $hash;
+}
+
+/**
+ * Alter the mapping of Drupal data types to Search API data types.
+ *
+ * @param array $mapping
+ *   An array mapping all known (and supported) Drupal data types to their
+ *   corresponding Search API data types. A value of FALSE means that fields of
+ *   that type should be ignored by the Search API.
+ *
+ * @see \Drupal\search_api\Utility\DataTypeHelperInterface::getFieldTypeMapping()
+ */
+function elasticsearch_connector_search_api_field_type_mapping_alter(array &$mapping) {
+  $mapping['object'] = 'object';
+}
