@@ -113,7 +113,9 @@ class IndexFactory {
     $params = IndexFactory::index($index, TRUE);
 
     foreach ($items as $id => $item) {
-      $data = [];
+      $data = [
+        '_language' => $item->getLanguage(),
+      ];
       /** @var \Drupal\search_api\Item\FieldInterface $field */
       foreach ($item as $name => $field) {
         $field_type = $field->getType();
@@ -194,6 +196,10 @@ class IndexFactory {
         $properties[$field_id]['fielddata'] = TRUE;
       }
     }
+
+    $properties['_language'] = [
+      'type' => 'keyword',
+    ];
 
     $params['body'][$params['type']]['properties'] = $properties;
 
