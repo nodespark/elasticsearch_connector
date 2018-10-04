@@ -6,6 +6,6 @@ core: 8.x
 package: Elasticsearch
 type: module
 dependencies:
- - views
- - elasticsearch_connector
+ - drupal:views
+ - elasticsearch_connector:elasticsearch_connector
 version: VERSION
