@@ -182,7 +182,15 @@ class SearchBuilder {
       }
 
       // Full text fields in which to perform the search.
-      $query_full_text_fields = $this->index->getFulltextFields();
+      $query_full_text_fields = $this->query->getFulltextFields();
+      if ($query_full_text_fields) {
+        // Make sure the fields exists within the indexed fields.
+        $query_full_text_fields = array_intersect($this->index->getFulltextFields(), $query_full_text_fields);
+      }
+      else {
+        $query_full_text_fields = $this->index->getFulltextFields();
+      }
+
       $query_fields = [];
       foreach ($query_full_text_fields as $full_text_field_name) {
         $full_text_field = $index_fields[$full_text_field_name];
