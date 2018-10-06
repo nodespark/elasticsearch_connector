@@ -14,3 +14,8 @@ services:
 
   elasticsearch_connector.index_factory:
     class: Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory
+
+  elasticsearch_connector.mapping_factory:
+    class: Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\MappingFactory
+    calls:
+      - [setContainer, ['@service_container']]

@@ -26,7 +26,7 @@ class FilterFactoryTest extends UnitTestCase {
     $condition = $this->prophesize(Condition::class);
 
     $condition->getValue()
-      ->willReturn(FALSE);
+      ->willReturn(NULL);
 
     $condition->getOperator()
       ->willReturn('<>');
@@ -48,7 +48,7 @@ class FilterFactoryTest extends UnitTestCase {
     $condition = $this->prophesize(Condition::class);
 
     $condition->getValue()
-      ->willReturn(FALSE);
+      ->willReturn(NULL);
 
     $condition->getOperator()
       ->willReturn('=');
@@ -71,7 +71,7 @@ class FilterFactoryTest extends UnitTestCase {
     $condition = $this->prophesize(Condition::class);
 
     $condition->getValue()
-      ->willReturn(FALSE);
+      ->willReturn(NULL);
 
     $condition->getOperator()
       ->willReturn('>');
@@ -142,11 +142,11 @@ class FilterFactoryTest extends UnitTestCase {
 
     $filter = FilterFactory::filterFromCondition($condition->reveal());
     $expected_filter = [
-      'not' => [
-        'filter' =>[
+      'bool' => [
+        'must_not' => [
           'term' => ['foo' => 'bar'],
         ],
-      ],
+      ]
     ];
     $this->assertEquals($expected_filter, $filter);
 
@@ -247,6 +247,60 @@ class FilterFactoryTest extends UnitTestCase {
           'include_upper' => TRUE,
         ],
       ],
+    ];
+    $this->assertEquals($expected_filter, $filter);
+
+    /** @var \Prophecy\Prophecy\ObjectProphecy $condition */
+    $condition = $this->prophesize(Condition::class);
+
+    $condition->getValue()
+      ->willReturn([1, 2]);
+
+    $condition->getOperator()
+      ->willReturn('BETWEEN');
+
+    $condition->getField()
+      ->willReturn('foo');
+
+    $filter = FilterFactory::filterFromCondition($condition->reveal());
+    $expected_filter = [
+      'range' => [
+        'foo' => [
+          'from' => 1,
+          'to' => 2,
+          'include_lower' => FALSE,
+          'include_upper' => FALSE,
+        ],
+      ],
+    ];
+    $this->assertEquals($expected_filter, $filter);
+
+    /** @var \Prophecy\Prophecy\ObjectProphecy $condition */
+    $condition = $this->prophesize(Condition::class);
+
+    $condition->getValue()
+      ->willReturn([1, 2]);
+
+    $condition->getOperator()
+      ->willReturn('NOT BETWEEN');
+
+    $condition->getField()
+      ->willReturn('foo');
+
+    $filter = FilterFactory::filterFromCondition($condition->reveal());
+    $expected_filter = [
+      'bool' => [
+        'must_not' => [
+          'range' => [
+            'foo' => [
+              'from' => 1,
+              'to' => 2,
+              'include_lower' => FALSE,
+              'include_upper' => FALSE,
+            ],
+          ],
+        ]
+      ]
     ];
     $this->assertEquals($expected_filter, $filter);
 
