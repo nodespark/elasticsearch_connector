@@ -3,18 +3,21 @@ name: 'Elasticsearch server'
 description: 'Testing Elasticsearch backend.'
 backend: elasticsearch
 backend_config:
+  cluster_settings:
+    cluster: elastic_search_cluster
+  fuzziness: '0'
   scheme: http
   host: localhost
   port: '9200'
   path: ''
-  http_user: ''
-  http_pass: ''
-  excerpt: 0
-  retrieve_data: 0
-  highlight_data: 0
+  excerpt: false
+  retrieve_data: false
+  highlight_data: false
   http_method: AUTO
-status: 1
+  autocorrect_spell: true
+  autocorrect_suggest_words: true
 langcode: en
+status: true
 dependencies:
   module:
     - elasticsearch_connector

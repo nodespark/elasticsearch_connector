@@ -1,5 +1,5 @@
-elasticsearch_connector.backend.plugin.elasticsearch:
-  type: mapping
+plugin.plugin_configuration.search_api_backend.elasticsearch:
+  type: config_object
   label: 'Search API Elasticsearch settings'
   mapping:
     cluster_settings:
@@ -45,3 +45,6 @@ elasticsearch_connector.backend.plugin.elasticsearch:
     autocorrect_suggest_words:
       type: boolean
       label: 'Suggest additional words'
+    fuzziness:
+      type: string
+      label: 'fuzziness'

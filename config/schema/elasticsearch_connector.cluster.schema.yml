@@ -24,6 +24,21 @@ elasticsearch_connector.cluster.*:
         multiple_nodes_connection:
           type: boolean
           label: 'Multiple Nodes Connection'
+        use_authentication:
+          type: integer
+          label: 'Use Authentication'
+        authentication_type:
+          type: string
+          label: 'Authentication Type'
+        username:
+          type: string
+          label: 'User Name'
+        password:
+          type: string
+          label: 'Password'
+        timeout:
+          type: string
+          label: 'Timeout'
     locked:
       type: boolean
       label: 'Locked'

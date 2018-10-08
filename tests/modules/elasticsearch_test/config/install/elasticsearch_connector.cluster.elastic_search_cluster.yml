@@ -1,0 +1,13 @@
+cluster_id: elastic_search_cluster
+name: 'Elastic search cluster'
+url: 'http://localhost:9200'
+options:
+  multiple_nodes_connection: false
+  use_authentication: 0
+  authentication_type: Basic
+  username: ''
+  password: ''
+  timeout: '3'
+langcode: en
+status: '1'
+dependencies: {  }

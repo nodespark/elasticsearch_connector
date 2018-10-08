@@ -38,7 +38,7 @@ class ElasticsearchTest extends BackendTest {
    *
    * @var array
    */
-  public static $modules = array('elasticsearch_connector', 'elasticsearch_test');
+  public static $modules = array('elasticsearch_connector', 'elasticsearch_test', 'search_api');
 
   /**
    * {@inheritdoc}
@@ -62,9 +62,8 @@ class ElasticsearchTest extends BackendTest {
     try {
       /** @var \Drupal\search_api\Entity\Server $server */
       $server = Server::load($this->serverId);
-      if ($server->getBackend()->ping()) {
-        $this->elasticsearchAvailable = TRUE;
-      }
+
+      return $server->getBackend()->isAvailable();
     }
     catch (\Exception $e) {
     }
