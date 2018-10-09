@@ -10,7 +10,7 @@
   "repositories": {
     "drupal": {
       "type": "composer",
-      "url": "https://packages.drupal.org/7"
+      "url": "https://packages.drupal.org/8"
     }
   },
   "require-dev": {
