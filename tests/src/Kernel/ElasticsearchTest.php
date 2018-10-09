@@ -574,4 +574,11 @@ class ElasticsearchTest extends BackendTest {
   protected function assertIgnored(ResultSetInterface $results, array $ignored = array(), $message = 'No keys were ignored.') {
   }
 
+  /**
+   * Tests whether indexing of dates works correctly.
+   */
+  public function testDateIndexing() {
+    $this->markTestSkipped('Not Implemented yet');
+  }
+
 }
