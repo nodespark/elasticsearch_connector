@@ -16,7 +16,7 @@
 defaults: &defaults
   docker:
     # specify the version you desire here (avoid latest except for testing)
-    - image: andrewberry/drupal_tests:drupal-86
+    - image: andrewberry/drupal_tests:latest
 
     # Use our fork until https://github.com/wernight/docker-phantomjs/pull/3 is
     # merged.
