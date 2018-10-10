@@ -28,7 +28,7 @@ defaults: &defaults
       environment:
         MYSQL_ALLOW_EMPTY_PASSWORD: 1
 
-    - image: elasticsearch:6.4
+    - image: elasticsearch:6.4.0
       environment:
         discovery.type: single-node
 
