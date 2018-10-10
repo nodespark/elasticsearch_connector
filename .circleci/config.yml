@@ -139,12 +139,12 @@ version: 2
 jobs:
   run-unit-kernel-tests:
     <<: *unit_kernel_tests
-#  run-behat-tests:
-#    <<: *behat_tests
-#  run-code-sniffer:
-#    <<: *code_sniffer
-#  run-code-coverage:
-#    <<: *code_coverage
+  run-behat-tests:
+    <<: *behat_tests
+  run-code-sniffer:
+    <<: *code_sniffer
+  run-code-coverage:
+    <<: *code_coverage
 
 workflows:
   version: 2
@@ -153,6 +153,6 @@ workflows:
   test_and_lint:
     jobs:
       - run-unit-kernel-tests
-#      - run-behat-tests
-#      - run-code-sniffer
-#      - run-code-coverage
+      - run-behat-tests
+      - run-code-sniffer
+      - run-code-coverage
