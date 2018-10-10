@@ -67,8 +67,8 @@ unit_kernel_tests: &unit_kernel_tests
   steps:
     - checkout
 
-    - restore_cache: *restore_cache
-    - save_cache: *save_cache
+#    - restore_cache: *restore_cache
+#    - save_cache: *save_cache
 
     - run:
         working_directory: /var/www/html
@@ -153,6 +153,6 @@ workflows:
   test_and_lint:
     jobs:
       - run-unit-kernel-tests
-      - run-behat-tests
-      - run-code-sniffer
-      - run-code-coverage
+#      - run-behat-tests
+#      - run-code-sniffer
+#      - run-code-coverage
