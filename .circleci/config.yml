@@ -16,7 +16,7 @@
 defaults: &defaults
   docker:
     # specify the version you desire here (avoid latest except for testing)
-    - image: andrewberry/drupal_tests:0.0.11
+    - image: andrewberry/drupal_tests:latest
 
     # Use our fork until https://github.com/wernight/docker-phantomjs/pull/3 is
     # merged.
@@ -73,6 +73,7 @@ unit_kernel_tests: &unit_kernel_tests
     - run:
         working_directory: /var/www/html
         command: |
+          echo "create database test" | mysql -h 127.0.0.1 -u root && \
           ./test.sh $CIRCLE_PROJECT_REPONAME
 
     - store_test_results:
@@ -139,12 +140,12 @@ version: 2
 jobs:
   run-unit-kernel-tests:
     <<: *unit_kernel_tests
-  run-behat-tests:
-    <<: *behat_tests
-  run-code-sniffer:
-    <<: *code_sniffer
-  run-code-coverage:
-    <<: *code_coverage
+#  run-behat-tests:
+#    <<: *behat_tests
+#  run-code-sniffer:
+#    <<: *code_sniffer
+#  run-code-coverage:
+#    <<: *code_coverage
 
 workflows:
   version: 2
@@ -153,6 +154,6 @@ workflows:
   test_and_lint:
     jobs:
       - run-unit-kernel-tests
-      - run-behat-tests
-      - run-code-sniffer
-      - run-code-coverage
+#      - run-behat-tests
+#      - run-code-sniffer
+#      - run-code-coverage
