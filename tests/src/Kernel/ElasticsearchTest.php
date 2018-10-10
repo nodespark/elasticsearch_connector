@@ -578,7 +578,19 @@ class ElasticsearchTest extends BackendTest {
    * Tests whether indexing of dates works correctly.
    */
   public function testDateIndexing() {
+    // @Todo: implement this test.
     $this->markTestSkipped('Not Implemented yet');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function checkServerBackend() {
+    // @Todo: implement this test.
+    $connectionOptions = \Drupal::database()->getConnectionOptions();
+    if ($connectionOptions['driver'] == 'sqlite') {
+      $this->markTestSkipped('Not Implemented yet');
+    }
   }
 
 }
