@@ -81,70 +81,70 @@ unit_kernel_tests: &unit_kernel_tests
         path: /var/www/html/artifacts
 
 # Run Behat tests. This command invokes the test-js.sh hook.
-behat_tests: &behat_tests
-  <<: *defaults
-  steps:
-    - checkout
-
-    - restore_cache: *restore_cache
-    - save_cache: *save_cache
-
-    - run:
-        working_directory: /var/www/html
-        command: |
-          ./test-js.sh $CIRCLE_PROJECT_REPONAME
-
-    - store_test_results:
-        path: /var/www/html/artifacts/behat
-    - store_artifacts:
-        path: /var/www/html/artifacts
+#behat_tests: &behat_tests
+#  <<: *defaults
+#  steps:
+#    - checkout
+#
+#    - restore_cache: *restore_cache
+#    - save_cache: *save_cache
+#
+#    - run:
+#        working_directory: /var/www/html
+#        command: |
+#          ./test-js.sh $CIRCLE_PROJECT_REPONAME
+#
+#    - store_test_results:
+#        path: /var/www/html/artifacts/behat
+#    - store_artifacts:
+#        path: /var/www/html/artifacts
 
 # Run code quality tests. This invokes code-sniffer.sh.
-code_sniffer: &code_sniffer
-  <<: *defaults
-  steps:
-    - checkout
-
-    - restore_cache: *restore_cache
-    - save_cache: *save_cache
-
-    - run:
-        working_directory: /var/www/html
-        command: |
-          ./code-sniffer.sh $CIRCLE_PROJECT_REPONAME
-
-    - store_test_results:
-        path: /var/www/html/artifacts/phpcs
-    - store_artifacts:
-        path: /var/www/html/artifacts
+#code_sniffer: &code_sniffer
+#  <<: *defaults
+#  steps:
+#    - checkout
+#
+#    - restore_cache: *restore_cache
+#    - save_cache: *save_cache
+#
+#    - run:
+#        working_directory: /var/www/html
+#        command: |
+#          ./code-sniffer.sh $CIRCLE_PROJECT_REPONAME
+#
+#    - store_test_results:
+#        path: /var/www/html/artifacts/phpcs
+#    - store_artifacts:
+#        path: /var/www/html/artifacts
 
 # Run code coverage tests. This invokes code-coverage-stats.sh.
-code_coverage: &code_coverage
-  <<: *defaults
-  steps:
-    - checkout
-
-    - restore_cache: *restore_cache
-    - save_cache: *save_cache
-
-    - run:
-        working_directory: /var/www/html
-        command: |
-          ./code-coverage-stats.sh $CIRCLE_PROJECT_REPONAME
-    - store_artifacts:
-        path: /var/www/html/artifacts
+#code_coverage: &code_coverage
+#  <<: *defaults
+#  steps:
+#    - checkout
+#
+#    - restore_cache: *restore_cache
+#    - save_cache: *save_cache
+#
+#    - run:
+#        working_directory: /var/www/html
+#        command: |
+#          ./code-coverage-stats.sh $CIRCLE_PROJECT_REPONAME
+#    - store_artifacts:
+#        path: /var/www/html/artifacts
 
 # Declare all of the jobs we should run.
 version: 2
 jobs:
   run-unit-kernel-tests:
      <<: *unit_kernel_tests
-  run-behat-tests:
-     <<: *behat_tests
-  run-code-sniffer:
-     <<: *code_sniffer
-  run-code-coverage:
-     <<: *code_coverage
+#  run-behat-tests:
+#     <<: *behat_tests
+#  run-code-sniffer:
+#     <<: *code_sniffer
+#  run-code-coverage:
+#     <<: *code_coverage
 
 workflows:
   version: 2
