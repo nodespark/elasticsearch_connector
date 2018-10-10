@@ -49,7 +49,7 @@ defaults: &defaults
 # We use the composer.json as a way to determine if we can cache our build.
 restore_cache: &restore_cache
   keys:
-  - v2-dependencies-{{ checksum "composer.json" }}
+  - v2-dependencies-{{}}-{{ checksum "composer.json" }}
   # fallback to using the latest cache if no exact match is found
   - v2-dependencies-
 
@@ -73,7 +73,7 @@ unit_kernel_tests: &unit_kernel_tests
     - run:
         working_directory: /var/www/html
         command: |
-          composer run-script drupal-phpunit-upgrade && ./test.sh $CIRCLE_PROJECT_REPONAME
+          ./test.sh $CIRCLE_PROJECT_REPONAME
 
     - store_test_results:
         path: /var/www/html/artifacts/phpunit
