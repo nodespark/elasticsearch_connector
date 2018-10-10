@@ -73,7 +73,6 @@ unit_kernel_tests: &unit_kernel_tests
     - run:
         working_directory: /var/www/html
         command: |
-          echo "create database test" | mysql -h 127.0.0.1 -u root && \
           ./test.sh $CIRCLE_PROJECT_REPONAME
 
     - store_test_results:
