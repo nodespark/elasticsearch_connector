@@ -73,6 +73,8 @@ unit_kernel_tests: &unit_kernel_tests
     - run:
         working_directory: /var/www/html
         command: |
+          rm -rf ./vendor/drupal/coder && \
+          composer run-script drupal-phpunit-upgrade && \
           ./test.sh $CIRCLE_PROJECT_REPONAME
 
     - store_test_results:
