@@ -131,6 +131,10 @@ class IndexFactory {
                 $values[] = $value->toText();
                 break;
 
+              case 'boolean':
+                $values[] = (boolean) $value;
+                break;
+
               default:
                 $values[] = $value;
             }
