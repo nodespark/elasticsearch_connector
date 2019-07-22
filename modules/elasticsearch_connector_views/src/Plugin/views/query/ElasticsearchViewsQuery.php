@@ -341,13 +341,20 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
     }
 
     if (!empty($this->where['conditions'])) {
-      $params['query'] = [
-        'bool' => [
-          'must' => [
-            'match' => $this->where['conditions'],
+      if (count($this->where['conditions']) == 1) {
+        $params['query'] = [
+          'bool' => [
+            'should' => $this->where['conditions']
           ],
-        ],
-      ];
+        ];
+      } else {
+        $params['query'] = [
+          'multi_match' => [
+            'query' => implode(' ',array_unique( array_values($this->where['conditions']))),
+            'fields' => array_keys($this->where['conditions'])
+          ]
+        ];
+      }
     }
 
     // Add sorting.
