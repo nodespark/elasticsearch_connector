@@ -533,8 +533,8 @@ function _elasticsearch_validate_ttl_field(array $element, array &$form_state, a
 /**
  * Returns a unique hash for the current site.
  *
- * This is used to identify Solr documents from different sites within a single
- * Solr server.
+ * This is used to identify documents from different sites within a single
+ * Elasticsearch server.
  *
  * @return string
  *   A unique site hash, containing only alphanumeric characters.

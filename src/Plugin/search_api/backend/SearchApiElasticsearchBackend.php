@@ -614,7 +614,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     }
 
     try {
-      // Allow modules to alter the Elastic Search query.
+      // Allow modules to alter the Elasticsearch query.
       $this->preQuery($query);
 
       // Do search.
@@ -626,7 +626,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
         $this->parseFacets($results, $query);
       }
 
-      // Allow modules to alter the Elastic Search Results.
+      // Allow modules to alter the Elasticsearch Results.
       $this->postQuery($results, $query, $response);
 
       return $results;
@@ -1104,10 +1104,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   }
 
   /**
-   * Allow custom changes before sending a search query to Elastic Search.
+   * Allow custom changes before sending a search query to Elasticsearch.
    *
    * This allows subclasses to apply custom changes before the query is sent to
-   * Solr.
+   * Elasticsearch.
    *
    * @param \Drupal\search_api\Query\QueryInterface $query
    *   The \Drupal\search_api\Query\Query object representing the executed
@@ -1125,7 +1125,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    *   The \Drupal\search_api\Query\Query object representing the executed
    *   search query.
    * @param object $response
-   *   The response object returned by Elastic Search.
+   *   The response object returned by Elasticsearch.
    */
   protected function postQuery(ResultSetInterface $results, QueryInterface $query, $response) {
   }

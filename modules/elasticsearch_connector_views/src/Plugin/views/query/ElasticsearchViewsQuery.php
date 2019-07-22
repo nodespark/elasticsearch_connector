@@ -318,7 +318,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       $field->aliases['entity_type'] = 'entity_type';
     }
 
-    // Add fields to the query so they will be shown in solr document.
+    // Add fields to the query so they will be shown in document.
     $this->params['fields'] = array_keys($view->field);
     $this->params['fields'][] = '_source';
 
