@@ -37,7 +37,7 @@ class IndexFactory {
    */
   public static function index(IndexInterface $index, $with_type = FALSE) {
     $params = [];
-    $params['index'] = IndexFactory::getIndexName($index);
+    $params['index'] = static::getIndexName($index);
 
     if ($with_type) {
       $params['type'] = $index->id();
@@ -55,7 +55,7 @@ class IndexFactory {
    * @return array
    */
    public static function create(IndexInterface $index) {
-     $indexName = IndexFactory::getIndexName($index);
+     $indexName = static::getIndexName($index);
      $indexConfig =  [
        'index' => $indexName,
        'body' => [
@@ -111,7 +111,7 @@ class IndexFactory {
    *   index.
    */
   public static function bulkIndex(IndexInterface $index, array $items) {
-    $params = IndexFactory::index($index, TRUE);
+    $params = static::index($index, TRUE);
 
     foreach ($items as $id => $item) {
       $data = [
@@ -172,7 +172,7 @@ class IndexFactory {
    *   Parameters required to create an index mapping.
    */
   public static function mapping(IndexInterface $index) {
-    $params = IndexFactory::index($index, TRUE);
+    $params = static::index($index, TRUE);
 
     $properties = [
       'id' => [

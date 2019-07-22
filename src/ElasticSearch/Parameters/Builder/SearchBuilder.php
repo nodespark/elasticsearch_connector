@@ -6,7 +6,6 @@ use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\FilterFactory;
-use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory;
 use Drupal\search_api\ParseMode\ParseModeInterface;
 use Drupal\search_api\Query\Condition;
 use Drupal\search_api\Query\ConditionGroupInterface;
@@ -68,7 +67,9 @@ class SearchBuilder {
    */
   public function build() {
     // Query options.
-    $params = IndexFactory::index($this->index, TRUE);
+    $indexFactory = \Drupal::service('elasticsearch_connector.index_factory');
+    $params = $indexFactory->index($this->index, TRUE);
+
     $query_options = $this->getSearchQueryOptions();
 
     // Set the size and from parameters.
@@ -125,7 +126,8 @@ class SearchBuilder {
     $this->query->setOption('ElasticParams', $params);
 
     // Allow other modules to alter index config before we create it.
-    $indexName = IndexFactory::getIndexName($this->index);
+    $indexFactory = \Drupal::service('elasticsearch_connector.index_factory');
+    $indexName = $indexFactory->getIndexName($this->index);
     $dispatcher = \Drupal::service('event_dispatcher');
     $buildSearchParamsEvent = new BuildSearchParamsEvent($params, $indexName);
     $event = $dispatcher->dispatch(BuildSearchParamsEvent::BUILD_QUERY, $buildSearchParamsEvent);
@@ -259,7 +261,9 @@ class SearchBuilder {
     ];
 
     // Allow other modules to alter index config before we create it.
-    $indexName = IndexFactory::getIndexName($this->index);
+    $indexFactory = \Drupal::service('elasticsearch_connector.index_factory');
+    $indexName = $indexFactory->getIndexName($this->index);
+
     $dispatcher = \Drupal::service('event_dispatcher');
     $prepareSearchQueryEvent = new PrepareSearchQueryEvent($elasticSearchQuery, $indexName);
     $event = $dispatcher->dispatch(PrepareSearchQueryEvent::PREPARE_QUERY, $prepareSearchQueryEvent);
