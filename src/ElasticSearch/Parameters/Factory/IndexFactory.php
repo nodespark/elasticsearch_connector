@@ -5,6 +5,7 @@ namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 use Drupal\search_api\IndexInterface;
 use Drupal\elasticsearch_connector\Event\PrepareIndexEvent;
 use Drupal\elasticsearch_connector\Event\PrepareIndexMappingEvent;
+use Drupal\elasticsearch_connector\Event\BuildIndexParamsEvent;
 use Drupal\search_api_autocomplete\Suggester\SuggesterInterface;
 
 /**
@@ -145,6 +146,13 @@ class IndexFactory {
       $params['body'][] = ['index' => ['_id' => $id]];
       $params['body'][] = $data;
     }
+
+    // Allow other modules to alter index params before we send them.
+    $indexName = IndexFactory::getIndexName($index);
+    $dispatcher = \Drupal::service('event_dispatcher');
+    $buildIndexParamsEvent = new BuildIndexParamsEvent($params, $indexName);
+    $event = $dispatcher->dispatch(BuildIndexParamsEvent::BUILD_PARAMS, $buildIndexParamsEvent);
+    $params = $event->getElasticIndexParams();
 
     return $params;
   }
