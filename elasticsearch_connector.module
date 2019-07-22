@@ -784,7 +784,7 @@ function elasticsearch_connector_get_client_by_id($cluster_id = NULL, $default_f
  * @return \nodespark\DESConnector\ClientInterface
  */
 function elasticsearch_connector_load_library($cluster) {
-  static $clients;
+  $clients = &drupal_static(__FUNCTION__, []);
 
   if (!isset($clients[$cluster->cluster_id])) {
     $clients[$cluster->cluster_id] = FALSE;
