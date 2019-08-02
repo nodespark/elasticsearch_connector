@@ -872,8 +872,8 @@ class SearchApiElasticsearchConnector extends SearchApiAbstractService {
 
         case '=':
           $filter = array(
-            'not' => array(
-              'filter' => array(
+            'bool' => array(
+              'must_not' => array(
                 'exists' => array('field' => $filter_assoc['field_id'])
               )
             )
