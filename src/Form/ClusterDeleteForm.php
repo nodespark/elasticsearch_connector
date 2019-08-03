@@ -99,28 +99,26 @@ class ClusterDeleteForm extends EntityConfirmFormBase {
 
     // TODO: handle indices linked to the cluster being deleted.
     if (count($indices)) {
-      drupal_set_message(
+      $this->messenger()->addError(
         $this->t(
           'The cluster %title cannot be deleted as it still has indices.',
           ['%title' => $this->entity->label()]
-        ),
-        'error'
+        )
       );
       return;
     }
 
     if ($this->entity->id() == $this->clusterManager->getDefaultCluster()) {
-      drupal_set_message(
+      $this->messenger()->addError(
         $this->t(
           'The cluster %title cannot be deleted as it is set as the default cluster.',
           ['%title' => $this->entity->label()]
-        ),
-        'error'
+        )
       );
     }
     else {
       $this->entity->delete();
-      drupal_set_message(
+      $this->messenger()->addMessage(
         $this->t(
           'The cluster %title has been deleted.',
           ['%title' => $this->entity->label()]

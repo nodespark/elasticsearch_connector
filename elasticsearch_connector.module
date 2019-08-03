@@ -450,7 +450,7 @@ function elasticsearch_connector_get_cluster_nodes_stat(Client $client) {
     return $client->nodes()->stats();
   }
   catch (\Exception $e) {
-    drupal_set_message($e->getMessage(), 'error');
+    \Drupal::messenger()->addError($e->getMessage());
   }
 
   return array();
@@ -498,7 +498,7 @@ function elasticsearch_connector_check_plugin_exists(Client $client, $plugin_nam
     return $result;
   }
   catch (\Exception $e) {
-    drupal_set_message($e->getMessage(), 'error');
+    \Drupal::messenger()->addError($e->getMessage());
     return FALSE;
   }
 }

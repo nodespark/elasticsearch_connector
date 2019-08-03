@@ -3,7 +3,6 @@
 namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Builder;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\FilterFactory;
 use Drupal\search_api\ParseMode\ParseModeInterface;
@@ -16,12 +15,14 @@ use MakinaCorpus\Lucene\TermCollectionQuery;
 use MakinaCorpus\Lucene\TermQuery;
 use Drupal\elasticsearch_connector\Event\PrepareSearchQueryEvent;
 use Drupal\elasticsearch_connector\Event\BuildSearchParamsEvent;
+use Drupal\Core\Messenger\MessengerTrait;
 
 /**
  * Class SearchBuilder.
  */
 class SearchBuilder {
   use StringTranslationTrait;
+  use MessengerTrait;
 
   /**
    * Search API Index entity.
@@ -217,7 +218,7 @@ class SearchBuilder {
     }
     catch (ElasticsearchException $e) {
       watchdog_exception('Elasticsearch Search API', $e);
-      drupal_set_message($e->getMessage(), 'error');
+      $this->messenger()->addError($e->getMessage());
     }
 
     $languages = $this->query->getLanguages();
@@ -242,7 +243,7 @@ class SearchBuilder {
         $e,
         Html::escape($e->getMessage())
       );
-      drupal_set_message(Html::escape($e->getMessage()), 'error');
+      $this->messenger()->addError(Html::escape($e->getMessage()));
     }
 
     // More Like This.
@@ -339,7 +340,7 @@ class SearchBuilder {
     $sort = [];
     $query_full_text_fields = $this->index->getFulltextFields();
     foreach ($this->query->getSorts() as $field_id => $direction) {
-      $direction = Unicode::strtolower($direction);
+      $direction = mb_strtolower($direction);
 
       if ($field_id === 'search_api_relevance') {
         $sort['_score'] = $direction;

@@ -251,7 +251,7 @@ class ClusterForm extends EntityForm {
     }
 
     if ($values['default'] == 0 && !empty($default) && $default == $values['cluster_id']) {
-      drupal_set_message(
+      $this->messenger()->addWarning(
         t(
           'There must be a default connection. %name is still the default
           connection. Please change the default setting on the cluster you wish
@@ -259,8 +259,7 @@ class ClusterForm extends EntityForm {
           array(
             '%name' => $values['name'],
           )
-        ),
-        'warning'
+        )
       );
     }
   }
@@ -330,7 +329,7 @@ class ClusterForm extends EntityForm {
         }
       }
       catch (\Exception $e) {
-        drupal_set_message($e->getMessage(), 'error');
+        $this->messenger()->addError($e->getMessage());
       }
     }
 
@@ -345,15 +344,14 @@ class ClusterForm extends EntityForm {
     if (!$form_state->isRebuilding()) {
       try {
         parent::save($form, $form_state);
-        drupal_set_message(t('Cluster %label has been updated.', array('%label' => $this->entity->label())));
+        $this->messenger()->addMessage(t('Cluster %label has been updated.', array('%label' => $this->entity->label())));
         $form_state->setRedirect('elasticsearch_connector.config_entity.list');
       }
       catch (EntityStorageException $e) {
         $form_state->setRebuild();
         watchdog_exception('elasticsearch_connector', $e);
-        drupal_set_message(
-          $this->t('The cluster could not be saved.'),
-          'error'
+        $this->messenger()->addError(
+          $this->t('The cluster could not be saved.')
         );
       }
     }
