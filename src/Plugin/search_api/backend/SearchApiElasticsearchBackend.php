@@ -392,7 +392,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
           $this->indexFactory->create($index)
         );
         if (!$this->client->CheckResponseAck($response)) {
-          drupal_set_message($this->t('The elasticsearch client was not able to create index'), 'error');
+          \Drupal::messenger()->addError($this->t('The elasticsearch client was not able to create index'));
         }
       }
 
@@ -400,7 +400,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       $this->fieldsUpdated($index);
     }
     catch (ElasticsearchException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      \Drupal::messenger()->addError($e->getMessage());
     }
   }
 
@@ -440,11 +440,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       );
 
       if (!$this->client->CheckResponseAck($response)) {
-        drupal_set_message(t('Cannot create the mapping of the fields!'), 'error');
+        \Drupal::messenger()->addError(t('Cannot create the mapping of the fields!'));
       }
     }
     catch (ElasticsearchException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      \Drupal::messenger()->addError($e->getMessage());
       return FALSE;
     }
 
@@ -463,7 +463,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       }
     }
     catch (ElasticsearchException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      \Drupal::messenger()->addError($e->getMessage());
     }
   }
 
@@ -497,7 +497,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       }
     }
     catch (ElasticsearchException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      \Drupal::messenger()->addError($e->getMessage());
     }
 
     return array_keys($items);
@@ -525,7 +525,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       );
     }
     catch (ElasticsearchException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      \Drupal::messenger()->addError($e->getMessage());
     }
   }
 
@@ -751,7 +751,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       return $this->client->indices()->existsType($params);
     }
     catch (ElasticsearchException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      \Drupal::messenger()->addError($e->getMessage());
       return FALSE;
     }
   }
