@@ -69,7 +69,7 @@ class SearchBuilder {
   public function build() {
     // Query options.
     $indexFactory = \Drupal::service('elasticsearch_connector.index_factory');
-    $params = $indexFactory->index($this->index, TRUE);
+    $params = $indexFactory->index($this->index);
 
     $query_options = $this->getSearchQueryOptions();
 

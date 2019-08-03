@@ -27,22 +27,15 @@ class IndexFactory {
    *
    * @param \Drupal\search_api\IndexInterface $index
    *   Index to create.
-   * @param bool $with_type
-   *   Should the index be created with a type.
    *
    * @return array
    *   Associative array with the following keys:
    *   - index: The name of the index on the Elasticsearch server.
    *   - type(optional): The name of the type to use for the given index.
    */
-  public static function index(IndexInterface $index, $with_type = FALSE) {
+  public static function index(IndexInterface $index) {
     $params = [];
     $params['index'] = static::getIndexName($index);
-
-    if ($with_type) {
-      $params['type'] = $index->id();
-    }
-
     return $params;
   }
 
@@ -84,12 +77,11 @@ class IndexFactory {
    * @return array
    */
   public static function bulkDelete(IndexInterface $index, array $ids) {
-    $params = IndexFactory::index($index, TRUE);
+    $params = IndexFactory::index($index);
     foreach ($ids as $id) {
       $params['body'][] = [
         'delete' => [
           '_index' => $params['index'],
-          '_type' => $params['type'],
           '_id' => $id,
         ],
       ];
@@ -111,7 +103,7 @@ class IndexFactory {
    *   index.
    */
   public static function bulkIndex(IndexInterface $index, array $items) {
-    $params = static::index($index, TRUE);
+    $params = static::index($index);
 
     foreach ($items as $id => $item) {
       $data = [
@@ -172,7 +164,7 @@ class IndexFactory {
    *   Parameters required to create an index mapping.
    */
   public static function mapping(IndexInterface $index) {
-    $params = static::index($index, TRUE);
+    $params = static::index($index);
 
     $properties = [
       'id' => [
@@ -213,7 +205,7 @@ class IndexFactory {
       'type' => 'keyword',
     ];
 
-    $params['body'][$params['type']]['properties'] = $properties;
+    $params['body']['properties'] = $properties;
 
     // Allow other modules to alter index mapping before we create it.
     $dispatcher = \Drupal::service('event_dispatcher');

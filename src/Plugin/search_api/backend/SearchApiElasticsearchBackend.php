@@ -414,25 +414,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    *   TRUE on success, FALSE otherwise.
    */
   public function fieldsUpdated(IndexInterface $index) {
-    $params = $this->indexFactory->index($index, TRUE);
-
     try {
-      if ($this->client->indices()->existsType($params)) {
-        $current_mapping = $this->client->indices()->getMapping($params);
-        if (!empty($current_mapping)) {
-          try {
-            // If the mapping exits, delete it to be able to re-create it.
-            $this->client->indices()->deleteMapping($params);
-          }
-          catch (ElasticsearchException $e) {
-            // If the mapping exits, delete the index and recreate it.
-            // In Elasticsearch 2.3 it is not possible to delete a mapping,
-            // so don't use $this->client->indices()->deleteMapping as doing so
-            // will throw an exception.
-            $this->removeIndex($index);
-            $this->addIndex($index);
-          }
-        }
+      if (!$this->client->indices()->exists($this->indexFactory->index($index))) {
+        $this->addIndex($index);
       }
 
       $response = $this->client->indices()->putMapping(
@@ -443,7 +427,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
         \Drupal::messenger()->addError(t('Cannot create the mapping of the fields!'));
       }
     }
-    catch (ElasticsearchException $e) {
+    catch (\Exception $e) {
       \Drupal::messenger()->addError($e->getMessage());
       return FALSE;
     }
@@ -471,9 +455,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * {@inheritdoc}
    */
   public function indexItems(IndexInterface $index, array $items) {
-    $elastic_type_exists = $this->doesTypeExists($index);
-
-    if (empty($elastic_type_exists) || empty($items)) {
+    if (empty($items)) {
       return array();
     }
 
@@ -580,10 +562,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     // Get index.
     $index = $query->getIndex();
 
-    $params = $this->indexFactory->index($index, TRUE);
+    $params = $this->indexFactory->index($index);
 
     // Check Elasticsearch index.
-    if (!$this->client->indices()->existsType($params)) {
+    if (!$this->client->indices()->exists($params)) {
       return $search_result;
     }
 
@@ -734,26 +716,6 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     }
 
     $results->setExtraData('search_api_facets', $attach);
-  }
-
-  /**
-   * Helper function, check if the given index and type exists.
-   *
-   * @param \Drupal\search_api\IndexInterface $index
-   *   Index object.
-   *
-   * @return bool
-   *   TRUE if the given index exists in Elasticsearch, otherwise FALSE.
-   */
-  protected function doesTypeExists(IndexInterface $index) {
-    $params = $this->indexFactory->index($index, TRUE);
-    try {
-      return $this->client->indices()->existsType($params);
-    }
-    catch (ElasticsearchException $e) {
-      \Drupal::messenger()->addError($e->getMessage());
-      return FALSE;
-    }
   }
 
   /**
