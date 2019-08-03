@@ -191,8 +191,8 @@ class ElasticsearchViewsStringFilter extends FilterPluginBase {
    * Helper function to query.
    */
   public function query() {
-    if (!empty($this->value[0])) {
-      $this->query->where['conditions'][$this->realField] = $this->value[0];
+    if (!empty($this->value)) {
+      $this->query->where['conditions'][$this->realField] = $this->value;
     }
   }
 

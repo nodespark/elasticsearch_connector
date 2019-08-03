@@ -331,21 +331,18 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       $params['_source'] = array_merge($params['_source'], $this->params['fields']);
     }
 
+    // TODO: This should be refactored to use filters where possible.
+    // TODO: The specific queries should be on filter handler level, not here.
     if (!empty($this->where['conditions'])) {
-      if (count($this->where['conditions']) == 1) {
-        $params['query'] = [
-          'bool' => [
-            'should' => $this->where['conditions']
-          ],
-        ];
-      } else {
-        $params['query'] = [
-          'multi_match' => [
-            'query' => implode(' ',array_unique( array_values($this->where['conditions']))),
-            'fields' => array_keys($this->where['conditions'])
-          ]
-        ];
+      $boolQueries = [];
+      foreach ($this->where['conditions'] as $field => $value) {
+        $boolQueries[]['match'] = [$field => $value];
       }
+      $params['query'] = [
+        'bool' => [
+          'must' => $boolQueries,
+        ]
+      ];
     }
 
     // Add sorting.
