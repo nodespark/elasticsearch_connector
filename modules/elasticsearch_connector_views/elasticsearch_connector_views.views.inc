@@ -6,7 +6,6 @@
  */
 
 use Drupal\Component\Render\FormattableMarkup;
-use Drupal\elasticsearch_connector\Entity\Cluster;
 
 /**
  * Implements hook_views_data().
@@ -24,66 +23,57 @@ function elasticsearch_connector_views_views_data() {
       // TODO: Handle aliases also, not only indices.
       if (!empty($indices['indices'])) {
         foreach ($indices['indices'] as $index_name => $index_info) {
-          // In elasticsearch the table is actually the document type.
-          // So get all types and build data array.
-          $mapping = $elasticsearchClient->indices()
-                                         ->getMapping(array('index' => $index_name));
-          if (!empty($mapping[$index_name]['mappings'])) {
-            foreach ($mapping[$index_name]['mappings'] as $type_name => $type_settings) {
-              $name = new FormattableMarkup(
-                '@cluster (@index_name - @type)', array(
-                  '@cluster' => $cluster->name,
-                  '@index_name' => $index_name,
-                  '@type' => $type_name,
-                )
-              );
-              $base_table = 'elsv__' . $cluster->cluster_id . '__' . $index_name . '__' . $type_name;
+          $name = new FormattableMarkup(
+            '@cluster (@index_name)', array(
+              '@cluster' => $cluster->name,
+              '@index_name' => $index_name,
+            )
+          );
+          $base_table = 'elsv__' . $cluster->cluster_id . '__' . $index_name;
 
-              $data[$base_table]['table']['group'] = t('Elasticsearch');
-              $data[$base_table]['table']['base'] = array(
-                'index' => $index_name,
-                'cluster_id' => $cluster->cluster_id,
-                'type' => $type_name,
-                'title' => t('Cluster :name', array(':name' => $name)),
-                'help' => t('Searches the site with the Elasticsearch search engine for !name', array('!name' => $name)),
-                'query_id' => 'elasticsearch_connector_views_query',
-              );
+          $data[$base_table]['table']['group'] = t('Elasticsearch');
+          $data[$base_table]['table']['base'] = array(
+            'index' => $index_name,
+            'cluster_id' => $cluster->cluster_id,
+            'title' => t('Cluster :name', array(':name' => $name)),
+            'help' => t('Searches the site with the Elasticsearch search engine for !name', array('!name' => $name)),
+            'query_id' => 'elasticsearch_connector_views_query',
+          );
 
-              // Get the list of the fields in index directly from Elasticsearch.
-              if (!empty($type_settings['properties'])) {
-                _elasticsearch_connector_views_handle_fields($base_table, $data, $type_settings['properties']);
-              }
-
-              // Keyword field.
-              $data[$base_table]['keyword'] = array(
-                'title' => t('Search'),
-                'help' => t('Fulltext search'),
-                'filter' => array(
-                  'id' => 'elasticsearch_connector_views_fulltext_filter',
-                ),
-              );
-
-              // Snippet field.
-              $data[$base_table]['snippet'] = array(
-                'title' => t('Snippet'),
-                'help' => t('Search snippet'),
-                'field' => array(
-                  'handler' => 'elasticsearch_connector_views_snippet_handler_field',
-                  'click sortable' => TRUE,
-                ),
-              );
-
-              // Score field.
-              $data[$base_table]['score'] = array(
-                'title' => t('Score'),
-                'help' => t('Score'),
-                'field' => array(
-                  'id' => 'elasticsearch_connector_views_standard',
-                  'click sortable' => TRUE,
-                ),
-              );
-            }
+          $indexMapping = $elasticsearchClient->indices()->getMapping(array('index' => $index_name));
+          // Get the list of the fields in index directly from Elasticsearch.
+          if (!empty($indexMapping[$index_name]['mappings']['properties'])) {
+            _elasticsearch_connector_views_handle_fields($base_table, $data, $indexMapping[$index_name]['mappings']['properties']);
           }
+
+          // Keyword field.
+          $data[$base_table]['keyword'] = array(
+            'title' => t('Search'),
+            'help' => t('Fulltext search'),
+            'filter' => array(
+              'id' => 'elasticsearch_connector_views_fulltext_filter',
+            ),
+          );
+
+          // Snippet field.
+          $data[$base_table]['snippet'] = array(
+            'title' => t('Snippet'),
+            'help' => t('Search snippet'),
+            'field' => array(
+              'handler' => 'elasticsearch_connector_views_snippet_handler_field',
+              'click sortable' => TRUE,
+            ),
+          );
+
+          // Score field.
+          $data[$base_table]['score'] = array(
+            'title' => t('Score'),
+            'help' => t('Score'),
+            'field' => array(
+              'id' => 'elasticsearch_connector_views_standard',
+              'click sortable' => TRUE,
+            ),
+          );
         }
       }
     }

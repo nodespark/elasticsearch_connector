@@ -47,13 +47,6 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
   protected $index;
 
   /**
-   * Elasticsearch types to be fetched.
-   *
-   * @var array
-   */
-  protected $elasticsearchTypes;
-
-  /**
    * @var Cluster
    */
   protected $elasticsearchCluster;
@@ -182,7 +175,6 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       $data = Views::viewsData()->get($view_id);
       $cluster_id = $data['table']['base']['cluster_id'];
       $this->index = $data['table']['base']['index'];
-      $this->elasticsearchTypes[$data['table']['base']['type']] = $data['table']['base']['type'];
       $this->elasticsearchCluster = $this->entityTypeManager->getStorage('elasticsearch_cluster')->load($cluster_id);
       $clientManager = \Drupal::service('elasticsearch_connector.client_manager');
       $this->elasticsearchClient = $clientManager->getClientForCluster($this->elasticsearchCluster);
@@ -425,7 +417,6 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
     $view->execute_time = 0;
 
     $index = $this->getIndex();
-    $type = $this->getSearchTypes();
 
     try {
       $start = microtime(TRUE);
@@ -438,7 +429,6 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       $response = $client->search(
         array(
           'index' => $index,
-          'type' => $type,
           'body' => $this->query_params,
         )
       )->getRawResponse();
@@ -469,7 +459,7 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
 
       // $view->result = iterator_to_array($view->result);
       // Store the results.
-      $view->pager->total_items = $view->total_rows = $response['hits']['total'];
+      $view->pager->total_items = $view->total_rows = $response['hits']['total']['value'];
       $view->pager->updatePageInfo();
 
       // We shouldn't use $results['performance']['complete'] here, since
@@ -567,13 +557,6 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
    */
   public function getClusterId() {
     return $this->elasticsearchCluster->cluster_id;
-  }
-
-  /**
-   *
-   */
-  public function getSearchTypes() {
-    return implode(',', $this->elasticsearchTypes);
   }
 
   /**

@@ -77,8 +77,6 @@ class ElasticsearchViewsFulltextSearch extends FilterPluginBase {
     $data = Views::viewsData()->get($view_id);
 
     $index = $data['table']['base']['index'];
-    $type = (is_array($data['table']['base']['type'])) ? implode(',', $data['table']['base']['type']) : $data['table']['base']['type'];
-
     $cluster_id = $data['table']['base']['cluster_id'];
 
     /** @var \Drupal\elasticsearch_connector\Entity\Cluster $elasticsearchCluster */
@@ -89,11 +87,10 @@ class ElasticsearchViewsFulltextSearch extends FilterPluginBase {
 
     $params = array(
       'index' => $index,
-      'type' => $type,
     );
     $mapping = $client->indices()->getMapping($params);
 
-    $fulltext_fields = array_keys(array_filter($mapping[$index]['mappings'][$type]['properties'], function($v) {
+    $fulltext_fields = array_keys(array_filter($mapping[$index]['mappings']['properties'], function($v) {
       return $v['type'] == 'text' && (!isset($v['index']) || $v['index'] != 'not_analyzed');
     }));
 
