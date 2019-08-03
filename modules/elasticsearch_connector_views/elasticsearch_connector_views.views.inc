@@ -128,6 +128,8 @@ function _elasticsearch_connector_views_handle_fields($base_table, &$data, $fiel
           $field_handler = 'elasticsearch_connector_views_boolean';
           break;
 
+        // TODO: Handle the keyword also for the text fields!
+        case 'text':
         case 'string':
         case 'keyword':
           // TODO: Handle the analyser and non_analyzed fields.
