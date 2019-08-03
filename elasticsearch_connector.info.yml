@@ -1,0 +1,8 @@
+name: 
+  'Elasticsearch Connector'
+description: 
+  'Abstraction of making connection to the elasticsearch server. This module is API for a whole bunch of functionality connected with this module.'
+core: 8.x
+package: Elasticsearch
+type: module
+configure: elasticsearch_connector.config_entity.list

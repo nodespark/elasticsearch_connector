@@ -1,0 +1,7 @@
+elasticsearch_connector.config_entity.list:
+  path: '/admin/config/search/elasticsearch-connector'
+  defaults:
+    _title: 'Elasticsearch Connector'
+    _entity_list: 'elasticsearch_cluster'
+  requirements:
+    _permission: 'administer elasticsearch connector'

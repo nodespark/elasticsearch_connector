@@ -1,0 +1,19 @@
+elasticsearch_connector.index.*:
+  type: config_entity
+  label: 'Elasticsearch Index'
+  mapping:
+    index_id:
+      type: string
+      label: 'Index ID'
+    name:
+      type: string
+      label: 'Index Name'
+    num_of_shards:
+      type: integer
+      label: 'Shards'
+    num_of_replica:
+      type: integer
+      label: 'Replica'
+    server:
+      type: string
+      label: 'Cluster machine name'

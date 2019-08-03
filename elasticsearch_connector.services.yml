@@ -1,0 +1,16 @@
+services:
+  elasticsearch_connector.client_factory:
+    class: nodespark\DESConnector\ClientFactory
+
+  elasticsearch_connector.client_manager:
+    class: Drupal\elasticsearch_connector\ElasticSearch\ClientManager
+    arguments:
+      - '@module_handler'
+      - '@elasticsearch_connector.client_factory'
+
+  elasticsearch_connector.cluster_manager:
+    class: Drupal\elasticsearch_connector\ClusterManager
+    arguments: ['@state', '@entity_type.manager']
+
+  elasticsearch_connector.index_factory:
+    class: Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory

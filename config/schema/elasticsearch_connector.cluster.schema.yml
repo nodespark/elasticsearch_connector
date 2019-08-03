@@ -1,0 +1,29 @@
+elasticsearch_connector.cluster.*:
+  type: config_entity
+  label: 'Elasticsearch Cluster'
+  mapping:
+    cluster_id:
+      type: string
+      label: 'Cluster ID'
+    name:
+      type: string
+      label: 'Cluster Name'
+    status:
+      type: string
+      label: 'Cluster Status'
+    url:
+      type: string
+      label: 'Cluster URL'
+    proxy:
+      type: string
+      label: 'Cluster Proxy'
+    options:
+      type: mapping
+      label: 'Options'
+      mapping:
+        multiple_nodes_connection:
+          type: boolean
+          label: 'Multiple Nodes Connection'
+    locked:
+      type: boolean
+      label: 'Locked'
