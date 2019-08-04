@@ -280,7 +280,7 @@ class IndexForm extends EntityForm {
     try {
       $response = $client->indices()->create($index_params);
       if ($client->CheckResponseAck($response)) {
-        drupal_set_message(
+        $this->messenger()->addMessage(
           t(
             'The index %index having id %index_id has been successfully created.',
             array(
@@ -291,25 +291,25 @@ class IndexForm extends EntityForm {
         );
       }
       else {
-        drupal_set_message(
+        $this->messenger()->addError(
           t(
             'Fail to create the index %index having id @index_id',
             array(
               '%index' => $form_state->getValue('name'),
               '@index_id' => $form_state->getValue('index_id'),
             )
-          ), 'error'
+          )
         );
       }
 
       parent::save($form, $form_state);
 
-      drupal_set_message(t('Index %label has been added.', array('%label' => $this->entity->label())));
+      $this->messenger()->addMessage(t('Index %label has been added.', array('%label' => $this->entity->label())));
 
       $form_state->setRedirect('elasticsearch_connector.config_entity.list');
     }
     catch (\Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      $this->messenger()->addError($e->getMessage());
     }
   }
 

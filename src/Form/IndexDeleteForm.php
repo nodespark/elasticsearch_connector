@@ -73,15 +73,15 @@ class IndexDeleteForm extends EntityConfirmFormBase {
         $client->indices()->delete(['index' => $this->entity->index_id]);
       }
       $this->entity->delete();
-      drupal_set_message($this->t('The index %title has been deleted.', array('%title' => $this->entity->label())));
+      $this->messenger()->addMessage($this->t('The index %title has been deleted.', array('%title' => $this->entity->label())));
       $form_state->setRedirect('elasticsearch_connector.config_entity.list');
     }
     catch (Missing404Exception $e) {
       // The index was not found, so just remove it anyway.
-      drupal_set_message($e->getMessage(), 'error');
+      $this->messenger()->addError($e->getMessage());
     }
     catch (\Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      $this->messenger()->addError($e->getMessage());
     }
   }
 

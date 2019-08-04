@@ -5,11 +5,11 @@ namespace Drupal\elasticsearch_connector_views\Plugin\views\field;
 use Drupal\Core\Form\FormHelper;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
-use Drupal\views\Plugin\views\field\Field;
 use Drupal\views\Plugin\views\field\MultiItemsFieldHandlerInterface;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Views;
+use Drupal\views\Plugin\views\field\EntityField;
 
 /**
  * Displays entity field data.
@@ -18,7 +18,7 @@ use Drupal\views\Views;
  *
  * @ViewsField("elasticsearch_connector_views_field")
  */
-class ElasticsearchViewsEntityField extends Field {
+class ElasticsearchViewsEntityField extends EntityField {
 
   use ElasticsearchViewsFieldTrait;
 
@@ -56,7 +56,7 @@ class ElasticsearchViewsEntityField extends Field {
   /**
    * {@inheritdoc}
    */
-  public function query() {
+  public function query($use_groupby = false) {
     // If we're not using Field API field rendering, just use the query()
     // implementation of the fallback handler.
     if (!$this->options['field_rendering']) {
