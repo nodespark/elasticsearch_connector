@@ -45,7 +45,7 @@ class SearchFactory {
     // Set up the results array.
     $results = $query->getResults();
     $results->setExtraData('elasticsearch_response', $response);
-    $results->setResultCount($response['hits']['total']);
+    $results->setResultCount($response['hits']['total']['value']);
     /** @var \Drupal\search_api\Utility\FieldsHelper $fields_helper */
     $fields_helper = \Drupal::getContainer()->get('search_api.fields_helper');
 
