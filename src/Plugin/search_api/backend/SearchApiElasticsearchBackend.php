@@ -1136,7 +1136,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * {@inheritdoc}
    */
   public function supportsDataType($type) {
-    return in_array($type, ['object']);
+    return in_array($type, ['object', 'location']);
   }
 
   /**
