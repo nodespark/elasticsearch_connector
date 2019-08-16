@@ -9,6 +9,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
+use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\Url;
 use Drupal\elasticsearch_connector\ClusterManager;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
@@ -17,6 +18,7 @@ use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\SearchFactor
 use Drupal\elasticsearch_connector\Entity\Cluster;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
+use Drupal\search_api\Item\Field;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\Query\ResultSet;
 use Drupal\search_api\Query\ResultSetInterface;
@@ -1136,7 +1138,33 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * {@inheritdoc}
    */
   public function supportsDataType($type) {
-    return in_array($type, ['object']);
+    return in_array($type, ['object', 'location']);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getBackendDefinedFields(IndexInterface $index) {
+    $backend_defined_fields = [];
+
+    foreach ($index->getFields() as $field) {
+      if ($field->getType() == 'location') {
+        // Add a distance pseudo field to integrate with the search_api_location module.
+        // See search_api_location_views_views_data_alter() for details.
+        $distance_field_name = $field->getFieldIdentifier() . '__distance';
+        $property_path_name = $field->getPropertyPath() . '__distance';
+        $distance_field = new Field($index, $distance_field_name);
+        $distance_field->setLabel($field->getLabel() . ' (distance)');
+        $distance_field->setDataDefinition(DataDefinition::create('decimal'));
+        $distance_field->setType('decimal');
+        $distance_field->setDatasourceId($field->getDatasourceId());
+        $distance_field->setPropertyPath($property_path_name);
+
+        $backend_defined_fields[$distance_field_name] = $distance_field;
+      }
+    }
+
+    return $backend_defined_fields;
   }
 
   /**

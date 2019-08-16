@@ -343,6 +343,16 @@ class SearchBuilder {
       elseif ($field_id === 'search_api_id') {
         $sort['id'] = $direction;
       }
+      elseif ($this->query->getOption('search_api_location')) {
+        $options = $this->query->getOption('search_api_location');
+        $sort["_geo_distance"] = [
+          $options[0]['field'] => [
+            "lat" => $options[0]['lat'],
+            "lon" => $options[0]['lon'],
+          ],
+          "order" => $direction
+        ];
+      }
       elseif (isset($index_fields[$field_id])) {
         if (in_array($field_id, $query_full_text_fields)) {
           // Set the field that has not been analyzed for sorting.
