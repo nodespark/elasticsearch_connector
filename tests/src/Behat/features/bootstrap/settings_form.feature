@@ -1,6 +1,6 @@
 @javascript @api
 Feature: Test the settings form
-  In order configure Draco DFP
+  In order configure Elasticsearch Connector
   As an authenticated user
   I need to be able to set the module's settings via it's admin form.
 
