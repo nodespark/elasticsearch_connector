@@ -231,6 +231,48 @@ class ClusterForm extends EntityForm {
       '#default_value' => (!empty($this->entity->options['timeout']) ? $this->entity->options['timeout'] : Cluster::ELASTICSEARCH_CONNECTOR_DEFAULT_TIMEOUT),
       '#weight' => 5.6,
     );
+
+    $form['options']['rewrite'] = [
+      '#tree' => TRUE,
+      '#weight' => 6,
+    ];
+
+    $form['options']['rewrite']['rewrite_index'] = [
+      '#title' => $this->t('Alter the Elasticsearch index name.'),
+      '#type' => 'checkbox',
+      '#default_value' => (!empty($this->entity->options['rewrite']['rewrite_index']) ? 1 : 0),
+      '#description' => $this->t('Alter the name of the Elasticsearch index by optionally adding a prefix and suffix to the Search API index name.')
+    ];
+
+    $form['options']['rewrite']['index']['prefix'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Index name prefix'),
+      '#default_value' => (!empty($this->entity->options['rewrite']['index']['prefix']) ? $this->entity->options['rewrite']['index']['prefix'] : ''),
+      '#description' => $this->t(
+        'If a value is provided it will be prepended to the index name.'
+      ),
+      '#states' => [
+        'visible' => [
+          ':input[name="options[rewrite][rewrite_index]"]' => ['checked' => TRUE],
+        ],
+      ],
+      '#weight' => 5,
+    ];
+
+    $form['options']['rewrite']['index']['suffix'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Index name suffix'),
+      '#default_value' => (!empty($this->entity->options['rewrite']['index']['suffix']) ? $this->entity->options['rewrite']['index']['suffix'] : ''),
+      '#description' => $this->t(
+        'If a value is provided it will be appended to the index name.'
+      ),
+      '#states' => [
+        'visible' => [
+          ':input[name="options[rewrite][rewrite_index]"]' => ['checked' => TRUE],
+        ],
+      ],
+      '#weight' => 10,
+    ];
   }
 
   /**

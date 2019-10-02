@@ -7,6 +7,7 @@ use Drupal\elasticsearch_connector\Event\PrepareIndexEvent;
 use Drupal\elasticsearch_connector\Event\PrepareIndexMappingEvent;
 use Drupal\elasticsearch_connector\Event\BuildIndexParamsEvent;
 use Drupal\search_api_autocomplete\Suggester\SuggesterInterface;
+use Drupal\elasticsearch_connector\Entity\Cluster;
 
 /**
  * Create Elasticsearch Indices.
@@ -236,15 +237,34 @@ class IndexFactory {
    */
   public static function getIndexName(IndexInterface $index) {
 
-    $options = \Drupal::database()->getConnectionOptions();
-    $site_database = $options['database'];
-
+    // Get index machine name.
     $index_machine_name = is_string($index) ? $index : $index->id();
+
+    // Get prefix and suffix from the cluster if present.
+    $cluster_id = $index->getServerInstance()->getBackend()->getCluster();
+    $cluster_options = Cluster::load($cluster_id)->options;
+
+    $index_suffix = '';
+    if (!empty($cluster_options['rewrite']['rewrite_index'])) {
+      $index_prefix = isset($cluster_options['rewrite']['index']['prefix']) ? $cluster_options['rewrite']['index']['prefix'] : '';
+      if ($index_prefix && substr($index_prefix, -1) !== '_') {
+        $index_prefix .= '_';
+      }
+      $index_suffix = isset($cluster_options['rewrite']['index']['suffix']) ? $cluster_options['rewrite']['index']['suffix'] : '';
+      if ($index_suffix && $index_suffix[0] !== '_') {
+        $index_suffix = '_' . $index_suffix;
+      }
+    }
+    else {
+      // If a custom rewrite is not enabled, set prefix to db name by default.
+      $options = \Drupal::database()->getConnectionOptions();
+      $index_prefix = 'elasticsearch_index_' . $options['database'] . '_';
+    }
 
     return strtolower(preg_replace(
       '/[^A-Za-z0-9_]+/',
       '',
-      'elasticsearch_index_' . $site_database . '_' . $index_machine_name
+      $index_prefix . $index_machine_name . $index_suffix
     ));
   }
 
