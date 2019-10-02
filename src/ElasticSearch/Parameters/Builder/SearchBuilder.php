@@ -422,9 +422,18 @@ class SearchBuilder {
             );
           }
 
+          // For some data type, we need to do conversions here.
+          if (isset($index_fields[$field_id])) {
+            $field = $index_fields[$field_id];
+            switch ($field->getType()) {
+              case 'boolean':
+                $condition->setValue((bool) $condition->getValue());
+                break;
+            }
+          }
+
           // Check field.
           $filter = FilterFactory::filterFromCondition($condition);
-
           if (!empty($filter)) {
             $filters[] = $filter;
           }
