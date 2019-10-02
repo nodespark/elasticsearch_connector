@@ -15,6 +15,7 @@ use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\SearchFactory;
 use Drupal\elasticsearch_connector\Entity\Cluster;
+use Drupal\elasticsearch_connector\Plugin\search_api\backend\SearchApiElasticsearchBackendInterface;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\QueryInterface;
@@ -44,7 +45,7 @@ use Drupal\search_api\Plugin\PluginFormTrait;
  *   description = @Translation("Index items using an Elasticsearch server.")
  * )
  */
-class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginFormInterface {
+class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginFormInterface, SearchApiElasticsearchBackendInterface {
 
   use PluginFormTrait;
 
@@ -322,6 +323,17 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       'search_api_grouping',
       'search_api_mlt',
     ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSupportedDataTypes() {
+    $data_types = ['object', 'location'];
+    // Allow other modules to intercept and define what types they want to
+    // support.
+    $this->moduleHandler->alter('elasticsearch_connector_supported_data_types', $data_types);
+    return $data_types;
   }
 
   /**
@@ -1136,7 +1148,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * {@inheritdoc}
    */
   public function supportsDataType($type) {
-    return in_array($type, ['object', 'location']);
+    $data_types = $this->getSupportedDataTypes();
+    return in_array($type, $data_types);
   }
 
   /**

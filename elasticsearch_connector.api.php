@@ -15,3 +15,13 @@
  */
 function hook_elasticsearch_connector_load_library_options_alter(array &$options, \Drupal\elasticsearch_connector\Entity\Cluster $cluster) {
 }
+
+/**
+ * Modify the list of supported data types.
+ *
+ * @param array &$data_types
+ *   Array of strings representing supported data types.
+ */
+function hook_elasticsearch_connector_supported_data_types_alter(array &$data_types) {
+
+}
