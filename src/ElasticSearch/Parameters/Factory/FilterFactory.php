@@ -59,6 +59,16 @@ class FilterFactory {
           ];
           break;
 
+        case 'NOT IN':
+          $filter = [
+            'bool' => [
+              'must_not' => [
+                'terms' => [$condition->getField() => array_values($condition->getValue())],
+              ],
+            ]
+          ];
+          break;
+
         case '<>':
           $filter = [
             'bool' => [
