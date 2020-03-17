@@ -184,6 +184,9 @@ class ElasticsearchViewsQuery extends QueryPluginBase {
       $this->index = $data['table']['base']['index'];
       $this->elasticsearchTypes[$data['table']['base']['type']] = $data['table']['base']['type'];
       $this->elasticsearchCluster = $this->entityTypeManager->getStorage('elasticsearch_cluster')->load($cluster_id);
+      if (!$this->elasticsearchCluster) {
+        throw new \Exception('Elasticsearch cluster is not configured.');
+      }
       $clientManager = \Drupal::service('elasticsearch_connector.client_manager');
       $this->elasticsearchClient = $clientManager->getClientForCluster($this->elasticsearchCluster);
     }
