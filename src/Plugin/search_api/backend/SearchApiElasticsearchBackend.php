@@ -401,6 +401,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * {@inheritdoc}
    */
   public function updateIndex(IndexInterface $index) {
+    // Do not update read-only indexes.
+    if ($index->isReadOnly()) {
+      return;
+    }
+
     try {
       if (!$this->client->indices()->exists($this->indexFactory->index($index))) {
         $response = $this->client->indices()->create(
@@ -429,6 +434,11 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    *   TRUE on success, FALSE otherwise.
    */
   public function fieldsUpdated(IndexInterface $index) {
+    // Do not update read-only indexes.
+    if ($index->isReadOnly()) {
+      return FALSE;
+    }
+
     try {
       if (!$this->client->indices()->exists($this->indexFactory->index($index))) {
         $this->addIndex($index);
@@ -454,6 +464,15 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * {@inheritdoc}
    */
   public function removeIndex($index) {
+    $index_entity = $index instanceof IndexInterface
+      ? $index
+      : $this->entityTypeManager->getStorage('search_api_index')->load($index);
+
+    // Do not remove read-only indexes.
+    if ($index_entity && $index_entity->isReadOnly()) {
+      return;
+    }
+
     $params = $this->indexFactory->index($index);
 
     try {
