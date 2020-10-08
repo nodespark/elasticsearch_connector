@@ -343,7 +343,11 @@ class SearchBuilder {
       $direction = mb_strtolower($direction);
 
       if ($field_id === 'search_api_relevance') {
-        $sort['_score'] = $direction;
+        // Apply only on fulltext search.
+        $keys = $this->query->getKeys();
+        if (!empty($keys)) {
+          $sort['_score'] = $direction;
+        }
       }
       elseif ($field_id === 'search_api_id') {
         $sort['id'] = $direction;
