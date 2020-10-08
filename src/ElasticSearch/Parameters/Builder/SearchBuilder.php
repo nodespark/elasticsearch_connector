@@ -300,7 +300,7 @@ class SearchBuilder {
     }
 
     // Filter out top level properties beginning with '#'.
-    $keys = array_filter($keys, function ($key) {
+    $keys = array_filter($keys, function (string $key) {
       return $key[0] !== '#';
     }, ARRAY_FILTER_USE_KEY);
 
