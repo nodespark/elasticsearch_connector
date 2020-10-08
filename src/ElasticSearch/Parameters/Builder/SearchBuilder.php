@@ -3,8 +3,11 @@
 namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Builder;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\FilterFactory;
+use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory;
 use Drupal\search_api\ParseMode\ParseModeInterface;
 use Drupal\search_api\Query\Condition;
 use Drupal\search_api\Query\ConditionGroupInterface;
@@ -15,6 +18,7 @@ use MakinaCorpus\Lucene\TermCollectionQuery;
 use MakinaCorpus\Lucene\TermQuery;
 use Drupal\elasticsearch_connector\Event\PrepareSearchQueryEvent;
 use Drupal\elasticsearch_connector\Event\BuildSearchParamsEvent;
+use Drupal\search_api\Utility\Utility as SearchApiUtility;
 use Drupal\Core\Messenger\MessengerTrait;
 
 /**
@@ -519,9 +523,68 @@ class SearchBuilder {
         unset($query_options['mlt']['id']);
       }
 
+      $language_ids = $this->query->getLanguages();
+      if (empty($language_ids)) {
+        // If the query isn't already restricted by languages we have to do it
+        // here in order to limit the MLT suggestions to be of the same language
+        // as the currently shown one.
+        $language_ids[] = \Drupal::languageManager()
+          ->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)
+          ->getId();
+        // For non-translatable entity types, add the "not specified" language to
+        // the query so they also appear in the results.
+        $language_ids[] = LanguageInterface::LANGCODE_NOT_SPECIFIED;
+        $this->query->setLanguages($language_ids);
+      }
+
+      foreach ($query_options['mlt']['ids'] as $id) {
+        foreach ($this->index->getDatasources() as $datasource) {
+          if ($entity_type_id = $datasource->getEntityTypeId()) {
+            $entity = \Drupal::entityTypeManager()
+              ->getStorage($entity_type_id)
+              ->load($id);
+
+            if ($entity instanceof ContentEntityInterface) {
+              $translated = FALSE;
+              if ($entity->isTranslatable()) {
+                foreach ($language_ids as $language_id) {
+                  if ($entity->hasTranslation($language_id)) {
+                    $ids[] = SearchApiUtility::createCombinedId(
+                      $datasource->getPluginId(),
+                      $datasource->getItemId(
+                        $entity->getTranslation($language_id)->getTypedData()
+                      )
+                    );
+                    $translated = TRUE;
+                  }
+                }
+              }
+
+              if (!$translated) {
+                // Fall back to the default language of the entity.
+                $ids[] = SearchApiUtility::createCombinedId(
+                  $datasource->getPluginId(),
+                  $datasource->getItemId($entity->getTypedData())
+                );
+              }
+            }
+            else {
+              $ids[] = $id;
+            }
+          }
+        }
+      }
+
       // Input parameter: ids
-      if (isset($query_options['mlt']['ids'])) {
-        $mlt_query['more_like_this']['ids'] = $query_options['mlt']['ids'];
+      if (!empty($ids)) {
+        $mlt_query['more_like_this']['like'] = [];
+        foreach ($ids as $id) {
+          $mlt_query['more_like_this']['like'][] = [
+            '_index' => IndexFactory::getIndexName($this->index),
+            '_type' => '_doc',
+            '_id' => $id,
+          ];
+        }
       }
 
       // Input parameter: like
