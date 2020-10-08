@@ -2,6 +2,13 @@
 
 /**
  * @file
+ * Elasticsearch connector api.
+ */
+
+use Drupal\elasticsearch_connector\Entity\Cluster;
+
+/**
+ * @file
  * Hooks provided by the ElasticSearch Connector module.
  */
 
@@ -13,7 +20,7 @@
  * @param \Drupal\elasticsearch_connector\Entity\Cluster $cluster
  *   Cluster entity.
  */
-function hook_elasticsearch_connector_load_library_options_alter(array &$options, \Drupal\elasticsearch_connector\Entity\Cluster $cluster) {
+function hook_elasticsearch_connector_load_library_options_alter(array &$options, Cluster $cluster) {
 }
 
 /**

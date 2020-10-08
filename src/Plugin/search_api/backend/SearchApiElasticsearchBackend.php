@@ -2,7 +2,6 @@
 
 namespace Drupal\elasticsearch_connector\Plugin\search_api\backend;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Config;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -14,8 +13,6 @@ use Drupal\elasticsearch_connector\ClusterManager;
 use Drupal\elasticsearch_connector\ElasticSearch\ClientManagerInterface;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory;
 use Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\SearchFactory;
-use Drupal\elasticsearch_connector\Entity\Cluster;
-use Drupal\elasticsearch_connector\Plugin\search_api\backend\SearchApiElasticsearchBackendInterface;
 use Drupal\search_api\Backend\BackendPluginBase;
 use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\QueryInterface;
@@ -168,6 +165,8 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * @param \Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory $indexFactory
    *   Index factory.
    *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    * @throws \Drupal\search_api\SearchApiException
    */
   public function __construct(
@@ -214,6 +213,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
   /**
    * {@inheritdoc}
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   * @throws \Drupal\search_api\SearchApiException
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     return new static(
@@ -468,7 +471,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    */
   public function indexItems(IndexInterface $index, array $items) {
     if (empty($items)) {
-      return array();
+      return [];
     }
 
     try {
@@ -528,6 +531,18 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    *
    * Note that the interface is not directly implemented to avoid a dependency
    * on search_api_autocomplete module.
+   *
+   * @param \Drupal\search_api\Query\QueryInterface $query
+   *   The query interface parameter.
+   * @param \Drupal\search_api_autocomplete\SearchInterface $search
+   *   The search interface parameter.
+   * @param mixed $incomplete_key
+   *   The incomplete key parameter.
+   * @param string|null $user_input
+   *   The keywords input by the user so far.
+   *
+   * @return array
+   *   Returns autocomplete suggestion array.
    */
   public function getAutocompleteSuggestions(QueryInterface $query, SearchInterface $search, $incomplete_key, $user_input) {
     try {
@@ -538,7 +553,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       $query->setOption('autocomplete', $incomplete_key);
       $query->setOption('autocomplete_field', reset($fields));
 
-      // Disable facets so it does not collide with autocompletion results.
+      // Disable facets so it does not collide with auto-completion results.
       $query->setOption('search_api_facets', FALSE);
 
       $result = $this->search($query);
@@ -560,7 +575,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     }
     catch (\Exception $e) {
       $this->logger->error($e->getMessage());
-      return array();
+      return [];
     }
   }
 
@@ -589,7 +604,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
     // Build Elasticsearch query.
     $params = SearchFactory::search($query);
 
-    // Note that this requires fielddata option to be enabled.
+    // Note that this requires field data option to be enabled.
     // @see ::getAutocompleteSuggestions()
     // @see \Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory\IndexFactory::mapping()
     if ($incomplete_key = $query->getOption('autocomplete')) {
@@ -851,10 +866,14 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * Helper function that adds options and returns facet.
    *
    * @param array $facet
-   * @param QueryInterface $query
+   *   The facet array parameter.
+   * @param \Drupal\search_api\Query\QueryInterface $query
+   *   The query interface parameter.
    * @param string $facet_info
+   *   The facet info parameter.
    *
    * @return array
+   *   Returns facet array.
    */
   protected function addFacetOptions(array &$facet, QueryInterface $query, $facet_info) {
     $facet_limit = $this->getFacetLimit($facet_info);
@@ -882,15 +901,18 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   /**
    * Helper function return Facet filter.
    *
-   * @param QueryInterface $query
+   * @param \Drupal\search_api\Query\QueryInterface $query
+   *   The query interface parameter.
    * @param array $facet_info
+   *   The facet info parameter.
    *
    * @return array|null|string
+   *   Returns facet filter.
    */
   protected function getFacetSearchFilter(QueryInterface $query, array $facet_info) {
     $index_fields = $this->getIndexFields($query);
 
-    if (isset($facet_info['operator']) && Unicode::strtolower($facet_info['operator']) == 'or') {
+    if (isset($facet_info['operator']) && mb_strtolower($facet_info['operator']) == 'or') {
       $facet_search_filter = $this->parseConditionGroup($query->getConditionGroup(), $index_fields, $facet_info['field']);
       if (!empty($facet_search_filter)) {
         $facet_search_filter = $facet_search_filter[0];
@@ -911,9 +933,12 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * Helper function create Facet for date field type.
    *
    * @param mixed $facet_id
+   *   The facet id parameter.
    * @param array $facet
+   *   The facet parameter.
    *
-   * @return array.
+   * @return array
+   *   Returns facet array.
    */
   protected function createDateFieldFacet($facet_id, array $facet) {
     $result = $facet[$facet_id];
@@ -933,8 +958,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * Helper function that return facet limits.
    *
    * @param array $facet_info
+   *   The facet info parameter.
    *
    * @return int|null
+   *   Returns facet limits.
    */
   protected function getFacetLimit(array $facet_info) {
     // If no limit (-1) is selected, use the server facet limit option.
@@ -949,8 +976,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * Helper function which add params to date facets.
    *
    * @param mixed $facet_id
+   *   The facet id parameter.
    *
    * @return string
+   *   Returns facet interval.
    */
   protected function getDateFacetInterval($facet_id) {
     // Active search corresponding to this index.
@@ -990,9 +1019,12 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * Helper function to return date gap.
    *
    * @param $adapter
-   * @param $facet_id
+   *   The adapter parameter.
+   * @param mixed $facet_id
+   *   The facet it parameter.
    *
    * @return mixed|string
+   *   Returns date gap.
    */
   public function getDateGranularity($adapter, $facet_id) {
     // Date gaps.
@@ -1008,7 +1040,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
         foreach ($active_items as $active_item) {
           $value = $active_item['value'];
           if (strpos($value, ' TO ') > 0) {
-            list($date_min, $date_max) = explode(' TO ', str_replace(['[', ']'], '', $value), 2);
+            [$date_min, $date_max] = explode(
+              ' TO ',
+              str_replace(['[', ']'], '', $value),
+              2);
             $gap = self::getDateGap($date_min, $date_max, FALSE);
             if (isset($gap_weight[$gap])) {
               $gaps[] = $gap_weight[$gap];
@@ -1029,9 +1064,12 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
    * Helper function that parse facets.
    *
    * @param array $response
-   * @param QueryInterface $query
+   *   The response parameter.
+   * @param \Drupal\search_api\Query\QueryInterface $query
+   *   The query interface parameter.
    *
    * @return array
+   *   Returns parsed facet.
    */
   protected function parseSearchFacets(array $response, QueryInterface $query) {
 
@@ -1117,10 +1155,10 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
   /**
    * Implements __sleep()
    *
-   * Prevents closure serialization error on search_api server add form
+   * Prevents closure serialization error on search_api server add form.
    */
   public function __sleep() {
-    return array();
+    return [];
   }
 
 }
