@@ -645,6 +645,9 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
       // Allow modules to alter the Elasticsearch query.
       $this->preQuery($query);
 
+      // When set to true the search response will always track the number of hits that match the query accurately
+      $params['track_total_hits'] = TRUE;
+
       // Do search.
       $response = $this->client->search($params)->getRawResponse();
       $results = SearchFactory::parseResult($query, $response);
