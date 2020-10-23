@@ -584,7 +584,7 @@ class SearchApiElasticsearchBackend extends BackendPluginBase implements PluginF
 
       $response = $result->getExtraData('elasticsearch_response');
       if (isset($response['aggregations']['autocomplete']['buckets'])) {
-        $suffix_start = strlen($user_input);
+        $suffix_start = strlen($incomplete_key);
         $buckets = $response['aggregations']['autocomplete']['buckets'];
         foreach ($buckets as $bucket) {
           $suggestions[] = $factory->createFromSuggestionSuffix(substr($bucket['key'], $suffix_start), $bucket['doc_count']);
