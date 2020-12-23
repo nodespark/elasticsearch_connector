@@ -38,7 +38,7 @@ class ElasticsearchTest extends BackendTest {
    *
    * @var array
    */
-  public static $modules = array('elasticsearch_connector', 'elasticsearch_test');
+  public static $modules = array('elasticsearch_connector', 'elasticsearch_test', 'search_api');
 
   /**
    * {@inheritdoc}
@@ -62,9 +62,8 @@ class ElasticsearchTest extends BackendTest {
     try {
       /** @var \Drupal\search_api\Entity\Server $server */
       $server = Server::load($this->serverId);
-      if ($server->getBackend()->ping()) {
-        $this->elasticsearchAvailable = TRUE;
-      }
+
+      return $server->getBackend()->isAvailable();
     }
     catch (\Exception $e) {
     }
@@ -573,6 +572,25 @@ class ElasticsearchTest extends BackendTest {
    *   Result message.
    */
   protected function assertIgnored(ResultSetInterface $results, array $ignored = array(), $message = 'No keys were ignored.') {
+  }
+
+  /**
+   * Tests whether indexing of dates works correctly.
+   */
+  public function testDateIndexing() {
+    // @Todo: implement this test.
+    $this->markTestSkipped('Not Implemented yet');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function checkServerBackend() {
+    // @Todo: implement this test.
+    $connectionOptions = \Drupal::database()->getConnectionOptions();
+    if ($connectionOptions['driver'] == 'sqlite') {
+      $this->markTestSkipped('Not Implemented yet');
+    }
   }
 
 }

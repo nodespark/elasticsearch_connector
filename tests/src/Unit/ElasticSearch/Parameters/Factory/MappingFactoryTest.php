@@ -83,7 +83,7 @@ class MappingFactoryTest extends UnitTestCase {
 
     $expected_mapping = [
       'type' => 'date',
-      'format' => 'epoch_second',
+      'format' => 'strict_date_optional_time||epoch_second',
     ];
     $this->assertEquals($expected_mapping, MappingFactory::mappingFromField($field->reveal()));
 

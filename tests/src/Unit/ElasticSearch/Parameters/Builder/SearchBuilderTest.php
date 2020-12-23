@@ -48,5 +48,6 @@ class SearchBuilderTest extends UnitTestCase {
   public function testBuild() {
     // TODO Can't test because IndexFactory is hardcoded
     // instead of injected so it can't be mocked.
+    $this->markTestSkipped('Not Implemented yet');
   }
 }

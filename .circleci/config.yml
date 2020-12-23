@@ -16,7 +16,7 @@
 defaults: &defaults
   docker:
     # specify the version you desire here (avoid latest except for testing)
-    - image: andrewberry/drupal_tests:0.0.11
+    - image: andrewberry/drupal_tests:latest
 
     # Use our fork until https://github.com/wernight/docker-phantomjs/pull/3 is
     # merged.
@@ -27,6 +27,10 @@ defaults: &defaults
     - image: mariadb:10.3
       environment:
         MYSQL_ALLOW_EMPTY_PASSWORD: 1
+
+    - image: elasticsearch:6.4.0
+      environment:
+        discovery.type: single-node
 
     # Specify service dependencies here if necessary
     # CircleCI maintains a library of pre-built images
@@ -45,9 +49,9 @@ defaults: &defaults
 # We use the composer.json as a way to determine if we can cache our build.
 restore_cache: &restore_cache
   keys:
-  - v1-dependencies-{{ checksum "composer.json" }}
-  # fallback to using the latest cache if no exact match is found
-  - v1-dependencies-
+    - v1-dependencies-{{ checksum "composer.json" }}
+    # fallback to using the latest cache if no exact match is found
+    - v1-dependencies-
 
 # If composer.json hasn't changed, restore the vendor directory. We don't
 # restore the lock file so we ensure we get updated dependencies.
@@ -134,13 +138,13 @@ code_coverage: &code_coverage
 version: 2
 jobs:
   run-unit-kernel-tests:
-     <<: *unit_kernel_tests
+    <<: *unit_kernel_tests
   run-behat-tests:
-     <<: *behat_tests
+    <<: *behat_tests
   run-code-sniffer:
-     <<: *code_sniffer
+    <<: *code_sniffer
   run-code-coverage:
-     <<: *code_coverage
+    <<: *code_coverage
 
 workflows:
   version: 2

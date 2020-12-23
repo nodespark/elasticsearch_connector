@@ -5,11 +5,14 @@ namespace Drupal\elasticsearch_connector\ElasticSearch\Parameters\Factory;
 use Drupal\search_api\Item\FieldInterface;
 use Elasticsearch\Common\Exceptions\ElasticsearchException;
 use Drupal\elasticsearch_connector\Event\PrepareMappingEvent;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class MappingFactory.
  */
 class MappingFactory {
+
+  private static $container;
 
   /**
    * Helper function. Get the elasticsearch mapping for a field.
@@ -91,12 +94,22 @@ class MappingFactory {
     }
 
     // Allow other modules to alter mapping config before we create it.
-    $dispatcher = \Drupal::service('event_dispatcher');
-    $prepareMappingEvent = new PrepareMappingEvent($mappingConfig, $type, $field);
-    $event = $dispatcher->dispatch(PrepareMappingEvent::PREPARE_MAPPING, $prepareMappingEvent);
-    $mappingConfig = $event->getMappingConfig();
+    // Not sure if this is the best way to do it.
+    if (self::$container) {
+      $dispatcher = self::$container->get('event_dispatcher');
+      $prepareMappingEvent = new PrepareMappingEvent($mappingConfig, $type, $field);
+      $event = $dispatcher->dispatch(PrepareMappingEvent::PREPARE_MAPPING, $prepareMappingEvent);
+      $mappingConfig = $event->getMappingConfig();
+    }
 
     return $mappingConfig;
+  }
+
+  /**
+   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
+   */
+  public static function setContainer(ContainerInterface $container = NULL) {
+    self::$container = $container;
   }
 
 }

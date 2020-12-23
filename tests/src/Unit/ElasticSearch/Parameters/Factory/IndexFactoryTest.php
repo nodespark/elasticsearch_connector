@@ -14,5 +14,8 @@ class IndexFactoryTest extends UnitTestCase {
 
   // TODO All the methods contain static statements or hardcoded
   // services so they can't be tested with unit tests.
+  public function testSkippedTest() {
+    $this->markTestSkipped();
+  }
 
 }
